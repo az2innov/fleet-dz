@@ -2,20 +2,16 @@ import React from 'react';
 import { 
   Car, 
   Fuel, 
-  Wrench, 
   AlertTriangle, 
   TrendingUp, 
   CheckCircle2, 
-  Clock, 
   ArrowUpRight, 
   ShieldAlert, 
   FileText, 
-  MessageSquareQuote,
-  Sparkles,
-  Zap,
-  Smartphone,
-  ShieldCheck,
-  MapPin
+  Smartphone, 
+  MapPin,
+  Clock,
+  Sparkles
 } from 'lucide-react';
 import { Vehicle, FleetAlert, FuelLog, AccidentClaim, SovereignActivityLog, MissionOrder } from '../types.js';
 
@@ -38,13 +34,10 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   alerts,
   fuelLogs,
   accidentClaims,
-  activityLogs = [],
   missions = [],
   onResolveAlert,
   onNavigateTab,
   onSelectVehicle,
-  onOpen2FA,
-  onOpenANPDP,
 }) => {
   const totalFuelDZD = fuelLogs.reduce((acc, log) => acc + log.amountDZD, 0);
   const totalLiters = fuelLogs.reduce((acc, log) => acc + log.liters, 0);
@@ -63,262 +56,228 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   const recentFuelEntries = fuelLogs.slice(0, 5);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Welcome & System State Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                Système Opérationnel • Algérie
-              </span>
-              <span className="text-xs text-slate-400">
-                Monnaie : Dinar Algérien (DA)
-              </span>
-              <button
-                onClick={onOpenANPDP}
-                className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors cursor-pointer"
-              >
-                Certificat Loi 18-07
-              </button>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-              Tableau de Bord Exécutif & Flotte Souveraine
-            </h1>
-            <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-              Supervision unifiée : géolocalisation ANPDP, gestion du parc, affectation des missions réglementaires et suivi des coûts en Dinars Algériens.
-            </p>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      
+      {/* Header : Épuré, Moderne & Aéré */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Datacenter National • Loi 18-07 ANPDP
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Dinar Algérien (DA)
+            </span>
           </div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Tableau de Bord Exécutif
+          </h1>
+          <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Supervision du parc automobile, ravitaillements Naftal et ordres de mission réglementaires.
+          </p>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={() => onNavigateTab('pwa_driver')}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs md:text-sm font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-transform active:scale-95 cursor-pointer border border-emerald-400/40"
-            >
-              <Smartphone className="w-4 h-4" />
-              PWA Conducteur
-            </button>
-            <button
-              onClick={() => onNavigateTab('missions')}
-              className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs md:text-sm font-semibold border border-slate-700 flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <FileText className="w-4 h-4 text-emerald-400" />
-              Ordres de Mission
-            </button>
-            {onOpen2FA && (
-              <button
-                onClick={onOpen2FA}
-                className="px-3 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs md:text-sm font-medium border border-slate-700/60 transition-colors flex items-center gap-1.5 cursor-pointer"
-                title="Changer de rôle RBAC ou tester A2F"
-              >
-                <ShieldCheck className="w-4 h-4 text-indigo-400" />
-                Sécurité A2F
-              </button>
-            )}
-          </div>
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <button
+            onClick={() => onNavigateTab('missions')}
+            className="px-3.5 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <FileText className="w-3.5 h-3.5 text-emerald-500" />
+            <span>+ Ordre de Mission</span>
+          </button>
+          <button
+            onClick={() => onNavigateTab('pwa_driver')}
+            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span>PWA Chauffeur</span>
+          </button>
         </div>
       </div>
 
-      {/* Primary KPI Metrics (6 Cards Executive Dashboard) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Metric 1: Total Fleet & Availability */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
+      {/* 4 Cartes KPI Exécutives : Design moderne & contrasté */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* KPI 1 : Disponibilité */}
+        <div className="bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Disponibilité du Parc</span>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-              <Car className="w-5 h-5" />
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Disponibilité Parc
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <Car className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-white tracking-tight">{availabilityRate}%</span>
-              <span className="text-xs text-slate-400">({activeVehicles.length} / {vehicles.length} actifs)</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {availabilityRate}%
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                ({activeVehicles.length}/{vehicles.length} en service)
+              </span>
             </div>
-            <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Véhicules opérationnels prêts à rouler
-            </p>
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+              <div 
+                className="bg-emerald-500 h-full rounded-full transition-all"
+                style={{ width: `${availabilityRate}%` }}
+              ></div>
+            </div>
           </div>
         </div>
 
-        {/* Metric 2: Fuel Expenses in DZD */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
+        {/* KPI 2 : Carburant Naftal */}
+        <div className="bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Dépenses Carburant Naftal</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
-              <Fuel className="w-5 h-5" />
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Dépenses Naftal
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Fuel className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-2xl md:text-3xl font-bold text-white tracking-tight font-mono">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
                 {totalFuelDZD.toLocaleString('fr-DZ')}
               </span>
-              <span className="text-xs font-bold text-amber-400">DA</span>
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">DA</span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Volume total : <strong className="text-slate-200">{totalLiters.toLocaleString('fr-DZ')} L</strong> (Gasoil / Sans Plomb)
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              Volume : <strong className="text-slate-700 dark:text-slate-200">{totalLiters.toLocaleString('fr-DZ')} L</strong> (Gasoil / Essence)
             </p>
           </div>
         </div>
 
-        {/* Metric 3: Total Kilometres & CO2 Emissions */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
+        {/* KPI 3 : Kilométrage & CO2 */}
+        <div className="bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Kilométrage & Impact CO₂</span>
-            <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
-              <TrendingUp className="w-5 h-5" />
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Kilométrage Flotte
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-2xl md:text-3xl font-bold text-white tracking-tight font-mono">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
                 {totalFleetKm.toLocaleString('fr-DZ')}
               </span>
-              <span className="text-xs text-slate-400">km total</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">km total</span>
             </div>
-            <p className="text-xs text-sky-300 mt-1">
-              Émissions estimées : <strong className="font-mono">{(estimatedCO2Kg / 1000).toFixed(2)} t CO₂</strong> ({estimatedCO2Kg.toLocaleString('fr-DZ')} kg)
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+              CO₂ estimé : <strong className="text-sky-600 dark:text-sky-300">{(estimatedCO2Kg / 1000).toFixed(2)} tonnes</strong>
             </p>
           </div>
         </div>
 
-        {/* Metric 4: Active Mission Orders */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
+        {/* KPI 4 : Missions Actives */}
+        <div className="bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Ordres de Mission Actifs</span>
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
-              <FileText className="w-5 h-5" />
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Missions Réglementaires
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <FileText className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-white tracking-tight">{activeMissionsCount}</span>
-              <span className="text-xs text-slate-400">en cours de trajet</span>
-            </div>
-            <p className="text-xs text-indigo-300 mt-1 cursor-pointer hover:underline" onClick={() => onNavigateTab('missions')}>
-              Gendarmerie & DGSN conformes →
-            </p>
-          </div>
-        </div>
-
-        {/* Metric 5: Active Maintenance Alerts */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Alertes Échéances</span>
-            <div className={`p-2 rounded-xl ${activeAlerts.length > 0 ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-800 text-slate-400'}`}>
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-white tracking-tight">{activeAlerts.length}</span>
-              <span className="text-xs text-slate-400">à traiter</span>
-            </div>
-            <p className="text-xs text-rose-400 mt-1">
-              {activeAlerts.length > 0 ? 'Vidange, visite médicale ou CT' : 'Aucune alerte critique'}
-            </p>
-          </div>
-        </div>
-
-        {/* Metric 6: Open Claims & Surconsommation */}
-        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Sinistres & Anomalies</span>
-            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-bold text-white tracking-tight">{openClaims.length}</span>
-              <span className="text-xs text-slate-400">sinistres</span>
-              {overconsumptionLogs.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                  {overconsumptionLogs.length} surconsommation(s)
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Transmis aux assurances conventionnées (CAAT/SAA)
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Sovereign PWA Banner for Public Entities & Algerian Enterprises */}
-      <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-white">Alternative Souveraine : PWA Conducteur (Sans Dépendance Meta)</h3>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                Loi 18-07 ANPDP
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {activeMissionsCount}
               </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">ordres en cours</span>
             </div>
-            <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
-              Conçue spécialement pour les établissements publics et entreprises algériennes : fonctionne 100% hors-ligne dans les zones blanches routières, stocke les tickets Naftal localement, ne nécessite aucun compte Meta/Facebook, et garantit que les données de la flotte restent sur le territoire national.
-            </p>
+            <button 
+              onClick={() => onNavigateTab('missions')} 
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold mt-2 block"
+            >
+              Voir les ordres de mission →
+            </button>
           </div>
         </div>
-        <button
-          onClick={() => onNavigateTab('pwa_driver')}
-          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0 flex items-center gap-2 shadow-sm transition-all"
-        >
-          <Smartphone className="w-4 h-4" />
-          Ouvrir la PWA Conducteur
-        </button>
       </div>
 
-      {/* Grid: Active Alerts & Sovereign PWA Activity */}
+      {/* Mini-Bandeau de Statut Opérationnel (Aéré et discret) */}
+      <div className="bg-slate-100/80 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300">
+        <div className="flex items-center gap-4 flex-wrap">
+          <span className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-amber-500" />
+            <span>Échéances à traiter : <strong className="text-slate-900 dark:text-white">{activeAlerts.length}</strong></span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <ShieldAlert className="w-3.5 h-3.5 text-orange-500" />
+            <span>Sinistres en cours : <strong className="text-slate-900 dark:text-white">{openClaims.length}</strong></span>
+          </span>
+          {overconsumptionLogs.length > 0 && (
+            <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-semibold">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Surconsommation détectée : {overconsumptionLogs.length} véhicule(s)</span>
+            </span>
+          )}
+        </div>
+        <div className="text-[11px] text-slate-500 dark:text-slate-400">
+          Chiffrement souverain TLS 1.3 / AES-256
+        </div>
+      </div>
+
+      {/* Grille Deux Colonnes : Alertes Flotte & Ravitaillements PWA */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Alerts requiring manager attention */}
-        <div className="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        
+        {/* Colonne Gauche : Alertes & Entretiens */}
+        <div className="lg:col-span-6 bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-rose-400" />
-              <h2 className="text-base font-bold text-white">Alertes Flotte & Entretiens</h2>
+              <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">Alertes & Échéances Prioritaires</h2>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Assurance, contrôle technique, vidange</p>
+              </div>
             </div>
-            <span className="text-xs text-slate-400">Gestion par exception</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+              {activeAlerts.length} active(s)
+            </span>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {activeAlerts.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
-                Toutes les alertes sont résolues. Flotte à jour !
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-xs">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
+                Toutes les alertes sont traitées. Flotte à jour !
               </div>
             ) : (
               activeAlerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className={`p-4 rounded-xl border transition-all ${
+                  className={`p-3.5 rounded-xl border transition-all ${
                     alert.severity === 'high'
-                      ? 'bg-rose-950/20 border-rose-500/30'
-                      : 'bg-amber-950/20 border-amber-500/30'
+                      ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-500/30'
+                      : 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-500/30'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-900 border border-slate-700 text-white font-mono">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-200 font-mono">
                           {alert.vehiclePlate}
                         </span>
-                        <h4 className="text-xs font-semibold text-slate-200">{alert.title}</h4>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">{alert.title}</h4>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">{alert.message}</p>
-                      <div className="flex items-center gap-4 mt-2 text-[11px] text-slate-400">
-                        <span>Échéance : <strong className="text-slate-200">{alert.dueDate || 'Immédiat'}</strong></span>
-                        <span>Action : <strong className="text-slate-300">{alert.actionRequired}</strong></span>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{alert.message}</p>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-3 pt-0.5">
+                        <span>Échéance : <strong>{alert.dueDate || 'Immédiat'}</strong></span>
+                        <span>•</span>
+                        <span>Action : <strong>{alert.actionRequired}</strong></span>
                       </div>
                     </div>
 
                     <button
                       onClick={() => onResolveAlert(alert.id)}
-                      className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium border border-slate-700 whitespace-nowrap cursor-pointer transition-colors"
+                      className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 whitespace-nowrap cursor-pointer transition-colors shrink-0 shadow-2xs"
                     >
                       Résolu ✓
                     </button>
@@ -329,55 +288,60 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
           </div>
         </div>
 
-        {/* Right: Real-time Fuel Declarations via Sovereign PWA */}
-        <div className="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        {/* Colonne Droite : Ravitaillements Carburant Validés PWA */}
+        <div className="lg:col-span-6 bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-400" />
-              <h2 className="text-base font-bold text-white">Derniers Pleins Validés (PWA Souveraine)</h2>
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers Pleins Validés (PWA)</h2>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Reçus Naftal scannés & saisies chauffeurs</p>
+              </div>
             </div>
             <button
               onClick={() => onNavigateTab('fuel')}
-              className="text-xs font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
+              className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
             >
               Voir tout ({fuelLogs.length}) <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {recentFuelEntries.map((log) => (
               <div
                 key={log.id}
-                className="p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/60 hover:border-slate-600 transition-all flex items-center justify-between"
+                className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 transition-all flex items-center justify-between"
               >
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                     <Fuel className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-white">{log.driverName}</span>
-                      <span className="font-mono text-[10px] text-slate-400 bg-slate-900 px-1 rounded border border-slate-800">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">{log.driverName}</span>
+                      <span className="font-mono text-[10px] text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800">
                         {log.vehiclePlate}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                      <span>{log.stationName} • {log.liters} L @ {log.pricePerLiterDZD} DA/L</span>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                      <span>{log.stationName} • {log.liters} L</span>
                       {log.gpsCoordinates && (
-                        <span className="text-[10px] font-mono text-sky-400 bg-sky-950/40 px-1.5 py-0.2 rounded border border-sky-800/50 inline-flex items-center gap-0.5">
+                        <span className="text-[10px] font-mono text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/40 px-1 rounded inline-flex items-center gap-0.5">
                           <MapPin className="w-2.5 h-2.5" />
-                          GPS {log.gpsCoordinates.latitude.toFixed(3)}°, {log.gpsCoordinates.longitude.toFixed(3)}°
+                          GPS {log.gpsCoordinates.latitude.toFixed(2)}°, {log.gpsCoordinates.longitude.toFixed(2)}°
                         </span>
                       )}
                     </p>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-sm font-bold text-emerald-400 font-mono">
+                <div className="text-right shrink-0">
+                  <div className="text-xs md:text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                     +{log.amountDZD.toLocaleString('fr-DZ')} DA
                   </div>
-                  <span className="inline-block px-1.5 py-0.5 text-[9px] font-medium rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 mt-0.5">
+                  <span className="inline-block px-1.5 py-0.2 text-[9px] font-semibold rounded bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 mt-0.5">
                     {log.source === 'pwa_scan' ? 'Scan OCR PWA' : log.source === 'pwa_manual' ? 'PWA Direct' : 'Manuel'}
                   </span>
                 </div>
@@ -387,76 +351,81 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
         </div>
       </div>
 
-      {/* Fleet Vehicles Status Overview */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+      {/* État Actuel du Parc Flotte (Tableau Moderne & Aéré) */}
+      <div className="bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-5 shadow-xs">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Car className="w-5 h-5 text-sky-400" />
-            <h2 className="text-base font-bold text-white">État Actuel de la Flotte Entreprise</h2>
+            <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+              <Car className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">État Global du Parc Automobile</h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Kilométrage en direct, statut d'affectation et révisions</p>
+            </div>
           </div>
           <button
             onClick={() => onNavigateTab('vehicles')}
-            className="text-xs font-medium text-sky-400 hover:text-sky-300 flex items-center gap-1 cursor-pointer"
+            className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
           >
             Fiches complètes ({vehicles.length}) <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/80 text-[11px] text-slate-400 uppercase tracking-wider border-b border-slate-800">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 dark:bg-slate-950/60 text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="py-3 px-4">Véhicule</th>
                 <th className="py-3 px-4">Matricule (Wilaya)</th>
-                <th className="py-3 px-4">Chauffeur assigné</th>
+                <th className="py-3 px-4">Chauffeur Assigné</th>
                 <th className="py-3 px-4">Statut</th>
                 <th className="py-3 px-4">Odomètre</th>
                 <th className="py-3 px-4">Prochaine Révision</th>
                 <th className="py-3 px-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {vehicles.map((v) => {
                 const isOverdue = v.mileage >= v.nextServiceKm;
                 return (
-                  <tr key={v.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-white">
+                  <tr key={v.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
                       {v.make} {v.model}
-                      <span className="block text-[10px] font-normal text-slate-400">Année {v.year} • {v.fuelType}</span>
+                      <span className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">Année {v.year} • {v.fuelType}</span>
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-medium text-emerald-400">
+                    <td className="py-3 px-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">
                       {v.plate}
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className="text-slate-200 font-medium">{v.driverName}</span>
-                      <span className="block text-[10px] text-slate-500">{v.driverPhone}</span>
+                    <td className="py-3 px-4">
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold">{v.driverName}</span>
+                      <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-mono">{v.driverPhone}</span>
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${
+                    <td className="py-3 px-4">
+                      <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
                         v.status === 'active'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
                           : v.status === 'maintenance'
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                          : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                          : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
                       }`}>
                         {v.status === 'active' ? 'En Service' : v.status === 'maintenance' ? 'En Révision' : 'En Sinistre'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-slate-200">
+                    <td className="py-3 px-4 font-mono font-medium text-slate-700 dark:text-slate-300">
                       {v.mileage.toLocaleString('fr-DZ')} km
                     </td>
-                    <td className="py-3.5 px-4 font-mono">
-                      <span className={isOverdue ? 'text-rose-400 font-bold' : 'text-slate-300'}>
+                    <td className="py-3 px-4 font-mono">
+                      <span className={isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-700 dark:text-slate-300'}>
                         {v.nextServiceKm.toLocaleString('fr-DZ')} km
                       </span>
                       {isOverdue && (
-                        <span className="block text-[9px] text-rose-400 font-sans font-bold">Vidange Dépassée !</span>
+                        <span className="block text-[9px] text-rose-600 dark:text-rose-400 font-sans font-bold">Vidange Dépassée !</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-right">
+                    <td className="py-3 px-4 text-right">
                       <button
                         onClick={() => onSelectVehicle(v)}
-                        className="px-2.5 py-1 text-xs font-medium text-sky-400 hover:text-white bg-slate-800 hover:bg-sky-600 rounded-lg transition-colors cursor-pointer"
+                        className="px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 dark:hover:bg-emerald-600 rounded-lg transition-colors cursor-pointer"
                       >
                         Consulter
                       </button>

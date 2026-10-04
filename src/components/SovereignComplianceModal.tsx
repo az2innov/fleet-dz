@@ -75,110 +75,110 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-emerald-500/40 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 dark:bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-emerald-500/40 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 font-black text-xl">
               ANPDP
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-white tracking-tight">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   Conformité Loi 18-07 & Architecture Souveraine
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40 uppercase">
                   Certifié
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Autorité Nationale de Protection des Données à Caractère Personnel (Algérie)
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-300">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-700 dark:text-slate-300">
           {/* Key Guarantees Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-2.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5">
                 <Database className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Hébergement Souverain</h4>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Hébergement Souverain</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 100% hébergé en Algérie (Datacenter Alger). Aucun transfert de données vers des serveurs étrangers.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-              <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center mb-2.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+              <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-2.5">
                 <Lock className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Chiffrement AES-256</h4>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Chiffrement AES-256</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 Chiffrement strict TLS 1.3 en transit et AES-256 GCM au repos pour les coordonnées GPS et pièces d'identité.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-2.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-2.5">
                 <Smartphone className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider">Bac à Sable PWA</h4>
-              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Bac à Sable PWA</h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 Immunisé contre les virus mobiles : exécution sandboxée sans nécessiter l'installation d'un fichier APK tiers.
               </p>
             </div>
           </div>
 
           {/* Legal Compliance Registry */}
-          <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Fiche d'Enregistrement Réglementaire
                 </h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   Conformité aux exigences applicables aux entreprises publiques et privées
                 </p>
               </div>
-              <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-500/30">
+              <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-500/30">
                 N° Déclaration : DZ-ANPDP-DEC-2026-0419
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="text-slate-500 block text-[11px]">Texte de Référence</span>
-                <span className="font-medium text-slate-200">Loi 18-07 du 10 juin 2018 relative à la protection des données</span>
+                <span className="text-slate-400 dark:text-slate-500 block text-[11px]">Texte de Référence</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">Loi 18-07 du 10 juin 2018 relative à la protection des données</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[11px]">Autorité Tutelle</span>
-                <span className="font-medium text-slate-200">ANPDP (Présidence de la République Algérienne)</span>
+                <span className="text-slate-400 dark:text-slate-500 block text-[11px]">Autorité Tutelle</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">ANPDP (Présidence de la République Algérienne)</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[11px]">Rétention des Coordonnées GPS</span>
-                <span className="font-medium text-slate-200">30 jours maximum (purge automatique)</span>
+                <span className="text-slate-400 dark:text-slate-500 block text-[11px]">Rétention des Coordonnées GPS</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">30 jours maximum (purge automatique)</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[11px]">Délégué à la Protection des Données (DPO)</span>
-                <span className="font-medium text-slate-200">dpo@dz-fleet.dz (Cabinet Agréé Alger)</span>
+                <span className="text-slate-400 dark:text-slate-500 block text-[11px]">Délégué à la Protection des Données (DPO)</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">dpo@dz-fleet.dz (Cabinet Agréé Alger)</span>
               </div>
             </div>
           </div>
 
           {/* Offline & Sahara Reliability */}
-          <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
               <strong className="block font-bold mb-1">Continuité Opérationnelle en Zone Saharienne & Sans Réseau (Offline-First) :</strong>
               Les chauffeurs en transit sur les tronçons sahariens (ex: RN1 Transsaharienne, RN49, RN51) sans couverture réseau 3G/4G continuent d'enregistrer leurs tickets Naftal et compteurs en toute sécurité. Les données restent dans le bac à sable chiffré du téléphone et sont synchronisées automatiquement dès la détection d'une connexion réseau.
@@ -187,13 +187,13 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between">
           <button
             type="button"
             onClick={handleDownloadRegistry}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-2 transition-colors cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 flex items-center gap-2 transition-colors cursor-pointer"
           >
-            <Download className="w-4 h-4 text-emerald-400" />
+            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>{downloadSuccess ? 'Certificat Téléchargé !' : 'Télécharger Déclaration ANPDP (.txt)'}</span>
           </button>
 
@@ -201,7 +201,7 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors"
             >
               Fermer
             </button>

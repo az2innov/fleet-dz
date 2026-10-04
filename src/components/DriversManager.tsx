@@ -191,18 +191,18 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
               <Users className="w-3.5 h-3.5" />
               Ressources Humaines & Mobilité
             </span>
           </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
             Gestion des Chauffeurs & Conducteurs
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Suivi des {drivers.length} conducteurs : permis de conduire (B, C, D, E), visites médicales professionnelles et affectations
           </p>
         </div>
@@ -217,7 +217,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -225,17 +225,17 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
             placeholder="Nom, téléphone, n° permis, wilaya..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Status filter */}
-          <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
             <button
               onClick={() => setStatusFilter('all')}
               className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                statusFilter === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+                statusFilter === 'all' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Tous ({drivers.length})
@@ -243,7 +243,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
             <button
               onClick={() => setStatusFilter('available')}
               className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                statusFilter === 'available' ? 'bg-emerald-600/30 text-emerald-300 font-semibold' : 'text-slate-400 hover:text-white'
+                statusFilter === 'available' ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-600/30 dark:text-emerald-300 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Disponible
@@ -251,7 +251,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
             <button
               onClick={() => setStatusFilter('on_mission')}
               className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                statusFilter === 'on_mission' ? 'bg-sky-600/30 text-sky-300 font-semibold' : 'text-slate-400 hover:text-white'
+                statusFilter === 'on_mission' ? 'bg-sky-500/15 text-sky-700 dark:bg-sky-600/30 dark:text-sky-300 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               En Mission
@@ -259,7 +259,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
             <button
               onClick={() => setStatusFilter('on_leave')}
               className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                statusFilter === 'on_leave' ? 'bg-amber-600/30 text-amber-300 font-semibold' : 'text-slate-400 hover:text-white'
+                statusFilter === 'on_leave' ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-600/30 dark:text-amber-300 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               En Repos/Congé
@@ -270,7 +270,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           >
             <option value="all">Toutes Catégories Permis</option>
             <option value="B">Permis B (Véhicules Légers)</option>
@@ -291,7 +291,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
           return (
             <div
               key={driver.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all flex flex-col justify-between"
+              className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:border-emerald-500/40 dark:hover:border-slate-700 transition-all flex flex-col justify-between"
             >
               <div className="space-y-4">
                 {/* Header Profile */}
@@ -301,11 +301,11 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       {driver.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-white tracking-tight">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
                         {driver.name}
                       </h3>
-                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                        <Building2 className="w-3 h-3 text-slate-500" />
+                      <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                        <Building2 className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                         {driver.department}
                       </p>
                     </div>
@@ -314,12 +314,12 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                   {/* Status Badge */}
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${
                     driver.status === 'available'
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
                       : driver.status === 'on_mission'
-                      ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 animate-pulse'
+                      ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/40 animate-pulse'
                       : driver.status === 'in_training'
-                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                      : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40'
+                      : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40'
                   }`}>
                     {driver.status === 'available' ? 'Disponible' :
                      driver.status === 'on_mission' ? 'En Mission' :
@@ -328,21 +328,21 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 </div>
 
                 {/* Contact & Wilaya */}
-                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-                  <div className="flex items-center gap-2 text-slate-300">
-                    <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800/80">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span className="font-mono truncate">{driver.phone}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-300">
-                    <MapPin className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <MapPin className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
                     <span className="truncate">{driver.wilaya}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-300">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
                     <span>Embauche : {driver.hiringDate}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-300">
-                    <HeartPulse className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <HeartPulse className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
                     <span>Groupe : <strong>{driver.bloodGroup || 'O+'}</strong></span>
                   </div>
                 </div>
@@ -350,15 +350,15 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 {/* Permis de conduire & Catégories */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-semibold flex items-center gap-1.5">
-                      <Award className="w-3.5 h-3.5 text-amber-400" />
-                      Permis n° <span className="font-mono text-white">{driver.licenseNumber}</span>
+                    <span className="text-slate-600 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                      Permis n° <span className="font-mono text-slate-900 dark:text-white">{driver.licenseNumber}</span>
                     </span>
-                    <span className="text-slate-500 text-[11px]">Exp: {driver.licenseExpiry}</span>
+                    <span className="text-slate-400 dark:text-slate-500 text-[11px]">Exp: {driver.licenseExpiry}</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {driver.licenseCategories.map(cat => (
-                      <span key={cat} className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-xs font-bold text-amber-300">
+                      <span key={cat} className="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 dark:bg-slate-800 dark:border-slate-700 text-xs font-bold dark:text-amber-300">
                         Catégorie {cat.toUpperCase().replace('_', ' ')}
                       </span>
                     ))}
@@ -368,13 +368,13 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 {/* Visite médicale obligatoire */}
                 <div className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
                   isMedicalExpired
-                    ? 'bg-rose-950/30 border-rose-500/40 text-rose-300'
+                    ? 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/30 dark:border-rose-500/40 dark:text-rose-300'
                     : isMedicalWarning
-                    ? 'bg-amber-950/30 border-amber-500/40 text-amber-300'
-                    : 'bg-slate-950/40 border-slate-800 text-slate-300'
+                    ? 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/30 dark:border-amber-500/40 dark:text-amber-300'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-950/40 dark:border-slate-800 dark:text-slate-300'
                 }`}>
                   <div className="flex items-center gap-2">
-                    <HeartPulse className={`w-4 h-4 ${isMedicalExpired ? 'text-rose-400 animate-pulse' : isMedicalWarning ? 'text-amber-400' : 'text-emerald-400'}`} />
+                    <HeartPulse className={`w-4 h-4 ${isMedicalExpired ? 'text-rose-500 animate-pulse' : isMedicalWarning ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`} />
                     <div>
                       <span className="font-semibold block">Visite Médicale Périodique</span>
                       <span className="text-[11px] opacity-80">Échéance : {driver.medicalCheckupExpiry}</span>
@@ -382,40 +382,40 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                     isMedicalExpired
-                      ? 'bg-rose-500/20 text-rose-300'
+                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'
                       : isMedicalWarning
-                      ? 'bg-amber-500/20 text-amber-300'
-                      : 'bg-emerald-500/20 text-emerald-300'
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
                   }`}>
                     {isMedicalExpired ? 'Expirée !' : isMedicalWarning ? 'Renouveler' : 'Conforme'}
                   </span>
                 </div>
 
                 {/* Véhicule Titulaire */}
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-800/80">
-                  <span className="text-slate-400 flex items-center gap-1.5">
-                    <Car className="w-3.5 h-3.5 text-sky-400" />
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Car className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
                     Véhicule Assigné :
                   </span>
-                  <span className="font-mono font-bold text-sky-300 bg-sky-950/40 px-2.5 py-0.5 rounded border border-sky-800/60">
+                  <span className="font-mono font-bold text-sky-700 bg-sky-50 dark:text-sky-300 dark:bg-sky-950/40 px-2.5 py-0.5 rounded border border-sky-200 dark:border-sky-800/60">
                     {driver.assignedVehiclePlate || 'Aucun'}
                   </span>
                 </div>
               </div>
 
               {/* Card Actions */}
-              <div className="flex items-center justify-between gap-2 pt-4 mt-4 border-t border-slate-800">
+              <div className="flex items-center justify-between gap-2 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleOpenEdit(driver)}
-                    className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-colors"
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:hover:text-white text-xs font-medium transition-colors"
                     title="Modifier la fiche chauffeur"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteDriver(driver.id, driver.name)}
-                    className="p-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 text-xs font-medium transition-colors"
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-950/60 dark:text-slate-400 dark:hover:text-rose-400 text-xs font-medium transition-colors"
                     title="Supprimer ou archiver"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -424,7 +424,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
 
                 <button
                   onClick={() => onNavigateTab('pwa_driver')}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-colors flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/40 text-xs font-bold transition-colors flex items-center gap-1.5"
                 >
                   <Phone className="w-3 h-3" />
                   Compagnon PWA
@@ -437,40 +437,40 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
 
       {/* Driver Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 dark:bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                     {editingDriver ? `Modifier Profil : ${editingDriver.name}` : 'Nouveau Chauffeur / Conducteur'}
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Fiche état civil, catégories de permis et contrôle médical réglementaire
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveDriver} className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-200">
+            <form onSubmit={handleSaveDriver} className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-800 dark:text-slate-200">
               {/* Section 1: Civil info */}
               <div className="space-y-4">
-                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                   1. État Civil & Rattachement Entreprise
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Nom & Prénom <span className="text-rose-400">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Nom & Prénom <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -478,13 +478,13 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       placeholder="Ex: Karim Belkacem"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Numéro Téléphone (+213) <span className="text-rose-400">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Numéro Téléphone (+213) <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -492,12 +492,12 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       placeholder="+213550123456"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Wilaya de Résidence
                     </label>
                     <input
@@ -505,14 +505,14 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       placeholder="Ex: 16 - Alger, 31 - Oran"
                       value={wilaya}
                       onChange={(e) => setWilaya(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Direction / Service
                     </label>
                     <input
@@ -520,30 +520,30 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       placeholder="Ex: Direction Logistique"
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Date d'Embauche
                     </label>
                     <input
                       type="date"
                       value={hiringDate}
                       onChange={(e) => setHiringDate(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Groupe Sanguin
                     </label>
                     <select
                       value={bloodGroup}
                       onChange={(e) => setBloodGroup(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     >
                       <option value="O+">O+</option>
                       <option value="O-">O-</option>
@@ -559,14 +559,14 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
               </div>
 
               {/* Section 2: Permis & Catégories */}
-              <div className="space-y-4 pt-4 border-t border-slate-800">
-                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                   2. Permis de Conduire & Catégories
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Numéro de Permis <span className="text-rose-400">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Numéro de Permis <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -574,25 +574,25 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       placeholder="Ex: ALG-992014-B"
                       value={licenseNumber}
                       onChange={(e) => setLicenseNumber(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-amber-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Date d'Expiration du Permis
                     </label>
                     <input
                       type="date"
                       value={licenseExpiry}
                       onChange={(e) => setLicenseExpiry(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
                     Catégories Détenues :
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -605,8 +605,8 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                           onClick={() => toggleLicenseCategory(cat)}
                           className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
                             isChecked
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow'
-                              : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-white'
+                              ? 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/50 shadow-sm'
+                              : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/80 dark:text-slate-400 dark:border-slate-700 hover:text-slate-900 dark:hover:text-white'
                           }`}
                         >
                           <Check className={`w-3.5 h-3.5 ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
@@ -619,31 +619,31 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
               </div>
 
               {/* Section 3: Contrôle Médical Professionnel */}
-              <div className="space-y-4 pt-4 border-t border-slate-800">
-                <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider">
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                   3. Visite Médicale Périodique (Médecine du Travail)
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Date d'Échéance de la Visite Médicale
                     </label>
                     <input
                       type="date"
                       value={medicalCheckupExpiry}
                       onChange={(e) => setMedicalCheckupExpiry(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-rose-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-rose-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Statut de Validité Médicale
                     </label>
                     <select
                       value={medicalCheckupStatus}
                       onChange={(e: any) => setMedicalCheckupStatus(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-rose-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-rose-500"
                     >
                       <option value="valid">Valide & Conforme</option>
                       <option value="expiring_soon">Arrive à échéance (sous 30j)</option>
@@ -654,19 +654,19 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
               </div>
 
               {/* Section 4: Affectation & Statut */}
-              <div className="space-y-4 pt-4 border-t border-slate-800">
-                <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider">
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
                   4. Affectation Véhicule & Statut Dynamique
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Véhicule Titulaire Assigné
                     </label>
                     <select
                       value={assignedVehiclePlate}
                       onChange={(e) => setAssignedVehiclePlate(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
                     >
                       <option value="">Aucun (Chauffeur volant / Pool)</option>
                       {vehicles.map(v => (
@@ -678,13 +678,13 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Statut Opérationnel
                     </label>
                     <select
                       value={status}
                       onChange={(e: any) => setStatus(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
                     >
                       <option value="available">Disponible (Prêt pour mission)</option>
                       <option value="on_mission">En Mission (En route)</option>
@@ -696,13 +696,13 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
               </div>
 
               {/* Section 5: Contact Urgence */}
-              <div className="space-y-4 pt-4 border-t border-slate-800">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                   5. Contact d'Urgence Famille (Accident / Sinistre)
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Nom du Proche
                     </label>
                     <input
@@ -710,12 +710,12 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       placeholder="Ex: Fatima Belkacem"
                       value={emergencyName}
                       onChange={(e) => setEmergencyName(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Téléphone Proche
                     </label>
                     <input
@@ -723,12 +723,12 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       placeholder="+213550998811"
                       value={emergencyPhone}
                       onChange={(e) => setEmergencyPhone(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white font-mono focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Lien de Parenté
                     </label>
                     <input
@@ -736,18 +736,18 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       placeholder="Ex: Épouse, Père, Frère"
                       value={emergencyRelation}
                       onChange={(e) => setEmergencyRelation(e.target.value)}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Form Footer */}
-              <div className="p-4 bg-slate-950/80 rounded-2xl flex items-center justify-between border border-slate-800">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950/80 rounded-2xl flex items-center justify-between border border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors"
                 >
                   Annuler
                 </button>

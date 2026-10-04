@@ -23,6 +23,30 @@ import {
 } from './types.js';
 
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dzfleet_theme') as 'light' | 'dark' | null;
+      if (saved === 'light' || saved === 'dark') return saved;
+    }
+    return 'light'; // Clean, crisp, modern default
+  });
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (theme === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+      localStorage.setItem('dzfleet_theme', theme);
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     if (typeof window !== 'undefined') {
       const search = window.location.search;
@@ -117,18 +141,18 @@ export default function App() {
 
   if (loading && vehicles.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mb-4">
-          <div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f19] flex flex-col items-center justify-center text-slate-800 dark:text-white">
+        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mb-4 shadow-sm">
+          <div className="w-6 h-6 border-2 border-emerald-600 dark:border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
         </div>
-        <h2 className="text-base font-bold">Initialisation de Dz-Fleet AI...</h2>
-        <p className="text-xs text-slate-400 mt-1">Plateforme souveraine & gestion de parc automobile (Algérie)</p>
+        <h2 className="text-base font-bold text-slate-900 dark:text-white">Initialisation de Dz-Fleet AI...</h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Plateforme souveraine & gestion de parc automobile (Algérie)</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200">
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -138,6 +162,8 @@ export default function App() {
         userSession={userSession}
         onOpen2FA={() => setIs2FAModalOpen(true)}
         onOpenANPDP={() => setIsANPDPModalOpen(true)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Content Area */}
@@ -255,9 +281,9 @@ export default function App() {
       />
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 py-6 px-4 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-200/80 dark:border-slate-800/80 py-6 px-4 text-center text-xs text-slate-500 dark:text-slate-400">
         <p>Dz-Fleet AI • Système Intégré de Gestion de Flotte Automobile & Mobilité (Algérie)</p>
-        <p className="mt-1 text-[11px] text-slate-600">
+        <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
           Architecture Souveraine conforme Loi 18-07 / ANPDP • Dinars Algériens (DA) • Suivi Carburant Naftal & PWA Offline-First
         </p>
       </footer>
