@@ -7,7 +7,7 @@ import { sendNotificationEmail } from './server/emailService.js';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || process.env.Port) || 3000;
 
   // Increase payload size limit for image uploads (receipts and accident photos)
   app.use(express.json({ limit: '25mb' }));
