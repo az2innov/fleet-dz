@@ -194,10 +194,10 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+            <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
               <FileText className="w-3.5 h-3.5" />
               Réglementation Routière Algérienne
             </span>
@@ -205,7 +205,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
           <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
             Gestion des Trajets & Ordres de Mission Officiels
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">
             Édition et impression des documents de circulation conformes pour la Gendarmerie et la Sûreté Nationale (DGSN)
           </p>
         </div>
@@ -221,48 +221,48 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
 
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Missions Totales</span>
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Missions Totales</span>
           <div className="mt-1 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{missions.length}</span>
-            <span className="text-xs text-slate-400">enregistrées</span>
+            <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{missions.length}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-400">enregistrées</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">En Cours / Approuvées</span>
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">En Cours / Approuvées</span>
           <div className="mt-1 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-sky-600 dark:text-sky-400 tracking-tight">
+            <span className="text-2xl font-black text-sky-600 dark:text-sky-400 tracking-tight">
               {missions.filter(m => m.status === 'in_progress' || m.status === 'approved').length}
             </span>
-            <span className="text-xs text-slate-400">sur la route</span>
+            <span className="text-xs text-slate-400 dark:text-slate-400">sur la route</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Budget Carburant Prévu</span>
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Budget Carburant Prévu</span>
           <div className="mt-1 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-mono tracking-tight">
+            <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tracking-tight">
               {totalFuelBudget.toLocaleString('fr-DZ')}
             </span>
             <span className="text-xs font-bold text-amber-600 dark:text-amber-400">DA</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Budget Missions Global</span>
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Budget Missions Global</span>
           <div className="mt-1 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
               {totalMissionsBudget.toLocaleString('fr-DZ')}
             </span>
             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">DA</span>
           </div>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500">Inclus carburant + péages + per diem</span>
+          <span className="text-[10px] text-slate-400 dark:text-slate-400">Inclus carburant + péages + per diem</span>
         </div>
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-4 shadow-xs">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -270,39 +270,39 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
             placeholder="N° OM, destination, chauffeur, véhicule..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
         </div>
 
-        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+        <div className="flex items-center bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#1e2a3f] text-xs">
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-              statusFilter === 'all' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+              statusFilter === 'all' ? 'bg-white dark:bg-[#1c273e] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Tous ({missions.length})
           </button>
           <button
             onClick={() => setStatusFilter('in_progress')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-              statusFilter === 'in_progress' ? 'bg-sky-500/15 text-sky-700 dark:bg-sky-600/30 dark:text-sky-300 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+              statusFilter === 'in_progress' ? 'bg-sky-500/15 text-sky-700 dark:bg-sky-600/30 dark:text-sky-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             En Cours
           </button>
           <button
             onClick={() => setStatusFilter('approved')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-              statusFilter === 'approved' ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-600/30 dark:text-emerald-300 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+              statusFilter === 'approved' ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-600/30 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Validés
           </button>
           <button
             onClick={() => setStatusFilter('completed')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-              statusFilter === 'completed' ? 'bg-slate-200 text-slate-700 dark:bg-slate-600/30 dark:text-slate-300 font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+              statusFilter === 'completed' ? 'bg-slate-200 text-slate-800 dark:bg-[#1c273e] dark:text-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             Terminés
@@ -316,34 +316,34 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
           return (
             <div
               key={mission.id}
-              className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:border-emerald-500/40 dark:hover:border-slate-700 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+              className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] hover:border-emerald-500/40 dark:hover:border-emerald-500/50 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
             >
-              <div className="space-y-2 flex-1">
+              <div className="space-y-2.5 flex-1">
                 {/* Header row */}
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="font-mono text-sm font-extrabold text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-500/30">
+                  <span className="font-mono text-sm font-black text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-950/60 px-3 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-500/30">
                     {mission.orderNumber}
                   </span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
                     mission.status === 'in_progress'
                       ? 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/40 animate-pulse'
                       : mission.status === 'approved'
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
                       : mission.status === 'completed'
-                      ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
+                      ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-[#1c273e] dark:text-slate-300 dark:border-[#222f47]'
                       : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40'
                   }`}>
                     {mission.status === 'in_progress' ? 'En Mission' :
                      mission.status === 'approved' ? 'Validé Officiel' :
                      mission.status === 'completed' ? 'Terminé' : 'Brouillon'}
                   </span>
-                  <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold">
+                  <span className="text-xs text-slate-700 dark:text-slate-200 font-bold">
                     {mission.title}
                   </span>
                 </div>
 
                 {/* Itinerary route badge */}
-                <div className="flex flex-wrap items-center gap-2 text-xs bg-slate-50 dark:bg-slate-950/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800/80">
+                <div className="flex flex-wrap items-center gap-2 text-xs bg-slate-50 dark:bg-[#0c121e] p-3.5 rounded-xl border border-slate-200/80 dark:border-[#1e2a3f]">
                   <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
                     <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>{mission.departureCity} ({mission.departureWilaya})</span>
@@ -352,7 +352,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
 
                   {mission.intermediateStops && mission.intermediateStops.length > 0 && (
-                    <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-[11px]">
+                    <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300 text-[11px] font-medium">
                       <span>Via {mission.intermediateStops.join(', ')}</span>
                       <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                     </div>
@@ -363,7 +363,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                     <span>{mission.destinationCity} ({mission.destinationWilaya})</span>
                   </div>
 
-                  <span className="ml-auto font-mono text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-950/30 px-2 py-0.5 rounded text-[11px] font-bold">
+                  <span className="ml-auto font-mono text-emerald-700 bg-emerald-100/70 dark:text-emerald-300 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-lg text-xs font-bold border border-emerald-200 dark:border-emerald-500/30">
                     {mission.estimatedDistanceKm} km
                   </span>
                 </div>
@@ -372,11 +372,11 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-600 dark:text-slate-300">
                   <div className="flex items-center gap-2">
                     <User className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                    <span>Chauffeur : <strong className="text-slate-900 dark:text-white">{mission.driverName}</strong> (Permis {mission.driverLicenseCategory})</span>
+                    <span>Chauffeur : <strong className="text-slate-900 dark:text-white font-bold">{mission.driverName}</strong> (Permis {mission.driverLicenseCategory})</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Car className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
-                    <span>Véhicule : <strong className="font-mono text-slate-900 dark:text-white">{mission.vehiclePlate}</strong> ({mission.vehicleModel})</span>
+                    <span>Véhicule : <strong className="font-mono text-slate-900 dark:text-white font-bold">{mission.vehiclePlate}</strong> ({mission.vehicleModel})</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
@@ -386,13 +386,13 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
               </div>
 
               {/* Right side: Budgets & Actions */}
-              <div className="flex flex-col sm:flex-row lg:flex-col items-end justify-between gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
+              <div className="flex flex-col sm:flex-row lg:flex-col items-end justify-between gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-[#1e2a3f]">
                 <div className="text-right">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Budget Total Alloué</span>
-                  <span className="text-lg font-extrabold font-mono text-slate-900 dark:text-white">
-                    {mission.totalBudgetDZD.toLocaleString('fr-DZ')} <span className="text-xs text-amber-600 dark:text-amber-400">DA</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">Budget Total Alloué</span>
+                  <span className="text-xl font-black font-mono text-slate-900 dark:text-white">
+                    {mission.totalBudgetDZD.toLocaleString('fr-DZ')} <span className="text-xs text-amber-600 dark:text-amber-400 font-bold">DA</span>
                   </span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
                     Carburant: {mission.estimatedFuelBudgetDZD.toLocaleString('fr-DZ')} DA | Frais: {(mission.tollFeesDZD + mission.perDiemDZD).toLocaleString('fr-DZ')} DA
                   </span>
                 </div>
@@ -401,7 +401,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                   {mission.status === 'approved' && (
                     <button
                       onClick={() => handleStatusChange(mission.id, 'in_progress')}
-                      className="px-2.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
                     >
                       Démarrer
                     </button>
@@ -409,7 +409,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                   {mission.status === 'in_progress' && (
                     <button
                       onClick={() => handleStatusChange(mission.id, 'completed')}
-                      className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
                     >
                       Clôturer
                     </button>
@@ -417,7 +417,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
 
                   <button
                     onClick={() => setSelectedMissionForPrint(mission)}
-                    className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-[#1c273e] dark:hover:bg-[#263554] dark:text-white border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                   >
                     <Printer className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Imprimer OM</span>
@@ -439,9 +439,9 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
 
       {/* CREATE MISSION MODAL */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 dark:bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 dark:bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
+            <div className="p-6 border-b border-slate-100 dark:border-[#1e2a3f] bg-slate-50/80 dark:bg-[#0c121e] flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
                   <FileText className="w-5 h-5" />
@@ -457,7 +457,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-2 text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-[#1c273e] transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -480,7 +480,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       placeholder="Ex: Livraison d'équipement critique"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
                   <div>
@@ -493,7 +493,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       placeholder="Ex: Maintenance technique base vie pétrolière"
                       value={purpose}
                       onChange={(e) => setPurpose(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
                 </div>
@@ -514,7 +514,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       required
                       value={departureCity}
                       onChange={(e) => setDepartureCity(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
 
@@ -527,7 +527,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       required
                       value={destinationCity}
                       onChange={(e) => setDestinationCity(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
                 </div>
@@ -541,7 +541,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                     placeholder="Ex: Blida, Chlef, Relizane"
                     value={intermediateStopsText}
                     onChange={(e) => setIntermediateStopsText(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-sky-500"
                   />
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">Mentionné expressément sur l'Ordre de Mission pour les barrages de contrôle.</span>
                 </div>
@@ -556,7 +556,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       required
                       value={departureDate}
                       onChange={(e) => setDepartureDate(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
                   <div>
@@ -568,7 +568,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       required
                       value={departureTime}
                       onChange={(e) => setDepartureTime(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
                   <div>
@@ -580,7 +580,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       required
                       value={returnDate}
                       onChange={(e) => setReturnDate(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
                   <div>
@@ -592,7 +592,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       required
                       value={returnTime}
                       onChange={(e) => setReturnTime(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none"
                     />
                   </div>
                 </div>
@@ -611,7 +611,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                     <select
                       value={selectedVehicleId}
                       onChange={(e) => setSelectedVehicleId(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
                     >
                       {availableVehicles.map(v => (
                         <option key={v.id} value={v.id}>
@@ -628,7 +628,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                     <select
                       value={selectedDriverId}
                       onChange={(e) => setSelectedDriverId(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     >
                       {availableDrivers.map(d => (
                         <option key={d.id} value={d.id}>
@@ -654,7 +654,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       type="number"
                       value={estimatedDistanceKm}
                       onChange={(e) => setEstimatedDistanceKm(Number(e.target.value))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none"
                     />
                   </div>
 
@@ -666,7 +666,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       type="number"
                       value={tollFeesDZD}
                       onChange={(e) => setTollFeesDZD(Number(e.target.value))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none"
                     />
                   </div>
 
@@ -678,13 +678,13 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       type="number"
                       value={perDiemDZD}
                       onChange={(e) => setPerDiemDZD(Number(e.target.value))}
-                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none"
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Auto Calculated Summary Card */}
-                <div className="bg-slate-50 dark:bg-slate-950/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="bg-slate-50 dark:bg-[#0c121e] p-4 rounded-2xl border border-slate-200 dark:border-[#1e2a3f] flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400">
                     <div>
                       Carburant estimé : <strong className="text-slate-900 dark:text-white">{estimatedFuelLiters} L</strong> de {selectedVehicle?.fuelType === 'diesel' ? 'Gasoil' : 'Essence'} à {pricePerLiter} DA/L = <strong className="text-amber-600 dark:text-amber-400">{estimatedFuelBudgetDZD.toLocaleString('fr-DZ')} DA</strong>
@@ -704,11 +704,11 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
               </div>
 
               {/* Form Footer */}
-              <div className="p-4 bg-slate-50/80 dark:bg-slate-950/80 rounded-2xl flex items-center justify-between border border-slate-200 dark:border-slate-800">
+              <div className="p-4 bg-slate-50/80 dark:bg-[#0c121e] rounded-2xl flex items-center justify-between border border-slate-200 dark:border-[#1e2a3f]">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors"
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-[#1c273e] hover:bg-slate-200 dark:hover:bg-[#253452] text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Annuler
                 </button>

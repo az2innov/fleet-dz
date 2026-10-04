@@ -72,11 +72,11 @@ export default function App() {
   const [userSession, setUserSession] = useState<UserSession>({
     id: 'usr-1',
     name: 'Amine Benzerga (Super Admin)',
-    email: 'amine.benzerga@dzfleet.dz',
+    email: 'admin@fleet-dz.com',
     role: 'super_admin',
     twoFactorEnabled: true,
     twoFactorVerified: true,
-    department: 'Direction des Systèmes d\'Information (DSI)',
+    department: "Direction des Systèmes d'Information (DSI)",
   });
   const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
   const [isANPDPModalOpen, setIsANPDPModalOpen] = useState(false);
@@ -152,7 +152,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-800 dark:text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200">
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}

@@ -110,7 +110,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-200">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0c121e]/95 backdrop-blur-md border-b border-slate-200/90 dark:border-[#222f47] transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
           
@@ -126,24 +126,24 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
                 Dz-Fleet
               </span>
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="px-1.5 py-0.5 text-[10px] font-black rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                 AI
               </span>
             </div>
           </div>
 
           {/* Desktop Navigation Tabs */}
-          <nav className="hidden lg:flex items-center bg-slate-100/80 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/50">
+          <nav className="hidden lg:flex items-center bg-slate-100/90 dark:bg-[#121929] p-1 rounded-xl border border-slate-200/80 dark:border-[#222f47]">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer relative ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer relative ${
                     isActive
-                      ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/40'
+                      ? 'bg-white dark:bg-[#1c273e] text-emerald-700 dark:text-emerald-300 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-[#1c273e]/50'
                   }`}
                 >
                   {item.icon}
@@ -180,7 +180,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenANPDP}
-                className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-[#121929] hover:bg-slate-200 dark:hover:bg-[#1c273e] border border-slate-200 dark:border-[#222f47] text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
                 title="Consulter l'attestation de conformité ANPDP Loi 18-07"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
@@ -193,7 +193,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onToggleTheme}
-                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                className="p-2 rounded-xl bg-slate-100 dark:bg-[#121929] hover:bg-slate-200 dark:hover:bg-[#1c273e] border border-slate-200 dark:border-[#222f47] text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
                 title={theme === 'dark' ? 'Passer en Mode Jour' : 'Passer en Mode Nuit'}
                 aria-label="Basculer le thème"
               >
@@ -222,7 +222,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Mobile Navigation Bar */}
-      <div className="lg:hidden flex items-center justify-around border-t border-slate-200/80 dark:border-slate-800 py-2 bg-white/95 dark:bg-slate-950/95 px-2 overflow-x-auto gap-1">
+      <div className="lg:hidden flex items-center justify-around border-t border-slate-200/90 dark:border-[#222f47] py-2 bg-white/95 dark:bg-[#0c121e]/95 px-2 overflow-x-auto gap-1">
         {navItems.map((item) => (
           <button
             key={item.id}
@@ -244,7 +244,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
           }`}
         >
-          <Smartphone className="w-3 h-3" /> PWA
+          <Smartphone className="w-3.5 h-3.5" /> PWA
         </button>
       </div>
     </header>

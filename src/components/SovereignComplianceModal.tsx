@@ -75,10 +75,10 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 dark:bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-emerald-500/40 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 dark:bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-100 dark:border-[#1e2a3f] bg-slate-50/80 dark:bg-[#0c121e] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 font-black text-xl">
               ANPDP
@@ -99,7 +99,7 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-[#1c273e] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -109,7 +109,7 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
         <div className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-700 dark:text-slate-300">
           {/* Key Guarantees Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f]">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5">
                 <Database className="w-4 h-4" />
               </div>
@@ -119,7 +119,7 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f]">
               <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-2.5">
                 <Lock className="w-4 h-4" />
               </div>
@@ -129,7 +129,7 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f]">
               <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-2.5">
                 <Smartphone className="w-4 h-4" />
               </div>
@@ -141,8 +141,8 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
           </div>
 
           {/* Legal Compliance Registry */}
-          <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#1e2a3f] pb-3">
               <div>
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                   Fiche d'Enregistrement Réglementaire
@@ -187,11 +187,11 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between">
+        <div className="p-6 border-t border-slate-100 dark:border-[#1e2a3f] bg-slate-50/80 dark:bg-[#0c121e] flex items-center justify-between">
           <button
             type="button"
             onClick={handleDownloadRegistry}
-            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 flex items-center gap-2 transition-colors cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-[#222f47] flex items-center gap-2 transition-colors cursor-pointer"
           >
             <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>{downloadSuccess ? 'Certificat Téléchargé !' : 'Télécharger Déclaration ANPDP (.txt)'}</span>
@@ -201,7 +201,7 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-[#222f47] transition-colors cursor-pointer"
             >
               Fermer
             </button>

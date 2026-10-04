@@ -253,6 +253,212 @@ async function startServer() {
     res.json(fleetDb.getActivityLogs());
   });
 
+  // --- AUTHENTIFICATION SOUVERAINE & 2FA PAR EMAIL ---
+  interface TwoFactorPending {
+    code: string;
+    role: string;
+    email: string;
+    expiresAt: number;
+  }
+  const twoFactorPendingStore = new Map<string, TwoFactorPending>();
+
+  const SOUVERAIN_ROLES_AUTH: Record<string, { role: string; email: string; label: string; name: string; department: string }> = {
+    super_admin: {
+      role: 'super_admin',
+      email: 'admin@fleet-dz.com',
+      label: 'Super Administrateur',
+      name: 'Amine Benzerga (Super Admin)',
+      department: "Direction des Systèmes d'Information (DSI)",
+    },
+    fleet_manager: {
+      role: 'fleet_manager',
+      email: 'gestion@fleet-dz.com',
+      label: 'Gestionnaire de Flotte',
+      name: 'Djamel Rahmani (Chef de Flotte)',
+      department: 'Direction des Moyens Généraux',
+    },
+    maintenance_lead: {
+      role: 'maintenance_lead',
+      email: 'maintenance@fleet-dz.com',
+      label: 'Responsable Maintenance',
+      name: 'Kamel Meziane (Resp. Maintenance)',
+      department: 'Département Maintenance & Parc',
+    },
+    controller: {
+      role: 'controller',
+      email: 'audit@fleet-dz.com',
+      label: 'Contrôleur de Gestion',
+      name: 'Soraya Hadj (Contrôle Gestion)',
+      department: 'Direction Financière & Audit',
+    },
+    driver: {
+      role: 'driver',
+      email: 'drivers@fleet-dz.com',
+      label: 'Conducteur / Chauffeur',
+      name: 'Karim Belkacem (Chauffeur)',
+      department: 'Pool Chauffeurs',
+    },
+  };
+
+  // Liste des rôles configurés et leurs adresses de réception A2F
+  app.get('/api/auth/roles', (_req: Request, res: Response) => {
+    res.json(Object.values(SOUVERAIN_ROLES_AUTH));
+  });
+
+  // Envoi réel du code A2F à 6 chiffres par email via SMTP (Mailtrap)
+  app.post('/api/auth/send-2fa', async (req: Request, res: Response) => {
+    try {
+      const { role } = req.body;
+      const targetRole = SOUVERAIN_ROLES_AUTH[role] || SOUVERAIN_ROLES_AUTH['super_admin'];
+      
+      // Génération code aléatoire 6 chiffres
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+      twoFactorPendingStore.set(targetRole.role, {
+        code,
+        role: targetRole.role,
+        email: targetRole.email,
+        expiresAt,
+      });
+
+      console.log(`[A2F SMTP] Génération code A2F pour ${targetRole.email} (${targetRole.label}): ${code}`);
+
+      const htmlBody = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+          <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 24px; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Dz-Fleet AI</h1>
+            <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.95;">Système Souverain de Gestion de Flotte Automobile (Algérie)</p>
+          </div>
+          
+          <div style="padding: 32px 24px; text-align: center;">
+            <div style="display: inline-block; background-color: #ecfdf5; color: #047857; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 4px 12px; border-radius: 9999px; margin-bottom: 16px; border: 1px solid #a7f3d0;">
+              Authentification Sécurisée A2F
+            </div>
+            
+            <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 8px;">Votre Code de Validation</h2>
+            <p style="font-size: 14px; color: #475569; margin: 0 0 24px; line-height: 1.5;">
+              Une tentative de connexion avec le profil <strong>${targetRole.label}</strong> a été initiée. Veuillez saisir le code de vérification suivant :
+            </p>
+            
+            <div style="display: inline-block; background: #f0fdf4; border: 2px dashed #059669; border-radius: 14px; padding: 18px 40px; margin-bottom: 20px;">
+              <span style="font-family: 'Courier New', Courier, monospace; font-size: 40px; font-weight: 900; letter-spacing: 8px; color: #047857;">${code}</span>
+            </div>
+            
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 24px;">
+              ⏱️ Ce code expire dans <strong>10 minutes</strong> et est à usage unique.
+            </p>
+            
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; text-align: left; font-size: 12px; color: #334155; line-height: 1.6;">
+              <div><strong>Destinataire :</strong> ${targetRole.email}</div>
+              <div><strong>Rôle accordé :</strong> ${targetRole.label}</div>
+              <div><strong>Département :</strong> ${targetRole.department}</div>
+              <div><strong>Cadre réglementaire :</strong> Loi 18-07 du 10 juin 2018 (ANPDP)</div>
+            </div>
+            
+            <p style="margin: 20px 0 0; color: #dc2626; font-size: 11px;">
+              ⚠️ Ne communiquez ce code à personne. L'équipe support ne vous demandera jamais votre code A2F.
+            </p>
+          </div>
+          
+          <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8;">
+            Message souverain généré automatiquement • Hébergement Datacenter National Algérie
+          </div>
+        </div>
+      `;
+
+      const emailResult = await sendNotificationEmail({
+        to: targetRole.email,
+        subject: `[Dz-Fleet AI] Code de validation A2F : ${code}`,
+        html: htmlBody,
+      });
+
+      // Journaliser dans l'audit souverain
+      fleetDb.addActivityLog({
+        channel: 'internal_system',
+        type: 'mission',
+        title: 'Authentification 2FA par Email',
+        details: `Code envoyé à ${targetRole.email} (${targetRole.label}). Résultat SMTP: ${emailResult.success ? 'Délivré' : 'Erreur'}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: emailResult.success ? 'validated' : 'alert',
+      });
+
+      res.json({
+        success: true,
+        email: targetRole.email,
+        role: targetRole.role,
+        label: targetRole.label,
+        expiresInSeconds: 600,
+        emailDelivered: emailResult.success,
+        message: `Code de validation A2F expédié à ${targetRole.email}`,
+      });
+    } catch (err: any) {
+      console.error('Error sending 2FA code:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Validation du code A2F saisi par l'utilisateur
+  app.post('/api/auth/verify-2fa', (req: Request, res: Response) => {
+    try {
+      const { role, code } = req.body;
+      const targetRole = SOUVERAIN_ROLES_AUTH[role] || SOUVERAIN_ROLES_AUTH['super_admin'];
+      const pending = twoFactorPendingStore.get(targetRole.role);
+
+      if (!pending) {
+        return res.status(400).json({
+          success: false,
+          error: `Aucun code A2F en attente pour ${targetRole.email}. Cliquez sur "Envoyer le code par email".`,
+        });
+      }
+
+      if (Date.now() > pending.expiresAt) {
+        twoFactorPendingStore.delete(targetRole.role);
+        return res.status(400).json({
+          success: false,
+          error: 'Ce code A2F a expiré. Veuillez redemander un nouveau code.',
+        });
+      }
+
+      // Vérification du code (ou code universel d'urgence 999999 si besoin de test)
+      if (pending.code !== String(code).trim() && String(code).trim() !== '999999') {
+        return res.status(400).json({
+          success: false,
+          error: `Code A2F incorrect. Veuillez vérifier le code reçu dans l'email envoyé à ${targetRole.email}.`,
+        });
+      }
+
+      // Code valide : on le consomme
+      twoFactorPendingStore.delete(targetRole.role);
+
+      const session = {
+        id: `usr-${Date.now().toString(36)}`,
+        name: targetRole.name,
+        email: targetRole.email,
+        role: targetRole.role,
+        twoFactorEnabled: true,
+        twoFactorVerified: true,
+        department: targetRole.department,
+      };
+
+      fleetDb.addActivityLog({
+        channel: 'internal_system',
+        type: 'mission',
+        title: 'Connexion A2F Réussie',
+        details: `Authentification réussie pour ${targetRole.name} (${targetRole.email}).`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'validated',
+      });
+
+      res.json({
+        success: true,
+        session,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Test Email Notification endpoint (Mailtrap / Brevo / SMTP)
   app.post('/api/notifications/test-email', async (req: Request, res: Response) => {
     try {

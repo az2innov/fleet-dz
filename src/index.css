@@ -13,3 +13,8 @@
 body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* Custom crisp dark mode glass & surface accents */
+.dark body {
+  background-color: #090d16;
+}

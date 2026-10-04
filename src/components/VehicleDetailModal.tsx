@@ -36,20 +36,20 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
   const totalLiters = vehicleFuel.reduce((acc, f) => acc + f.liters, 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 dark:bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 dark:bg-black/85 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 relative dark:shadow-[0_20px_50px_rgba(0,0,0,0.8),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+          className="absolute top-6 right-6 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-slate-300 dark:hover:text-white transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
-        <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-5">
+        <div className="flex items-start justify-between border-b border-slate-100 dark:border-[#1e2a3f] pb-5">
           <div>
-            <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-slate-100 dark:bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 inline-block mb-2">
+            <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-slate-100 dark:bg-[#0c121e] px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1e2a3f] inline-block mb-2">
               {vehicle.plate}
             </span>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -73,7 +73,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
-          <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="bg-slate-50 dark:bg-[#0c121e] p-4 rounded-xl border border-slate-200 dark:border-[#1e2a3f]">
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Odomètre Actuel</span>
             <div className="text-xl font-bold text-slate-900 dark:text-white font-mono mt-1">
               {vehicle.mileage.toLocaleString('fr-DZ')} km
@@ -81,7 +81,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Certifié via PWA Souveraine</p>
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="bg-slate-50 dark:bg-[#0c121e] p-4 rounded-xl border border-slate-200 dark:border-[#1e2a3f]">
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Total Carburant (DA)</span>
             <div className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono mt-1">
               {totalFuelDZD.toLocaleString('fr-DZ')} DA
@@ -89,7 +89,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{totalLiters} Litres déclarés</p>
           </div>
 
-          <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="bg-slate-50 dark:bg-[#0c121e] p-4 rounded-xl border border-slate-200 dark:border-[#1e2a3f]">
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase">Prochaine Vidange</span>
             <div className={`text-xl font-bold font-mono mt-1 ${vehicle.mileage >= vehicle.nextServiceKm ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
               {vehicle.nextServiceKm.toLocaleString('fr-DZ')} km
@@ -99,9 +99,9 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
         </div>
 
         {/* Driver Assigned */}
-        <div className="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs mb-6 flex items-center justify-between">
+        <div className="bg-slate-50 dark:bg-[#0c121e] p-4 rounded-xl border border-slate-200 dark:border-[#1e2a3f] text-xs mb-6 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-700">
+            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#1c273e] flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-[#222f47]">
               <User className="w-5 h-5" />
             </div>
             <div>
@@ -112,7 +112,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           <div className="flex items-center gap-2">
             <a
               href={`tel:${vehicle.driverPhone}`}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium transition-colors"
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-slate-200 dark:border-[#222f47] rounded-lg text-xs font-medium transition-colors"
             >
               Appeler (+213)
             </a>
@@ -134,19 +134,19 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             Conformité Administrative & Assurance (Algérie)
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f]">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Assureur ({vehicle.insuranceCompany || 'CAAT'})</span>
               <span className="font-semibold text-slate-900 dark:text-white">{vehicle.insuranceExpiry}</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f]">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Contrôle Technique</span>
               <span className="font-semibold text-slate-900 dark:text-white">{vehicle.technicalControlExpiry}</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f]">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Vignette Fiscale</span>
               <span className="font-semibold text-slate-900 dark:text-white">Année {vehicle.vignetteYear}</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f]">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Châssis (VIN)</span>
               <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300 truncate block">{vehicle.chassisNumber || 'Non renseigné'}</span>
             </div>
@@ -159,7 +159,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
               État d'Usure des Pneumatiques
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 dark:bg-slate-950/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 dark:bg-[#0c121e] p-3.5 rounded-xl border border-slate-200 dark:border-[#1e2a3f]">
               <div>
                 <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Avant Gauche</span>
                 <span className="font-bold text-sky-600 dark:text-sky-400 font-mono text-sm">{vehicle.tires.frontLeft}%</span>
@@ -187,7 +187,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           </h4>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {vehicleFuel.map(f => (
-              <div key={f.id} className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 text-xs flex justify-between items-center">
+              <div key={f.id} className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] text-xs flex justify-between items-center">
                 <div>
                   <span className="font-medium text-slate-900 dark:text-white">{f.stationName}</span>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 ml-2">({f.liters} L @ {f.pricePerLiterDZD} DA/L)</span>
