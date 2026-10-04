@@ -151,6 +151,28 @@ export default function App() {
     );
   }
 
+  const isDedicatedPwa = typeof window !== 'undefined' && (
+    window.location.search.includes('view=pwa') ||
+    window.location.search.includes('mode=pwa') ||
+    window.matchMedia('(display-mode: standalone)').matches
+  );
+
+  // If in dedicated PWA mode or standalone, render directly full-screen
+  if (isDedicatedPwa || activeTab === 'pwa_driver') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
+        <DriverPwaApp
+          vehicles={vehicles}
+          drivers={drivers}
+          fuelLogs={fuelLogs}
+          missions={missions}
+          onRefreshData={fetchFleetData}
+          onClosePwa={isDedicatedPwa ? undefined : () => setActiveTab('dashboard')}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-800 dark:text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200">
       {/* Top Navbar */}
@@ -168,30 +190,6 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
-        {activeTab === 'pwa_driver' && (
-          <div className="py-2">
-            <div className="max-w-md mx-auto mb-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-3.5 flex items-center justify-between text-xs text-emerald-300">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span><strong>Vue Chauffeur Souveraine :</strong> Compatible hors-ligne (Sahara / Autoroutes).</span>
-              </div>
-              <button 
-                onClick={() => setActiveTab('dashboard')} 
-                className="px-2.5 py-1 rounded-lg bg-emerald-800/40 hover:bg-emerald-800/60 text-white font-medium text-[11px]"
-              >
-                Retour Flotte
-              </button>
-            </div>
-            <DriverPwaApp
-              vehicles={vehicles}
-              drivers={drivers}
-              fuelLogs={fuelLogs}
-              missions={missions}
-              onRefreshData={fetchFleetData}
-              onClosePwa={() => setActiveTab('dashboard')}
-            />
-          </div>
-        )}
 
         {activeTab === 'dashboard' && (
           <FleetDashboard

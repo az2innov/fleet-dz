@@ -64,13 +64,55 @@ export const DriverPwaApp: React.FC<DriverPwaAppProps> = ({
     }
   });
 
-  // Selected driver & vehicle
-  const [selectedDriverId, setSelectedDriverId] = useState<string>(drivers[0]?.id || 'drv-1');
+  // Selected driver & vehicle with URL parameter and localStorage persistence
+  const [selectedDriverId, setSelectedDriverId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlDriverId = params.get('driverId') || params.get('driver');
+      if (urlDriverId && drivers.some(d => d.id === urlDriverId)) {
+        try { localStorage.setItem('dz_fleet_authenticated_driver_id', urlDriverId); } catch {}
+        return urlDriverId;
+      }
+      try {
+        const saved = localStorage.getItem('dz_fleet_authenticated_driver_id');
+        if (saved && drivers.some(d => d.id === saved)) return saved;
+      } catch {}
+    }
+    return drivers[0]?.id || 'drv-1';
+  });
+
+  const [isDriverSwitchModalOpen, setIsDriverSwitchModalOpen] = useState<boolean>(false);
+  const [driverSearchQuery, setDriverSearchQuery] = useState<string>('');
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    }
+    return false;
+  });
+  const [showInstallGuide, setShowInstallGuide] = useState<boolean>(false);
+
   const activeDriver = drivers.find(d => d.id === selectedDriverId) || drivers[0];
   const assignedVehicle = vehicles.find(v => v.plate === activeDriver?.assignedVehiclePlate) || vehicles[0];
 
   // Active form modal
   const [activeModal, setActiveModal] = useState<'fuel' | 'odometer' | 'accident' | 'qr' | 'install' | 'mission_order' | null>(null);
+
+  // Listen for native beforeinstallprompt (Android Chrome / Edge)
+  useEffect(() => {
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+    });
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
 
   const activeMission = missions?.find(m => m.driverId === activeDriver?.id && (m.status === 'in_progress' || m.status === 'approved')) 
     || missions?.find(m => m.vehiclePlate === assignedVehicle?.plate)
@@ -420,27 +462,27 @@ export const DriverPwaApp: React.FC<DriverPwaAppProps> = ({
   const pendingCount = offlineQueue.filter(a => a.status === 'pending').length;
 
   return (
-    <div className="max-w-md mx-auto bg-slate-950 text-slate-100 min-h-screen pb-12 flex flex-col shadow-2xl border-x border-slate-800">
+    <div className="max-w-md mx-auto w-full bg-slate-950 text-slate-100 min-h-screen pb-12 flex flex-col shadow-2xl border-x border-slate-800">
       {/* Top Sovereign Bar (Conformité Loi 18-07) */}
-      <div className="bg-emerald-950/80 border-b border-emerald-800/40 px-4 py-2 flex items-center justify-between text-[11px] text-emerald-300">
+      <div className="bg-emerald-950/80 border-b border-emerald-800/40 px-4 py-2.5 flex items-center justify-between text-[11px] text-emerald-300">
         <div className="flex items-center gap-1.5 font-medium">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span>Hébergement Souverain • Loi 18-07 ANPDP</span>
+          <span>Hébergement Souverain • Loi 18-07</span>
         </div>
         <div className="flex items-center gap-1.5">
           {isOnline ? (
-            <span className="flex items-center gap-1 text-emerald-400 font-bold">
+            <span className="flex items-center gap-1 text-emerald-400 font-bold bg-emerald-900/40 border border-emerald-500/30 px-2 py-0.5 rounded-full">
               <Wifi className="w-3 h-3" /> En ligne
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-amber-400 font-bold bg-amber-950/80 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-amber-300 font-bold bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded-full">
               <WifiOff className="w-3 h-3 animate-pulse" /> Zone Blanche (Hors-ligne)
             </span>
           )}
           {onClosePwa && (
             <button 
               onClick={onClosePwa}
-              className="ml-2 text-slate-400 hover:text-white p-1 rounded transition-colors"
+              className="ml-2 text-slate-400 hover:text-white p-1 rounded transition-colors cursor-pointer"
               title="Retour au portail gestionnaire"
             >
               <X className="w-4 h-4" />
@@ -449,56 +491,99 @@ export const DriverPwaApp: React.FC<DriverPwaAppProps> = ({
         </div>
       </div>
 
-      {/* Driver & Vehicle Header Card */}
-      <div className="p-4 bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-800">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Car className="w-4 h-4" />
+      {/* PWA Home Screen Installation Prompt Banner (1-Click on Android / Guide on iPhone) */}
+      {!isInstalled && (
+        <div className="mx-4 mt-3 p-3 bg-gradient-to-r from-emerald-950/90 to-[#121929] border border-emerald-500/40 rounded-2xl flex items-center justify-between text-xs text-emerald-200 shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+              <Smartphone className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-white tracking-wide">Dz-Fleet Conducteur</h1>
-              <p className="text-[10px] text-slate-400">PWA Entreprises & Établissements Publics</p>
+              <div className="font-bold text-white text-[12px]">Installer l'icône sur votre téléphone</div>
+              <div className="text-[10px] text-emerald-300/80">Accès direct 1-clic & 100% hors-ligne</div>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              if (installPrompt) {
+                installPrompt.prompt();
+              } else {
+                setShowInstallGuide(true);
+              }
+            }}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold text-[11px] shrink-0 transition-transform shadow cursor-pointer"
+          >
+            Installer
+          </button>
+        </div>
+      )}
+
+      {/* Driver & Vehicle Header Card */}
+      <div className="p-4 bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-800 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-sm">
+              DZ
+            </div>
+            <div>
+              <h1 className="text-sm font-bold text-white tracking-wide flex items-center gap-1.5">
+                Dz-Fleet Conducteur
+                <span className="w-2 h-2 rounded-full bg-emerald-400" title="Connecté"></span>
+              </h1>
+              <p className="text-[10px] text-slate-400">Portail Embarqué & Mobilité Souveraine</p>
             </div>
           </div>
           <button 
             onClick={() => setActiveModal('qr')}
-            className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 transition-colors"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Afficher le QR code pour un autre téléphone"
           >
-            <QrCode className="w-3.5 h-3.5 text-emerald-400" /> Scanner Mobile
+            <QrCode className="w-3.5 h-3.5 text-emerald-400" /> Partager
           </button>
         </div>
 
-        {/* Driver Selector & Active Vehicle Badge */}
-        <div className="bg-slate-900/90 rounded-xl p-3 border border-slate-800/80 space-y-2.5">
+        {/* Identified Driver Profile Card */}
+        <div className="bg-[#121929] rounded-2xl p-3.5 border border-[#222f47] shadow-sm space-y-2.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-emerald-400" />
-              <select 
-                value={selectedDriverId} 
-                onChange={(e) => setSelectedDriverId(e.target.value)}
-                className="bg-slate-950 border border-slate-700 text-xs text-white rounded-lg px-2.5 py-1 font-medium focus:outline-none focus:border-emerald-500"
-              >
-                {drivers.map(d => (
-                  <option key={d.id} value={d.id}>
-                    {d.name} ({d.phone})
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-xs shrink-0">
+                <User className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-white truncate">{activeDriver?.name || 'Conducteur'}</span>
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0">Vérifié</span>
+                </div>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                  {activeDriver?.phone} • Wilaya {activeDriver?.wilaya || 'Alger'}
+                </p>
+              </div>
             </div>
-            <span className="text-[11px] text-slate-400 font-mono">
-              Wilaya {activeDriver?.wilaya || 'Alger (16)'}
-            </span>
+            <button
+              onClick={() => setIsDriverSwitchModalOpen(true)}
+              className="text-[11px] text-emerald-400 hover:text-emerald-300 bg-[#0c121e] hover:bg-[#1a2336] px-2.5 py-1 rounded-lg border border-[#1e2a3f] transition-colors cursor-pointer shrink-0 font-medium"
+            >
+              Changer
+            </button>
           </div>
 
-          <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
-            <div>
-              <span className="text-slate-400 text-[10px] block">Véhicule assigné</span>
-              <span className="font-bold text-white font-mono">{assignedVehicle?.model} ({assignedVehicle?.plate})</span>
+          {/* Assigned vehicle & current odometer */}
+          <div className="pt-2 border-t border-[#1e2a3f] grid grid-cols-2 gap-2 text-xs">
+            <div className="bg-[#0c121e] p-2.5 rounded-xl border border-[#1e2a3f] min-w-0">
+              <span className="text-slate-400 text-[10px] block font-medium">Véhicule Assigné</span>
+              <span className="font-bold text-white font-mono text-[12px] truncate block mt-0.5">
+                {assignedVehicle?.plate || 'Non assigné'}
+              </span>
+              <span className="text-[10px] text-slate-400 block truncate">
+                {assignedVehicle?.make} {assignedVehicle?.model}
+              </span>
             </div>
-            <div className="text-right">
-              <span className="text-slate-400 text-[10px] block">Odomètre actuel</span>
-              <span className="font-bold text-emerald-400 font-mono">{(assignedVehicle?.mileage || 124500).toLocaleString()} km</span>
+            <div className="bg-[#0c121e] p-2.5 rounded-xl border border-[#1e2a3f] text-right">
+              <span className="text-slate-400 text-[10px] block font-medium">Compteur Actuel</span>
+              <span className="font-bold text-emerald-400 font-mono text-[13px] block mt-0.5">
+                {(assignedVehicle?.mileage || 124500).toLocaleString('fr-DZ')} km
+              </span>
+              <span className="text-[10px] text-slate-400 block">Dernier relevé certifié</span>
             </div>
           </div>
         </div>
@@ -770,19 +855,6 @@ export const DriverPwaApp: React.FC<DriverPwaAppProps> = ({
               </button>
             </div>
           )}
-        </div>
-
-        {/* Souveraineté & Mode Hors-Ligne Explanation Box */}
-        <div className="mt-4 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs space-y-2">
-          <div className="flex items-center gap-2 text-slate-300 font-semibold">
-            <Info className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Pourquoi la PWA est idéale pour l'Algérie ?</span>
-          </div>
-          <p className="text-slate-400 text-[11px] leading-relaxed">
-            • <strong>100% Souverain :</strong> Aucune donnée ne transite par WhatsApp ou des serveurs étrangers.<br/>
-            • <strong>Zones Blanches :</strong> Vous pouvez enregistrer vos tickets même au milieu du Sahara sans connexion 4G.<br/>
-            • <strong>Conforme Loi 18-07 :</strong> Conforme aux exigences de l'ANPDP pour les administrations et entreprises nationales.
-          </p>
         </div>
 
         {/* Recent Driver History */}
@@ -1410,11 +1482,149 @@ export const DriverPwaApp: React.FC<DriverPwaAppProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold"
+                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
               >
                 Fermer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL : CHANGER DE PROFIL CONDUCTEUR ================= */}
+      {isDriverSwitchModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-[#121929] border border-[#222f47] rounded-t-3xl sm:rounded-3xl w-full max-w-md p-5 max-h-[85vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[#1e2a3f]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">Changer de Profil Conducteur</h3>
+                  <p className="text-[10px] text-slate-400">Sélectionnez votre fiche pour lier votre smartphone</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDriverSwitchModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#1c273e] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="py-3">
+              <input
+                type="text"
+                placeholder="Rechercher par nom ou téléphone..."
+                value={driverSearchQuery}
+                onChange={(e) => setDriverSearchQuery(e.target.value)}
+                className="w-full bg-[#0c121e] border border-[#1e2a3f] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="overflow-y-auto space-y-2 flex-1 pr-1">
+              {drivers
+                .filter(d => 
+                  d.name.toLowerCase().includes(driverSearchQuery.toLowerCase()) || 
+                  d.phone.includes(driverSearchQuery)
+                )
+                .map((driver) => {
+                  const isCurrent = driver.id === selectedDriverId;
+                  const v = vehicles.find(veh => veh.plate === driver.assignedVehiclePlate);
+                  return (
+                    <button
+                      key={driver.id}
+                      onClick={() => {
+                        setSelectedDriverId(driver.id);
+                        try {
+                          localStorage.setItem('dz_fleet_authenticated_driver_id', driver.id);
+                        } catch {}
+                        setIsDriverSwitchModalOpen(false);
+                      }}
+                      className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
+                        isCurrent
+                          ? 'bg-emerald-950/40 border-emerald-500/50 text-white'
+                          : 'bg-[#0c121e] hover:bg-[#162033] border-[#1e2a3f] text-slate-200'
+                      }`}
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-xs truncate">{driver.name}</span>
+                          {isCurrent && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/30 text-emerald-300">Actuel</span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 font-mono mt-0.5">{driver.phone}</div>
+                        <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                          Véhicule : <strong className="text-slate-300">{driver.assignedVehiclePlate || 'Aucun'}</strong> {v ? `(${v.model})` : ''}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+                    </button>
+                  );
+                })}
+            </div>
+
+            <div className="pt-3 border-t border-[#1e2a3f] text-center">
+              <p className="text-[10px] text-slate-500">
+                Ce choix est mémorisé sur votre téléphone pour vos prochaines missions.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL : GUIDE D'INSTALLATION SUR SMARTPHONE ================= */}
+      {showInstallGuide && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#121929] border border-[#222f47] rounded-3xl w-full max-w-sm p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-white text-sm">Installer sur votre écran d'accueil</h3>
+              </div>
+              <button
+                onClick={() => setShowInstallGuide(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300 leading-relaxed">
+              <div className="p-3 bg-[#0c121e] rounded-xl border border-[#1e2a3f] space-y-1.5">
+                <strong className="text-emerald-400 block font-bold">Sur Android (Chrome ou Edge) :</strong>
+                <p className="text-[11px] text-slate-300">
+                  1. Si vous êtes dans WhatsApp ou une autre appli, touchez les <strong>3 petits points (⋮)</strong> en haut &gt; <em>« Ouvrir dans Chrome »</em>.
+                </p>
+                <p className="text-[11px] text-slate-300">
+                  2. Dans Chrome, touchez <strong>(⋮)</strong> &gt; <strong>« Installer l'application »</strong> (ou <em>« Ajouter à l'écran d'accueil »</em>).
+                </p>
+              </div>
+
+              <div className="p-3 bg-[#0c121e] rounded-xl border border-[#1e2a3f] space-y-1.5">
+                <strong className="text-sky-400 block font-bold">Sur iPhone (Apple Safari obligatoire) :</strong>
+                <p className="text-[11px] text-slate-300">
+                  1. Ouvrez obligatoirement le lien dans <strong>Safari</strong> <em>(Opera et Chrome sur iOS ne supportent pas l'installation)</em>.
+                </p>
+                <p className="text-[11px] text-slate-300">
+                  2. Touchez le bouton <strong>Partager</strong> (le carré avec flèche vers le haut au centre en bas).
+                </p>
+                <p className="text-[11px] text-slate-300">
+                  3. Faites défiler et touchez <strong>« Sur l'écran d'accueil » (➕)</strong> puis <strong>« Ajouter »</strong>.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowInstallGuide(false)}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs cursor-pointer transition-colors"
+            >
+              J'ai compris
+            </button>
           </div>
         </div>
       )}

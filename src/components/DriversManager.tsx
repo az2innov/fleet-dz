@@ -19,7 +19,10 @@ import {
   Building2,
   X,
   Save,
-  Check
+  Check,
+  QrCode,
+  Copy,
+  Smartphone
 } from 'lucide-react';
 import { Driver, Vehicle, DriverStatus, LicenseCategory } from '../types.js';
 
@@ -38,6 +41,8 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [qrDriver, setQrDriver] = useState<Driver | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // Modal State
@@ -422,13 +427,30 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                   </button>
                 </div>
 
-                <button
-                  onClick={() => onNavigateTab('pwa_driver')}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/40 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Phone className="w-3 h-3" />
-                  Compagnon PWA
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      setQrDriver(driver);
+                      setCopiedLink(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 dark:bg-sky-600/20 dark:hover:bg-sky-600/30 dark:text-sky-300 dark:border-sky-500/40 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                    title={`Générer le QR Code PWA personnalisé pour ${driver.name}`}
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    QR Chauffeur
+                  </button>
+                  <button
+                    onClick={() => {
+                      try { localStorage.setItem('dz_fleet_authenticated_driver_id', driver.id); } catch {}
+                      onNavigateTab('pwa_driver');
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/40 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                    title={`Ouvrir le compagnon PWA en tant que ${driver.name}`}
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    PWA
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -760,6 +782,81 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL : QR CODE D'ACCÈS CHAUFFEUR DÉDIÉ ================= */}
+      {qrDriver && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#121929] border border-[#222f47] rounded-3xl w-full max-w-sm p-6 text-center shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-[#1e2a3f]">
+              <div className="flex items-center gap-2 text-left">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm">Accès PWA Dédié</h3>
+                  <p className="text-[10px] text-slate-400 truncate max-w-[180px]">{qrDriver.name}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setQrDriver(null)} 
+                className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl inline-block shadow-lg mx-auto">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                  (typeof window !== 'undefined' ? window.location.origin : 'https://fleet-dz.onrender.com') + `/?view=pwa&driverId=${qrDriver.id}`
+                )}`}
+                alt={`QR Code ${qrDriver.name}`} 
+                className="w-40 h-40 mx-auto"
+              />
+            </div>
+
+            <div className="bg-[#0c121e] p-3 rounded-xl border border-[#1e2a3f] text-left text-xs space-y-1">
+              <div><strong className="text-white">Conducteur :</strong> <span className="text-slate-300">{qrDriver.name}</span></div>
+              <div><strong className="text-white">Véhicule :</strong> <span className="font-mono text-emerald-400">{qrDriver.assignedVehiclePlate || 'Non attribué'}</span></div>
+              <div><strong className="text-white">Téléphone :</strong> <span className="text-slate-300 font-mono">{qrDriver.phone}</span></div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 bg-[#0c121e] p-2 rounded-xl border border-[#1e2a3f]">
+                <input
+                  type="text"
+                  readOnly
+                  value={`${typeof window !== 'undefined' ? window.location.origin : 'https://fleet-dz.onrender.com'}/?view=pwa&driverId=${qrDriver.id}`}
+                  className="bg-transparent text-[11px] text-slate-400 font-mono flex-1 outline-none truncate"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = `${typeof window !== 'undefined' ? window.location.origin : 'https://fleet-dz.onrender.com'}/?view=pwa&driverId=${qrDriver.id}`;
+                    navigator.clipboard.writeText(url);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 3000);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
+                >
+                  {copiedLink ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3" />}
+                  {copiedLink ? 'Copié !' : 'Copier'}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-relaxed text-left">
+                💡 En scannant ce code ou en ouvrant ce lien, le téléphone du chauffeur est <strong>automatiquement lié à son profil</strong>. Il n'aura aucun risque de se mélanger avec un autre conducteur.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setQrDriver(null)}
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-xs cursor-pointer transition-colors"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       )}
