@@ -1,0 +1,6 @@
+{
+  "name": "Dz-Fleet AI — Gestion de Flotte Automobile Algérie",
+  "description": "Plateforme souveraine de gestion de flotte pour entreprises et établissements publics algériens : PWA mobile déconnectée (Loi 18-07 ANPDP), suivi carburant Naftal en Dinars (DA), odomètre, et déclarations d'accidents.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
