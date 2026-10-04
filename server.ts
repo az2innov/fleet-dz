@@ -3,6 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { fleetDb } from './server/fleetDb.js';
 import { processDriverMessage } from './server/geminiService.js';
+import { sendNotificationEmail } from './server/emailService.js';
 
 async function startServer() {
   const app = express();
@@ -256,7 +257,6 @@ async function startServer() {
   app.post('/api/notifications/test-email', async (req: Request, res: Response) => {
     try {
       const { to, subject, html } = req.body;
-      const { sendNotificationEmail } = await import('./server/emailService.js');
       const result = await sendNotificationEmail({
         to: to || 'direction@dzfleet.dz',
         subject: subject || 'Test Notification — Dz-Fleet AI',
