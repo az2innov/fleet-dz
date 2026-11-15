@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   FileText, 
@@ -28,6 +28,28 @@ export const SovereignComplianceModal: React.FC<SovereignComplianceModalProps> =
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  // Fermeture propre
+  const handleClose = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    onClose();
+  };
+
+  // Fermeture via la touche Échap
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
 
   const handlePrintCertificate = () => {
     window.print();
@@ -75,8 +97,14 @@ Fait à Alger, le ${new Date().toLocaleDateString('fr-DZ', { year: 'numeric', mo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 dark:bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 dark:bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      onClick={handleClose}
+    >
+      <div 
+        className="bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8),0_1px_0_0_rgba(255,255,255,0.06)_inset] relative z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-6 border-b border-slate-100 dark:border-[#1e2a3f] bg-slate-50/80 dark:bg-[#0c121e] flex items-center justify-between">
           <div className="flex items-center gap-3">
