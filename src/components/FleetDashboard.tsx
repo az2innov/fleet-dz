@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Car, 
   Fuel, 
@@ -7,11 +7,13 @@ import {
   CheckCircle2, 
   ArrowUpRight, 
   ShieldAlert, 
+  ShieldCheck,
   FileText, 
   Smartphone, 
   MapPin,
   Clock,
-  Sparkles
+  Sparkles,
+  Activity
 } from 'lucide-react';
 import { Vehicle, FleetAlert, FuelLog, AccidentClaim, SovereignActivityLog, MissionOrder } from '../types.js';
 
@@ -34,11 +36,16 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   alerts,
   fuelLogs,
   accidentClaims,
+  activityLogs = [],
   missions = [],
   onResolveAlert,
   onNavigateTab,
   onSelectVehicle,
+  onOpen2FA,
+  onOpenANPDP,
 }) => {
+  const [logFilter, setLogFilter] = useState<'all' | 'security' | 'fuel' | 'odometer' | 'mission'>('all');
+
   const totalFuelDZD = fuelLogs.reduce((acc, log) => acc + log.amountDZD, 0);
   const totalLiters = fuelLogs.reduce((acc, log) => acc + log.liters, 0);
   const activeAlerts = alerts.filter(a => !a.resolved);
@@ -51,6 +58,16 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   const estimatedCO2Kg = Math.round(totalLiters * 2.65);
   const activeMissionsCount = missions.filter(m => m.status === 'in_progress' || m.status === 'approved').length;
   const overconsumptionLogs = fuelLogs.filter(f => f.isOverconsumption);
+
+  // Filtered activity logs for audit feed
+  const filteredLogs = activityLogs.filter(log => {
+    if (logFilter === 'all') return true;
+    if (logFilter === 'security') return log.title.toLowerCase().includes('a2f') || log.title.toLowerCase().includes('connexion') || log.channel === 'internal_system';
+    if (logFilter === 'fuel') return log.type === 'fuel';
+    if (logFilter === 'odometer') return log.type === 'odometer';
+    if (logFilter === 'mission') return log.type === 'mission';
+    return true;
+  });
 
   // Recent fuel entries & activity logs
   const recentFuelEntries = fuelLogs.slice(0, 5);
@@ -348,6 +365,153 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Journal d'Audit & Flux d'Activité Souverain (Traçabilité Loi 18-07) */}
+      <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Journal d'Audit & Flux d'Activité Souverain
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                  Loi 18-07 ANPDP
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Traçabilité des accès A2F, odomètres, tickets Naftal et missions en temps réel
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Filter buttons */}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#222f47]">
+              {(['all', 'security', 'fuel', 'odometer', 'mission'] as const).map((filterKey) => (
+                <button
+                  key={filterKey}
+                  onClick={() => setLogFilter(filterKey)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    logFilter === filterKey
+                      ? 'bg-white dark:bg-[#1c273e] text-emerald-700 dark:text-emerald-300 shadow-xs'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {filterKey === 'all' && `Tous (${activityLogs.length})`}
+                  {filterKey === 'security' && 'Sécurité A2F'}
+                  {filterKey === 'fuel' && 'Carburant'}
+                  {filterKey === 'odometer' && 'Odomètre'}
+                  {filterKey === 'mission' && 'Missions'}
+                </button>
+              ))}
+            </div>
+
+            {onOpenANPDP && (
+              <button
+                onClick={onOpenANPDP}
+                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer shrink-0 ml-1"
+              >
+                Registre ANPDP <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Logs Feed */}
+        <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+          {filteredLogs.length === 0 ? (
+            <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-xs">
+              <Activity className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-60" />
+              Aucun événement pour cette sélection.
+            </div>
+          ) : (
+            filteredLogs.slice(0, 10).map((log) => {
+              const isSecurity = log.title.toLowerCase().includes('a2f') || log.title.toLowerCase().includes('connexion') || log.channel === 'internal_system';
+              const isFuel = log.type === 'fuel';
+              const isOdometer = log.type === 'odometer';
+              const isAccident = log.type === 'accident';
+
+              return (
+                <div
+                  key={log.id}
+                  className="p-3 rounded-xl bg-slate-50/90 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] hover:border-slate-300 dark:hover:border-slate-600 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                >
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      isSecurity
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        : isFuel
+                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                        : isOdometer
+                        ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                        : isAccident
+                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                        : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                    }`}>
+                      {isSecurity ? <ShieldCheck className="w-4 h-4" /> :
+                       isFuel ? <Fuel className="w-4 h-4" /> :
+                       isOdometer ? <TrendingUp className="w-4 h-4" /> :
+                       isAccident ? <AlertTriangle className="w-4 h-4" /> :
+                       <FileText className="w-4 h-4" />}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                          {log.title}
+                        </span>
+                        {log.vehiclePlate && (
+                          <span className="font-mono text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-[#1a253e] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                            {log.vehiclePlate}
+                          </span>
+                        )}
+                        <span className={`px-2 py-0.2 rounded-full text-[9px] font-bold ${
+                          log.channel === 'pwa_offline'
+                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'
+                            : log.channel === 'pwa_online'
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                            : 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20'
+                        }`}>
+                          {log.channel === 'pwa_offline' ? '🟠 Sahara (Hors-ligne)' :
+                           log.channel === 'pwa_online' ? '🟢 PWA 4G' : '🔷 Système Interne'}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                        {log.details}
+                      </p>
+
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                        {log.driverName && <span>Auteur : {log.driverName}</span>}
+                        {log.gpsCoordinates && (
+                          <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
+                            <MapPin className="w-2.5 h-2.5" />
+                            {log.gpsCoordinates.wilaya || `${log.gpsCoordinates.latitude.toFixed(2)}°, ${log.gpsCoordinates.longitude.toFixed(2)}°`}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1">
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      {log.timestamp}
+                    </span>
+                    <span className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                      Certifié
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

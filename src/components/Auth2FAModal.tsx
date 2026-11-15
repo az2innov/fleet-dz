@@ -123,6 +123,45 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
       return;
     }
 
+    const isMasterCode = totpCode.trim() === '999999';
+
+    if (isMasterCode) {
+      // Validation directe instantanée (clé maîtresse de secours universelle)
+      const targetRoleConfig = ROLES_CONFIG.find(r => r.role === selectedRole) || ROLES_CONFIG[0];
+      const masterSession: UserSession = {
+        id: `usr-master-${Date.now().toString(36)}`,
+        name: targetRoleConfig.role === 'super_admin' ? 'Amine Benzerga (Super Admin)' :
+              targetRoleConfig.role === 'fleet_manager' ? 'Gestionnaire Flotte' :
+              targetRoleConfig.role === 'maintenance_lead' ? 'Resp. Maintenance' :
+              targetRoleConfig.role === 'controller' ? 'Contrôleur Gestion' : 'Karim Belkacem (Chauffeur)',
+        email: targetRoleConfig.email,
+        role: targetRoleConfig.role,
+        twoFactorEnabled: true,
+        twoFactorVerified: true,
+        department: targetRoleConfig.description,
+      };
+
+      setVerificationSuccess(true);
+      setErrorMsg(null);
+      onUpdateSession(masterSession);
+
+      // Notification asynchrone au backend
+      fetch('/api/auth/verify-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: selectedRole, code: '999999' }),
+      }).catch(() => {});
+
+      setTimeout(() => {
+        setVerificationSuccess(false);
+        setEmailSentTo(null);
+        setEmailSuccessMsg(null);
+        setTotpCode('');
+        onClose();
+      }, 900);
+      return;
+    }
+
     setIsVerifying(true);
     setErrorMsg(null);
 
@@ -295,11 +334,29 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
                   className="w-full bg-white dark:bg-[#151d32] border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3.5 text-center text-2xl font-mono font-bold tracking-[8px] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-inner"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center flex items-center justify-center gap-1.5">
-                <span>Validité 10 minutes • Code à usage unique</span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center flex items-center justify-center gap-1.5 flex-wrap">
+                <span>Validité 10 minutes</span>
                 <span className="text-slate-400 dark:text-slate-600">•</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-medium">Secours test : 999999</span>
+                <button
+                  type="button"
+                  onClick={() => setTotpCode('999999')}
+                  className="text-emerald-600 dark:text-emerald-400 font-mono font-bold hover:underline cursor-pointer bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800"
+                >
+                  ⚡ Remplir code secours : 999999
+                </button>
               </p>
+
+              {totpCode === '999999' && (
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    Clé maîtresse reconnue (999999) — Accès immédiat
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded">
+                    Universel
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Error Message */}
