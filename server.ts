@@ -9,6 +9,25 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT || process.env.Port) || 3000;
 
+  // HTTP Request logger in terminal for visibility
+  app.use((req: Request, res: Response, next) => {
+    const start = Date.now();
+    const url = req.originalUrl || req.url;
+    res.on('finish', () => {
+      // Ignore Vite internal HMR pings to keep logs readable
+      if (url.startsWith('/@vite') || url.startsWith('/@id') || url.startsWith('/@fs') || url.startsWith('/@react-refresh')) {
+        return;
+      }
+      const duration = Date.now() - start;
+      const status = res.statusCode;
+      const color = status >= 500 ? '\x1b[31m' : status >= 400 ? '\x1b[33m' : status >= 300 ? '\x1b[36m' : '\x1b[32m';
+      const reset = '\x1b[0m';
+      const time = new Date().toLocaleTimeString('fr-FR');
+      console.log(`[${time}] ${req.method} ${url} -> ${color}${status}${reset} (${duration}ms)`);
+    });
+    next();
+  });
+
   // Increase payload size limit for image uploads (receipts and accident photos)
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
@@ -729,7 +748,13 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Dz-Fleet AI Server running on http://0.0.0.0:${PORT}`);
+    console.log(`\n======================================================`);
+    console.log(` 🇩🇿 Dz-Fleet AI — Serveur Prêt & Opérationnel`);
+    console.log(` 🌐 Ouvrez dans votre navigateur :`);
+    console.log(`    👉 http://localhost:${PORT}`);
+    console.log(`    👉 http://127.0.0.1:${PORT}`);
+    console.log(` ⚠️ Note : Ne pas ouvrir 0.0.0.0 dans le navigateur (bloqué par Brave/Chrome)`);
+    console.log(`======================================================\n`);
   });
 }
 

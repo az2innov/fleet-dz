@@ -21,12 +21,42 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script>
+      // En développement local (localhost / 127.0.0.1 / 0.0.0.0), désactiver le Service Worker pour éviter les conflits de cache Vite
+      const isLocalhost = Boolean(
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname.endsWith('.local')
+      );
+
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch((err) => {
-            console.log('[PWA] Service Worker registration failed:', err);
+        if (isLocalhost) {
+          // Désenregistrer tout ancien Service Worker en dev
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            for (const registration of registrations) {
+              registration.unregister();
+            }
           });
-        });
+        } else {
+          // En production (Render / Domaine officiel), enregistrer le SW pour le mode PWA déconnecté
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then((registration) => {
+              // Vérifier les mises à jour
+              registration.onupdatefound = () => {
+                const installingWorker = registration.installing;
+                if (installingWorker) {
+                  installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      console.log('[PWA] Nouvelle version détectée, rechargement automatique...');
+                    }
+                  };
+                }
+              };
+            }).catch((err) => {
+              console.log('[PWA] Service Worker registration failed:', err);
+            });
+          });
+        }
       }
     </script>
   </head>
