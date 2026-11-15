@@ -226,11 +226,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all cursor-pointer shadow-xs"
                 title="Fermer la session (Déconnexion)"
                 aria-label="Fermer la session"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Déconnexion</span>
               </button>
             )}
           </div>
@@ -262,6 +263,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <Smartphone className="w-3.5 h-3.5" /> PWA
         </button>
+        {onLogout && userSession?.twoFactorVerified && (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="px-2 py-1 text-xs rounded-lg whitespace-nowrap font-bold flex items-center gap-1 text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 shrink-0"
+            title="Fermer la session (Déconnexion)"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Déconnexion
+          </button>
+        )}
       </div>
     </header>
   );

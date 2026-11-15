@@ -271,6 +271,20 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
         {/* Content */}
         <div className="flex-1 p-6 space-y-6 overflow-y-auto">
           
+          {/* Bannière d'état Déconnecté / Verrouillé */}
+          {isLockScreen && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-3">
+              <Lock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <strong className="font-bold text-sm block mb-0.5">Session fermée — Plateforme Verrouillée</strong>
+                <p>
+                  Vous avez été déconnecté. Conformément aux directives ANPDP et Loi 18-07, l'accès à la flotte nécessite une validation A2F.
+                  Sélectionnez votre profil ci-dessous, utilisez le code de secours <strong>999999</strong> (ou recevez-le par email), puis cliquez sur <strong>« Déverrouiller la Plateforme »</strong>.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* 1. Role Selection Matrix */}
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-2">
@@ -375,6 +389,12 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
                   placeholder="• • • • • •"
                   value={totpCode}
                   onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && totpCode.trim().length >= 6) {
+                      e.preventDefault();
+                      handleVerifyAndSwitchRole();
+                    }
+                  }}
                   className="w-full bg-white dark:bg-[#151d32] border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3.5 text-center text-2xl font-mono font-bold tracking-[8px] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-inner"
                 />
               </div>
@@ -463,9 +483,9 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
                 type="button"
                 onClick={handleClose}
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer relative z-20 hover:scale-[1.02] active:scale-[0.98]"
-                title="Fermer la boîte de dialogue sans modifier votre session"
+                title="Fermer cette fenêtre et revenir au tableau de bord sans changer de session"
               >
-                Annuler
+                Annuler (Rester connecté)
               </button>
             )}
             <button

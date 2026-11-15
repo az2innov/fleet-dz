@@ -162,8 +162,10 @@ export default function App() {
     setUserSession(unverifiedSession);
     try {
       localStorage.setItem('dz_fleet_session', JSON.stringify(unverifiedSession));
+      sessionStorage.clear();
     } catch {}
     setIs2FAModalOpen(false);
+    console.log('[Dz-Fleet Auth] Session clôturée avec succès. Plateforme verrouillée.');
   };
 
   const activeAlertsCount = alerts.filter(a => !a.resolved).length;
