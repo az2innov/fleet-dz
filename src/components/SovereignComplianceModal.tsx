@@ -27,8 +27,6 @@ export const SovereignComplianceModal: React.FC<SovereignComplianceModalProps> =
 }) => {
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  if (!isOpen) return null;
-
   // Fermeture propre
   const handleClose = (e?: React.MouseEvent | React.TouchEvent) => {
     if (e) {
@@ -38,7 +36,7 @@ export const SovereignComplianceModal: React.FC<SovereignComplianceModalProps> =
     onClose();
   };
 
-  // Fermeture via la touche Échap
+  // Fermeture via la touche Échap (doit être appelée inconditionnellement avant tout return)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -50,6 +48,8 @@ export const SovereignComplianceModal: React.FC<SovereignComplianceModalProps> =
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
   }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
 
   const handlePrintCertificate = () => {
     window.print();

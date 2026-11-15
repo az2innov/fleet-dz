@@ -136,6 +136,20 @@ export default function App() {
     }
   };
 
+  // Clôture explicite de session (Déconnexion)
+  const handleLogout = () => {
+    setUserSession({
+      id: 'usr-guest',
+      name: 'Session Clôturée (Déconnecté)',
+      email: 'non-authentifie@fleet-dz.com',
+      role: 'controller',
+      twoFactorEnabled: false,
+      twoFactorVerified: false,
+      department: 'Accès Public / Reconnexion A2F requise',
+    });
+    setIs2FAModalOpen(false);
+  };
+
   const activeAlertsCount = alerts.filter(a => !a.resolved).length;
   const openClaimsCount = accidentClaims.filter(c => c.status !== 'settled').length;
 
@@ -186,6 +200,7 @@ export default function App() {
         onOpenANPDP={() => setIsANPDPModalOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
@@ -270,6 +285,7 @@ export default function App() {
         isOpen={is2FAModalOpen}
         onClose={() => setIs2FAModalOpen(false)}
         onUpdateSession={handleUpdateSession}
+        onLogout={handleLogout}
       />
 
       {/* Sovereign ANPDP / Loi 18-07 Modal */}

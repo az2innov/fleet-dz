@@ -10,7 +10,8 @@ import {
   Users, 
   Sun, 
   Moon,
-  Sparkles
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 import { UserSession } from '../types.js';
 
@@ -33,6 +34,7 @@ interface NavbarProps {
   onOpenANPDP?: () => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -45,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenANPDP,
   theme = 'dark',
   onToggleTheme,
+  onLogout,
 }) => {
   const getRoleLabel = () => {
     switch (userSession?.role) {
@@ -215,6 +218,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <span className="hidden sm:inline">{getRoleLabel()}</span>
+              </button>
+            )}
+
+            {/* Bouton direct pour Fermer la session (Déconnexion) */}
+            {onLogout && userSession?.twoFactorVerified && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+                title="Fermer la session (Déconnexion)"
+                aria-label="Fermer la session"
+              >
+                <LogOut className="w-4 h-4" />
               </button>
             )}
           </div>

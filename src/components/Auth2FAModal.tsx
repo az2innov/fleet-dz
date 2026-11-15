@@ -9,7 +9,8 @@ import {
   RefreshCw,
   Mail,
   Send,
-  Users
+  Users,
+  LogOut
 } from 'lucide-react';
 import { UserRole, UserSession } from '../types.js';
 
@@ -18,6 +19,7 @@ interface Auth2FAModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdateSession: (newSession: UserSession) => void;
+  onLogout?: () => void;
 }
 
 export const ROLES_CONFIG: {
@@ -75,6 +77,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
   isOpen,
   onClose,
   onUpdateSession,
+  onLogout,
 }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>(currentSession.role);
   const [totpCode, setTotpCode] = useState<string>('');
@@ -84,10 +87,6 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [verificationSuccess, setVerificationSuccess] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  if (!isOpen) return null;
-
-  const currentRoleConfig = ROLES_CONFIG.find(r => r.role === selectedRole) || ROLES_CONFIG[0];
 
   // Fermeture propre avec réinitialisation
   const handleClose = (e?: React.MouseEvent | React.TouchEvent) => {
@@ -102,7 +101,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
     onClose();
   };
 
-  // Fermeture via la touche Échap
+  // Fermeture via la touche Échap (toujours appelée inconditionnellement)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -114,6 +113,10 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
   }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const currentRoleConfig = ROLES_CONFIG.find(r => r.role === selectedRole) || ROLES_CONFIG[0];
 
   // Envoi réel du code A2F par email via le serveur Express + SMTP Mailtrap
   const handleSendEmailCode = async () => {
@@ -426,18 +429,35 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-[#0e1526] flex items-center justify-between">
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-            <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Chiffrement TLS 1.3 • Conforme directives ANPDP Algérie</span>
+        <div className="shrink-0 p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-[#0e1526] flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+            {onLogout && (
+              <button
+                type="button"
+                onClick={() => {
+                  onLogout();
+                  handleClose();
+                }}
+                className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                title="Clôturer et fermer votre session active (Déconnexion)"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Fermer la session (Déconnexion)</span>
+              </button>
+            )}
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 hidden md:flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>TLS 1.3 • Loi 18-07</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
             <button
               type="button"
               onClick={handleClose}
               className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer relative z-20 hover:scale-[1.02] active:scale-[0.98]"
+              title="Fermer la boîte de dialogue sans modifier votre session"
             >
-              Fermer
+              Annuler
             </button>
             <button
               type="button"
