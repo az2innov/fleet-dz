@@ -20,6 +20,7 @@ interface Auth2FAModalProps {
   onClose: () => void;
   onUpdateSession: (newSession: UserSession) => void;
   onLogout?: () => void;
+  isLockScreen?: boolean;
 }
 
 export const ROLES_CONFIG: {
@@ -78,6 +79,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
   onClose,
   onUpdateSession,
   onLogout,
+  isLockScreen = false,
 }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>(currentSession.role);
   const [totpCode, setTotpCode] = useState<string>('');
@@ -90,6 +92,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
 
   // Fermeture propre avec réinitialisation
   const handleClose = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (isLockScreen) return;
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -104,7 +107,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
   // Fermeture via la touche Échap (toujours appelée inconditionnellement)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !isLockScreen) {
         handleClose();
       }
     };
@@ -112,7 +115,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isOpen]);
+  }, [isOpen, isLockScreen]);
 
   if (!isOpen) return null;
 
@@ -241,24 +244,28 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                Sécurité & Authentification A2F par Email
+                {isLockScreen ? 'Authentification Souveraine & Accès Sécurisé' : 'Sécurité & Authentification A2F par Email'}
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40">
-                  SMTP / Loi 18-07
+                  {isLockScreen ? '🔒 Session Verrouillée' : 'SMTP / Loi 18-07'}
                 </span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Codes de validation réels expédiés par email pour chaque profil d'administration
+                {isLockScreen 
+                  ? 'Veuillez sélectionner votre profil et valider votre code à 6 chiffres pour déverrouiller la flotte.'
+                  : 'Codes de validation réels expédiés par email pour chaque profil d\'administration'}
               </p>
             </div>
           </div>
-          <button 
-            type="button"
-            onClick={handleClose}
-            className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-            title="Fermer la fenêtre (Échap)"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {!isLockScreen && (
+            <button 
+              type="button"
+              onClick={handleClose}
+              className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Fermer la fenêtre (Échap)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Content */}
@@ -431,7 +438,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
         {/* Footer */}
         <div className="shrink-0 p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-[#0e1526] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-            {onLogout && (
+            {!isLockScreen && onLogout && (
               <button
                 type="button"
                 onClick={() => {
@@ -451,14 +458,16 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer relative z-20 hover:scale-[1.02] active:scale-[0.98]"
-              title="Fermer la boîte de dialogue sans modifier votre session"
-            >
-              Annuler
-            </button>
+            {!isLockScreen && (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer relative z-20 hover:scale-[1.02] active:scale-[0.98]"
+                title="Fermer la boîte de dialogue sans modifier votre session"
+              >
+                Annuler
+              </button>
+            )}
             <button
               type="button"
               onClick={handleVerifyAndSwitchRole}
@@ -473,7 +482,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
-                  Valider l'Accès Sécurisé
+                  {isLockScreen ? 'Déverrouiller la Plateforme' : 'Valider l\'Accès Sécurisé'}
                 </>
               )}
             </button>

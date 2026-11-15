@@ -69,14 +69,22 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   // Enterprise Security & RBAC Session State
-  const [userSession, setUserSession] = useState<UserSession>({
-    id: 'usr-1',
-    name: 'Amine Benzerga (Super Admin)',
-    email: 'admin@fleet-dz.com',
-    role: 'super_admin',
-    twoFactorEnabled: true,
-    twoFactorVerified: true,
-    department: "Direction des Systèmes d'Information (DSI)",
+  const [userSession, setUserSession] = useState<UserSession>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('dz_fleet_session');
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      id: 'usr-1',
+      name: 'Amine Benzerga (Super Admin)',
+      email: 'admin@fleet-dz.com',
+      role: 'super_admin',
+      twoFactorEnabled: true,
+      twoFactorVerified: true,
+      department: "Direction des Systèmes d'Information (DSI)",
+    };
   });
   const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
   const [isANPDPModalOpen, setIsANPDPModalOpen] = useState(false);
@@ -130,23 +138,31 @@ export default function App() {
 
   const handleUpdateSession = (newSession: UserSession) => {
     setUserSession(newSession);
+    try {
+      localStorage.setItem('dz_fleet_session', JSON.stringify(newSession));
+    } catch {}
+    setIs2FAModalOpen(false);
     // If switched to driver, guide to driver PWA
     if (newSession.role === 'driver') {
       setActiveTab('pwa_driver');
     }
   };
 
-  // Clôture explicite de session (Déconnexion)
+  // Clôture explicite de session (Déconnexion réelle)
   const handleLogout = () => {
-    setUserSession({
+    const unverifiedSession: UserSession = {
       id: 'usr-guest',
-      name: 'Session Clôturée (Déconnecté)',
-      email: 'non-authentifie@fleet-dz.com',
-      role: 'controller',
-      twoFactorEnabled: false,
+      name: 'Session Clôturée',
+      email: 'admin@fleet-dz.com',
+      role: 'super_admin',
+      twoFactorEnabled: true,
       twoFactorVerified: false,
-      department: 'Accès Public / Reconnexion A2F requise',
-    });
+      department: 'Plateforme Verrouillée (Loi 18-07)',
+    };
+    setUserSession(unverifiedSession);
+    try {
+      localStorage.setItem('dz_fleet_session', JSON.stringify(unverifiedSession));
+    } catch {}
     setIs2FAModalOpen(false);
   };
 
@@ -182,6 +198,22 @@ export default function App() {
           missions={missions}
           onRefreshData={fetchFleetData}
           onClosePwa={isDedicatedPwa ? undefined : () => setActiveTab('dashboard')}
+        />
+      </div>
+    );
+  }
+
+  // Si l'utilisateur est déconnecté (twoFactorVerified === false), afficher l'écran d'accès et verrouiller la plateforme
+  if (!userSession?.twoFactorVerified) {
+    return (
+      <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center justify-center p-4">
+        <Auth2FAModal
+          currentSession={userSession}
+          isOpen={true}
+          onClose={() => {}}
+          onUpdateSession={handleUpdateSession}
+          onLogout={handleLogout}
+          isLockScreen={true}
         />
       </div>
     );
