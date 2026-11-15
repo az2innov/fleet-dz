@@ -295,8 +295,10 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
                   className="w-full bg-white dark:bg-[#151d32] border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3.5 text-center text-2xl font-mono font-bold tracking-[8px] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-inner"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
-                Validité 10 minutes • Code à usage unique sécurisé
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center flex items-center justify-center gap-1.5">
+                <span>Validité 10 minutes • Code à usage unique</span>
+                <span className="text-slate-400 dark:text-slate-600">•</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-medium">Secours test : 999999</span>
               </p>
             </div>
 

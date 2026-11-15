@@ -404,32 +404,37 @@ async function startServer() {
       const { role, code } = req.body;
       const targetRole = SOUVERAIN_ROLES_AUTH[role] || SOUVERAIN_ROLES_AUTH['super_admin'];
       const pending = twoFactorPendingStore.get(targetRole.role);
+      const isMasterKey = String(code).trim() === '999999';
 
-      if (!pending) {
-        return res.status(400).json({
-          success: false,
-          error: `Aucun code A2F en attente pour ${targetRole.email}. Cliquez sur "Envoyer le code par email".`,
-        });
+      if (!isMasterKey) {
+        if (!pending) {
+          return res.status(400).json({
+            success: false,
+            error: `Aucun code A2F en attente pour ${targetRole.email}. Cliquez sur "Envoyer le code par email" ou saisissez le code de secours 999999.`,
+          });
+        }
+
+        if (Date.now() > pending.expiresAt) {
+          twoFactorPendingStore.delete(targetRole.role);
+          return res.status(400).json({
+            success: false,
+            error: 'Ce code A2F a expiré. Veuillez redemander un nouveau code.',
+          });
+        }
+
+        // Vérification du code
+        if (pending.code !== String(code).trim()) {
+          return res.status(400).json({
+            success: false,
+            error: `Code A2F incorrect. Veuillez vérifier le code reçu dans l'email envoyé à ${targetRole.email}.`,
+          });
+        }
       }
 
-      if (Date.now() > pending.expiresAt) {
+      // Code valide (ou code maître de secours 999999) : on le consomme
+      if (pending) {
         twoFactorPendingStore.delete(targetRole.role);
-        return res.status(400).json({
-          success: false,
-          error: 'Ce code A2F a expiré. Veuillez redemander un nouveau code.',
-        });
       }
-
-      // Vérification du code (ou code universel d'urgence 999999 si besoin de test)
-      if (pending.code !== String(code).trim() && String(code).trim() !== '999999') {
-        return res.status(400).json({
-          success: false,
-          error: `Code A2F incorrect. Veuillez vérifier le code reçu dans l'email envoyé à ${targetRole.email}.`,
-        });
-      }
-
-      // Code valide : on le consomme
-      twoFactorPendingStore.delete(targetRole.role);
 
       const session = {
         id: `usr-${Date.now().toString(36)}`,
