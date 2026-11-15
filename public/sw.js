@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dz-fleet-pwa-v3';
+const CACHE_NAME = 'dz-fleet-pwa-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -36,6 +36,21 @@ self.addEventListener('activate', (event) => {
 // Network-First with Cache Fallback for offline usage
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Ne jamais intercepter ni mettre en cache les requêtes API ou les modules de développement
+  if (
+    url.pathname.startsWith('/api/') || 
+    url.pathname.startsWith('/@') || 
+    url.pathname.includes('/src/') ||
+    url.pathname.includes('/node_modules/') ||
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname === '0.0.0.0'
+  ) {
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)

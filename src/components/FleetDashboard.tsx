@@ -32,10 +32,10 @@ interface FleetDashboardProps {
 }
 
 export const FleetDashboard: React.FC<FleetDashboardProps> = ({
-  vehicles,
-  alerts,
-  fuelLogs,
-  accidentClaims,
+  vehicles = [],
+  alerts = [],
+  fuelLogs = [],
+  accidentClaims = [],
   activityLogs = [],
   missions = [],
   onResolveAlert,
@@ -46,23 +46,32 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
 }) => {
   const [logFilter, setLogFilter] = useState<'all' | 'security' | 'fuel' | 'odometer' | 'mission'>('all');
 
-  const totalFuelDZD = fuelLogs.reduce((acc, log) => acc + log.amountDZD, 0);
-  const totalLiters = fuelLogs.reduce((acc, log) => acc + log.liters, 0);
-  const activeAlerts = alerts.filter(a => !a.resolved);
-  const activeVehicles = vehicles.filter(v => v.status === 'active');
-  const openClaims = accidentClaims.filter(c => c.status !== 'settled');
+  const safeVehicles = Array.isArray(vehicles) ? vehicles : [];
+  const safeFuelLogs = Array.isArray(fuelLogs) ? fuelLogs : [];
+  const safeAlerts = Array.isArray(alerts) ? alerts : [];
+  const safeClaims = Array.isArray(accidentClaims) ? accidentClaims : [];
+  const safeActivityLogs = Array.isArray(activityLogs) ? activityLogs : [];
+  const safeMissions = Array.isArray(missions) ? missions : [];
+
+  const totalFuelDZD = safeFuelLogs.reduce((acc, log) => acc + (Number(log?.amountDZD) || 0), 0);
+  const totalLiters = safeFuelLogs.reduce((acc, log) => acc + (Number(log?.liters) || 0), 0);
+  const activeAlerts = safeAlerts.filter(a => a && !a.resolved);
+  const activeVehicles = safeVehicles.filter(v => v && v.status === 'active');
+  const openClaims = safeClaims.filter(c => c && c.status !== 'settled');
   
   // Executive Financial & Operational KPIs
-  const totalFleetKm = vehicles.reduce((acc, v) => acc + v.mileage, 0);
-  const availabilityRate = vehicles.length > 0 ? Math.round((activeVehicles.length / vehicles.length) * 100) : 100;
+  const totalFleetKm = safeVehicles.reduce((acc, v) => acc + (Number(v?.mileage) || 0), 0);
+  const availabilityRate = safeVehicles.length > 0 ? Math.round((activeVehicles.length / safeVehicles.length) * 100) : 100;
   const estimatedCO2Kg = Math.round(totalLiters * 2.65);
-  const activeMissionsCount = missions.filter(m => m.status === 'in_progress' || m.status === 'approved').length;
-  const overconsumptionLogs = fuelLogs.filter(f => f.isOverconsumption);
+  const activeMissionsCount = safeMissions.filter(m => m && (m.status === 'in_progress' || m.status === 'approved')).length;
+  const overconsumptionLogs = safeFuelLogs.filter(f => f && f.isOverconsumption);
 
   // Filtered activity logs for audit feed
-  const filteredLogs = activityLogs.filter(log => {
+  const filteredLogs = safeActivityLogs.filter(log => {
+    if (!log) return false;
     if (logFilter === 'all') return true;
-    if (logFilter === 'security') return log.title.toLowerCase().includes('a2f') || log.title.toLowerCase().includes('connexion') || log.channel === 'internal_system';
+    const title = (log.title || '').toLowerCase();
+    if (logFilter === 'security') return title.includes('a2f') || title.includes('connexion') || log.channel === 'internal_system';
     if (logFilter === 'fuel') return log.type === 'fuel';
     if (logFilter === 'odometer') return log.type === 'odometer';
     if (logFilter === 'mission') return log.type === 'mission';
@@ -70,7 +79,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   });
 
   // Recent fuel entries & activity logs
-  const recentFuelEntries = fuelLogs.slice(0, 5);
+  const recentFuelEntries = safeFuelLogs.slice(0, 5);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -347,7 +356,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                       {log.gpsCoordinates && (
                         <span className="text-[10px] font-mono text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-1 rounded inline-flex items-center gap-0.5">
                           <MapPin className="w-2.5 h-2.5" />
-                          GPS {log.gpsCoordinates.latitude.toFixed(2)}°, {log.gpsCoordinates.longitude.toFixed(2)}°
+                          GPS {Number(log.gpsCoordinates.latitude || 0).toFixed(2)}°, {Number(log.gpsCoordinates.longitude || 0).toFixed(2)}°
                         </span>
                       )}
                     </p>
@@ -492,7 +501,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                         {log.gpsCoordinates && (
                           <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
                             <MapPin className="w-2.5 h-2.5" />
-                            {log.gpsCoordinates.wilaya || `${log.gpsCoordinates.latitude.toFixed(2)}°, ${log.gpsCoordinates.longitude.toFixed(2)}°`}
+                            {log.gpsCoordinates.wilaya || `${Number(log.gpsCoordinates.latitude || 0).toFixed(2)}°, ${Number(log.gpsCoordinates.longitude || 0).toFixed(2)}°`}
                           </span>
                         )}
                       </div>
