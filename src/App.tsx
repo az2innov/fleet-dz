@@ -253,6 +253,7 @@ export default function App() {
             onSelectVehicle={setSelectedVehicle}
             onOpen2FA={() => setIs2FAModalOpen(true)}
             onOpenANPDP={() => setIsANPDPModalOpen(true)}
+            userSession={userSession}
           />
         )}
 

@@ -13,9 +13,28 @@ import {
   MapPin,
   Clock,
   Sparkles,
-  Activity
+  Activity,
+  Download,
+  Key,
+  Users,
+  Wrench,
+  QrCode,
+  Gauge,
+  Receipt,
+  BarChart3,
+  AlertCircle,
+  Disc
 } from 'lucide-react';
-import { Vehicle, FleetAlert, FuelLog, AccidentClaim, SovereignActivityLog, MissionOrder } from '../types.js';
+import { 
+  Vehicle, 
+  FleetAlert, 
+  FuelLog, 
+  AccidentClaim, 
+  SovereignActivityLog, 
+  MissionOrder,
+  UserSession 
+} from '../types.js';
+import { ROLES_CONFIG } from './Auth2FAModal.js';
 
 interface FleetDashboardProps {
   vehicles: Vehicle[];
@@ -29,6 +48,7 @@ interface FleetDashboardProps {
   onSelectVehicle: (vehicle: Vehicle) => void;
   onOpen2FA?: () => void;
   onOpenANPDP?: () => void;
+  userSession?: UserSession;
 }
 
 export const FleetDashboard: React.FC<FleetDashboardProps> = ({
@@ -43,6 +63,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   onSelectVehicle,
   onOpen2FA,
   onOpenANPDP,
+  userSession,
 }) => {
   const [logFilter, setLogFilter] = useState<'all' | 'security' | 'fuel' | 'odometer' | 'mission'>('all');
 
@@ -65,6 +86,42 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   const estimatedCO2Kg = Math.round(totalLiters * 2.65);
   const activeMissionsCount = safeMissions.filter(m => m && (m.status === 'in_progress' || m.status === 'approved')).length;
   const overconsumptionLogs = safeFuelLogs.filter(f => f && f.isOverconsumption);
+  const upcomingServicesCount = safeVehicles.filter(v => v && (v.nextServiceKm - v.mileage <= 5000)).length;
+
+  // Export comptable CSV pour le Contrôleur de Gestion
+  const handleExportAccountingCSV = () => {
+    const headers = ['Date', 'Matricule', 'Chauffeur', 'Station Naftal', 'Type Carburant', 'Litres', 'Prix Unitaire (DA/L)', 'Montant Total (DA)', 'Source Saisie'];
+    const rows = safeFuelLogs.map(log => [
+      log.date || '',
+      log.vehiclePlate || '',
+      `"${log.driverName || ''}"`,
+      `"${log.stationName || ''}"`,
+      log.fuelType || 'Gasoil',
+      log.liters || 0,
+      log.pricePerLiterDZD || (log.fuelType === 'essence' ? 45.62 : log.fuelType === 'gpl' ? 9.00 : 29.01),
+      log.amountDZD || 0,
+      log.source === 'pwa_scan' ? 'Scan OCR PWA' : 'Saisie PWA'
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `dz_fleet_rapprochement_comptable_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export JSON des journaux d'audit pour le Super Admin
+  const handleExportAuditLogsJSON = () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(safeActivityLogs, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `dz_fleet_audit_logs_loi_18_07_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    document.body.removeChild(downloadAnchor);
+  };
 
   // Filtered activity logs for audit feed
   const filteredLogs = safeActivityLogs.filter(log => {
@@ -78,538 +135,1210 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
     return true;
   });
 
-  // Recent fuel entries & activity logs
   const recentFuelEntries = safeFuelLogs.slice(0, 5);
+
+  const currentRole = userSession?.role || 'super_admin';
+
+  // Rendu de l'entête spécifique à chaque profil
+  const renderHeader = () => {
+    switch (currentRole) {
+      case 'super_admin':
+        return {
+          badge: '👑 Direction des Systèmes d\'Information (DSI) • Gouvernance Souveraine',
+          badgeColor: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30',
+          title: 'Console de Sécurité, Gouvernance & Audit Loi 18-07',
+          description: 'Surveillance des accès A2F, intégrité des logs d\'audit, chiffrement AES-256 et relais SMTP.',
+          actions: (
+            <>
+              {onOpenANPDP && (
+                <button
+                  type="button"
+                  onClick={onOpenANPDP}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Attestation Officielle ANPDP</span>
+                </button>
+              )}
+              {onOpen2FA && (
+                <button
+                  type="button"
+                  onClick={onOpen2FA}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Key className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Gestion Rôles & Clés A2F</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleExportAuditLogsJSON}
+                className="px-3.5 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-rose-500" />
+                <span>Exporter Logs JSON</span>
+              </button>
+            </>
+          ),
+        };
+
+      case 'fleet_manager':
+        return {
+          badge: '🚛 Direction Logistique & Exploitation • Opérations Flotte',
+          badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
+          title: 'Pilotage Opérationnel de la Flotte & Ordres de Mission',
+          description: 'Affectation des chauffeurs, émission des Ordres de Mission officiels et suivi de la disponibilité du parc.',
+          actions: (
+            <>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('missions')}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>+ Nouvel Ordre de Mission</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('drivers')}
+                className="px-3.5 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <QrCode className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Générer QR Chauffeur</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('vehicles')}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Car className="w-3.5 h-3.5 text-sky-500" />
+                <span>Gérer Parc</span>
+              </button>
+            </>
+          ),
+        };
+
+      case 'maintenance_lead':
+        return {
+          badge: '🔧 Direction Technique & Ateliers • Sécurité Mécanique',
+          badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30',
+          title: 'Supervision Technique & Maintenance Prédictive',
+          description: 'Surveillance des odomètres réels, anticipation des vidanges (10 000 km), usure pneumatique et contrôles techniques.',
+          actions: (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('maintenance-alerts-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-sm shadow-rose-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>{activeAlerts.length} Alertes d'Atelier</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('vehicles')}
+                className="px-3.5 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Wrench className="w-3.5 h-3.5 text-amber-500" />
+                <span>Carnet d'Entretien</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('accidents')}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <AlertCircle className="w-3.5 h-3.5 text-orange-500" />
+                <span>Dégâts & Réparations</span>
+              </button>
+            </>
+          ),
+        };
+
+      case 'controller':
+        return {
+          badge: '📊 Direction Financière & Contrôle de Gestion • Dinars Algériens (DA)',
+          badgeColor: 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30',
+          title: 'Contrôle Financier, Audit Carburant Naftal & Rentabilité',
+          description: 'Audit analytique des dépenses carburant aux barèmes officiels Naftal, détection des surconsommations et rapprochement comptable.',
+          actions: (
+            <>
+              <button
+                type="button"
+                onClick={handleExportAccountingCSV}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export Rapprochement (CSV)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('fuel')}
+                className="px-3.5 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Fuel className="w-3.5 h-3.5 text-amber-400" />
+                <span>Barèmes Naftal</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('missions')}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Receipt className="w-3.5 h-3.5 text-sky-500" />
+                <span>Frais Missions (Per Diem)</span>
+              </button>
+            </>
+          ),
+        };
+
+      default:
+        return {
+          badge: '🇩🇿 Datacenter National • Loi 18-07 ANPDP',
+          badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+          title: 'Tableau de Bord Exécutif',
+          description: 'Supervision du parc automobile, ravitaillements Naftal et ordres de mission réglementaires.',
+          actions: (
+            <>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('missions')}
+                className="px-3.5 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-500" />
+                <span>+ Ordre de Mission</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('pwa_driver')}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>PWA Chauffeur</span>
+              </button>
+            </>
+          ),
+        };
+    }
+  };
+
+  const headerInfo = renderHeader();
+
+  // Rendu des 4 Cartes KPI spécifiques à chaque profil
+  const renderKpiCards = () => {
+    if (currentRole === 'super_admin') {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Conformité Loi 18-07</span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">100% Conforme</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hébergement Datacenter National (Algérie)</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Comptes & Rôles RBAC</span>
+              <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <Users className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-slate-900 dark:text-white">5 Profils Actifs</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Principe du moindre privilège appliqué</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Passerelle SMTP & Clé</span>
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Key className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">A2F / 999999</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Codes à 6 chiffres par email réels</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Audit Souverain</span>
+              <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                <Activity className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">{safeActivityLogs.length} Événements</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Traçabilité immuable TLS 1.3 / AES-256</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (currentRole === 'maintenance_lead') {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Alertes Mécaniques</span>
+              <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-rose-600 dark:text-rose-400">{activeAlerts.length} Prioritaires</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Vidanges dépassées & contrôles techniques</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Véhicules Immobilisés</span>
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Wrench className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white">
+                {safeVehicles.filter(v => v.status === 'maintenance' || v.status === 'accident').length} en Atelier
+              </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hyundai H100 & Renault Symbol</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Révisions Approchantes</span>
+              <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                <Clock className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{upcomingServicesCount} Véhicules</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Échéance &lt; 5 000 km (Palier 10 000)</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Santé Pneumatiques</span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Disc className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">88% Bon État</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">4 roues surveillées par véhicule</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (currentRole === 'controller') {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Dépenses Carburant</span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Fuel className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
+                {totalFuelDZD.toLocaleString('fr-DZ')} <span className="text-xs text-emerald-600 dark:text-emerald-400">DA</span>
+              </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Volume consolidé : {totalLiters} L Naftal</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Surconsommation Détectée</span>
+              <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">+4 200 DA</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hilux +36% au-dessus norme constructeur</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Coût Moyen / km</span>
+              <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
+                {(totalFuelDZD / Math.max(totalFleetKm, 1) * 100).toFixed(2)} <span className="text-xs text-sky-600 dark:text-sky-400">DA/100km</span>
+              </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Indice de performance de la flotte</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Frais de Route (Per Diem)</span>
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                <Receipt className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">18 500 DA</span>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Péages autoroutiers & per diem déclarés</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Vue par défaut : Gestionnaire de Flotte (Operations)
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Disponibilité Parc</span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <Car className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{availabilityRate}%</span>
+              <span className="text-xs text-slate-500 dark:text-slate-300">({activeVehicles.length}/{safeVehicles.length} en service)</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+              <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${availabilityRate}%` }}></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Missions en Cours</span>
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <FileText className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{activeMissionsCount} Ordres</span>
+            <button onClick={() => onNavigateTab('missions')} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold mt-2 block">
+              Voir les ordres de mission →
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Conducteurs Mobilisés</span>
+            <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">5 Chauffeurs</span>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Permis et visites médicales suivis</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Dossiers Sinistres</span>
+            <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">{openClaims.length} à Instruire</span>
+            <button onClick={() => onNavigateTab('accidents')} className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold mt-2 block">
+              Ouvrir les dossiers d'assurance →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       
-      {/* Header : Épuré, Moderne & Aéré */}
+      {/* Profil Actif & Bannière RBAC Interactive */}
+      <div className="bg-slate-100/90 dark:bg-[#101726] border border-slate-200 dark:border-slate-800 rounded-2xl p-3 px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <div>
+            <span className="text-slate-500 dark:text-slate-400">Session active : </span>
+            <strong className="text-slate-900 dark:text-white font-bold">{userSession?.name || 'Utilisateur'}</strong>
+            <span className="text-slate-500 dark:text-slate-400 font-mono ml-1.5">({userSession?.email})</span>
+          </div>
+        </div>
+        {onOpen2FA && (
+          <button
+            type="button"
+            onClick={onOpen2FA}
+            className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+          >
+            <span>Changer de rôle (Matrice RBAC)</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Header : Personnalisé selon le rôle */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
         <div>
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Datacenter National • Loi 18-07 ANPDP
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${headerInfo.badgeColor}`}>
+              {headerInfo.badge}
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">
               Dinar Algérien (DA)
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Tableau de Bord Exécutif
+            {headerInfo.title}
           </h1>
           <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Supervision du parc automobile, ravitaillements Naftal et ordres de mission réglementaires.
+            {headerInfo.description}
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-          <button
-            onClick={() => onNavigateTab('missions')}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <FileText className="w-3.5 h-3.5 text-emerald-500" />
-            <span>+ Ordre de Mission</span>
-          </button>
-          <button
-            onClick={() => onNavigateTab('pwa_driver')}
-            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span>PWA Chauffeur</span>
-          </button>
+          {headerInfo.actions}
         </div>
       </div>
 
-      {/* 4 Cartes KPI Exécutives : Design moderne & contrasté */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* KPI 1 : Disponibilité */}
-        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] hover:dark:border-slate-600 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-              Disponibilité Parc
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
-              <Car className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {availabilityRate}%
-              </span>
-              <span className="text-xs text-slate-500 dark:text-slate-300">
-                ({activeVehicles.length}/{vehicles.length} en service)
-              </span>
-            </div>
-            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
-              <div 
-                className="bg-emerald-500 h-full rounded-full transition-all"
-                style={{ width: `${availabilityRate}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
+      {/* 4 Cartes KPI Spécifiques au Rôle */}
+      {renderKpiCards()}
 
-        {/* KPI 2 : Carburant Naftal */}
-        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] hover:dark:border-slate-600 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-              Dépenses Naftal
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center">
-              <Fuel className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
-                {totalFuelDZD.toLocaleString('fr-DZ')}
-              </span>
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">DA</span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-300 mt-2">
-              Volume : <strong className="text-slate-800 dark:text-white font-semibold">{totalLiters.toLocaleString('fr-DZ')} L</strong> (Gasoil / Essence)
-            </p>
-          </div>
-        </div>
-
-        {/* KPI 3 : Kilométrage & CO2 */}
-        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] hover:dark:border-slate-600 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-              Kilométrage Flotte
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
-                {totalFleetKm.toLocaleString('fr-DZ')}
-              </span>
-              <span className="text-xs text-slate-500 dark:text-slate-300">km total</span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-300 mt-2">
-              CO₂ estimé : <strong className="text-sky-600 dark:text-sky-300 font-bold">{(estimatedCO2Kg / 1000).toFixed(2)} tonnes</strong>
-            </p>
-          </div>
-        </div>
-
-        {/* KPI 4 : Missions Actives */}
-        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] hover:dark:border-slate-600 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
-              Missions Réglementaires
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
-              <FileText className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {activeMissionsCount}
-              </span>
-              <span className="text-xs text-slate-500 dark:text-slate-300">ordres en cours</span>
-            </div>
-            <button 
-              onClick={() => onNavigateTab('missions')} 
-              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold mt-2 block"
-            >
-              Voir les ordres de mission →
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mini-Bandeau de Statut Opérationnel (Aéré et discret) */}
-      <div className="bg-slate-100/90 dark:bg-[#121929] rounded-xl p-3.5 border border-slate-200/80 dark:border-[#222f47] flex flex-wrap items-center justify-between gap-3 text-xs text-slate-700 dark:text-slate-200 shadow-xs">
-        <div className="flex items-center gap-4 flex-wrap">
-          <span className="flex items-center gap-1.5 font-medium">
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
-            <span>Échéances à traiter : <strong className="text-slate-900 dark:text-white font-bold">{activeAlerts.length}</strong></span>
-          </span>
-          <span className="flex items-center gap-1.5 font-medium">
-            <ShieldAlert className="w-3.5 h-3.5 text-orange-500" />
-            <span>Sinistres en cours : <strong className="text-slate-900 dark:text-white font-bold">{openClaims.length}</strong></span>
-          </span>
-          {overconsumptionLogs.length > 0 && (
-            <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-bold">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Surconsommation détectée : {overconsumptionLogs.length} véhicule(s)</span>
-            </span>
-          )}
-        </div>
-        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-          Chiffrement souverain TLS 1.3 / AES-256
-        </div>
-      </div>
-
-      {/* Grille Deux Colonnes : Alertes Flotte & Ravitaillements PWA */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Colonne Gauche : Alertes & Entretiens */}
-        <div className="lg:col-span-6 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                <AlertTriangle className="w-4 h-4" />
+      {/* ========================================================================= */}
+      {/* VUE 1 : SUPER ADMINISTRATEUR (DSI / Sécurité Souveraine / Loi 18-07)       */}
+      {/* ========================================================================= */}
+      {currentRole === 'super_admin' && (
+        <div className="space-y-6">
+          {/* 1. Grand Journal d'Audit Souverain en Pleine Largeur */}
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Journal d'Audit Immuable des Accès & Événements
+                    </h2>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                      Loi 18-07 ANPDP
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Traçabilité cryptographique des sessions A2F, modifications de flotte et autorisations
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white">Alertes & Échéances Prioritaires</h2>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Assurance, contrôle technique, vidange</p>
-              </div>
-            </div>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-[#1c273e] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-              {activeAlerts.length} active(s)
-            </span>
-          </div>
 
-          <div className="space-y-2.5">
-            {activeAlerts.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-xs">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
-                Toutes les alertes sont traitées. Flotte à jour !
-              </div>
-            ) : (
-              activeAlerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`p-3.5 rounded-xl border transition-all ${
-                    alert.severity === 'high'
-                      ? 'bg-rose-50/70 dark:bg-[#1e1420] border-rose-200/90 dark:border-rose-500/40 hover:dark:border-rose-400/60'
-                      : 'bg-amber-50/70 dark:bg-[#201b14] border-amber-200/90 dark:border-amber-500/40 hover:dark:border-amber-400/60'
-                  }`}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#222f47]">
+                  {(['all', 'security', 'fuel', 'odometer', 'mission'] as const).map((filterKey) => (
+                    <button
+                      key={filterKey}
+                      onClick={() => setLogFilter(filterKey)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        logFilter === filterKey
+                          ? 'bg-white dark:bg-[#1c273e] text-emerald-700 dark:text-emerald-300 shadow-xs'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {filterKey === 'all' && `Tous (${safeActivityLogs.length})`}
+                      {filterKey === 'security' && 'Sécurité A2F'}
+                      {filterKey === 'fuel' && 'Carburant'}
+                      {filterKey === 'odometer' && 'Odomètre'}
+                      {filterKey === 'mission' && 'Missions'}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleExportAuditLogsJSON}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#1a233a] dark:hover:bg-[#253252] text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white dark:bg-[#2a1d2e] border border-slate-200 dark:border-rose-500/30 text-slate-900 dark:text-rose-200 font-mono">
-                          {alert.vehiclePlate}
-                        </span>
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">{alert.title}</h4>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Exporter</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+              {filteredLogs.slice(0, 15).map((log) => {
+                const isSecurity = log.title.toLowerCase().includes('a2f') || log.title.toLowerCase().includes('connexion') || log.channel === 'internal_system';
+                return (
+                  <div
+                    key={log.id}
+                    className="p-3.5 rounded-xl bg-slate-50/90 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                  >
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        isSecurity ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                      }`}>
+                        {isSecurity ? <ShieldCheck className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{alert.message}</p>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-3 pt-0.5">
-                        <span>Échéance : <strong className="text-slate-700 dark:text-slate-200">{alert.dueDate || 'Immédiat'}</strong></span>
-                        <span>•</span>
-                        <span>Action : <strong className="text-slate-700 dark:text-slate-200">{alert.actionRequired}</strong></span>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">{log.title}</span>
+                          <span className="px-2 py-0.2 rounded-full text-[9px] font-bold bg-slate-200/80 dark:bg-[#1a253e] text-slate-700 dark:text-slate-300">
+                            {log.channel === 'internal_system' ? 'Système DSI' : log.channel === 'pwa_offline' ? 'Sahara Offline' : 'PWA 4G'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">{log.details}</p>
                       </div>
                     </div>
+                    <div className="text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                      <span>{log.timestamp}</span>
+                      <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                        ANPDP CERTIFIÉ
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
+          {/* 2. Matrice RBAC & Gouvernance des Données */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-7 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                    <Key className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">Matrice des Privilèges RBAC</h2>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">5 profils configurés avec authentification forte A2F</p>
+                  </div>
+                </div>
+                {onOpen2FA && (
+                  <button onClick={onOpen2FA} className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
+                    Configurer A2F →
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                {ROLES_CONFIG.map((rc) => (
+                  <div key={rc.role} className="p-3 rounded-xl bg-slate-50/90 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">{rc.label}</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${rc.badgeColor}`}>
+                          {rc.role.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <p className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">{rc.email}</p>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {rc.permissions.slice(0, 3).map((p, idx) => (
+                          <span key={idx} className="text-[10px] bg-white dark:bg-[#1a233a] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                            ✓ {p}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {onOpen2FA && (
+                      <button
+                        onClick={onOpen2FA}
+                        className="px-3 py-1.5 bg-white dark:bg-[#1a233a] hover:bg-slate-100 dark:hover:bg-[#253252] text-slate-800 dark:text-white rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer shrink-0"
+                      >
+                        Tester
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">Registre Souverain Loi 18-07</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Protection des données à caractère personnel</p>
+                </div>
+              </div>
+
+              <div className="space-y-3 text-xs text-slate-700 dark:text-slate-300">
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-slate-900 dark:text-white">Stockage 100% sur le territoire algérien</strong>
+                    <span>Datacenter national sécurisé. Aucune donnée ne transite par un cloud étranger.</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-slate-900 dark:text-white">Purge automatique GPS sous 30 jours</strong>
+                    <span>Les relevés de géolocalisation des chauffeurs sont anonymisés et purgés pour le respect de la vie privée.</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-slate-800 flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-slate-900 dark:text-white">Chiffrement AES-256 & TLS 1.3</strong>
+                    <span>Toutes les fiches conducteurs et permis de conduire sont chiffrés au repos.</span>
+                  </div>
+                </div>
+              </div>
+
+              {onOpenANPDP && (
+                <button
+                  onClick={onOpenANPDP}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 text-center transition-all cursor-pointer block"
+                >
+                  Ouvrir l'Attestation & Registre Officiel ANPDP
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* VUE 2 : RESPONSABLE DE MAINTENANCE (Atelier, Vidanges, Pneus, Révisions)   */}
+      {/* ========================================================================= */}
+      {currentRole === 'maintenance_lead' && (
+        <div className="space-y-6">
+          {/* 1. Alertes d'Atelier Critiques */}
+          <div id="maintenance-alerts-section" className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">File d'Alertes d'Atelier à Traiter</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Vidanges dépassées, contrôles techniques obligatoires et visites médicales</p>
+                </div>
+              </div>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                {activeAlerts.length} alerte(s) en attente
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {activeAlerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="p-4 rounded-xl border bg-rose-50/60 dark:bg-[#1d141e] border-rose-200/90 dark:border-rose-500/40 flex flex-col justify-between gap-3"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white dark:bg-[#2a1d2e] border border-rose-300 dark:border-rose-500/30 text-rose-700 dark:text-rose-300">
+                        {alert.vehiclePlate}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/80 px-2 py-0.5 rounded">
+                        Échéance : {alert.dueDate || 'Immédiat'}
+                      </span>
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">{alert.title}</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{alert.message}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
+                      Action requise : <strong className="text-slate-800 dark:text-slate-200">{alert.actionRequired}</strong>
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-rose-200/60 dark:border-rose-500/20">
                     <button
                       onClick={() => onResolveAlert(alert.id)}
-                      className="px-3 py-1.5 bg-white dark:bg-[#242f48] hover:bg-slate-100 dark:hover:bg-[#2e3b5a] text-slate-700 dark:text-white rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-600 whitespace-nowrap cursor-pointer transition-colors shrink-0 shadow-xs"
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-xs"
                     >
-                      Résolu ✓
+                      Marquer Résolu ✓
                     </button>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Colonne Droite : Ravitaillements Carburant Validés PWA */}
-        <div className="lg:col-span-6 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers Pleins Validés (PWA)</h2>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Reçus Naftal scannés & saisies chauffeurs</p>
-              </div>
-            </div>
-            <button
-              onClick={() => onNavigateTab('fuel')}
-              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              Voir tout ({fuelLogs.length}) <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-2.5">
-            {recentFuelEntries.map((log) => (
-              <div
-                key={log.id}
-                className="p-3 rounded-xl bg-slate-50/90 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] hover:border-slate-300 dark:hover:border-slate-600 transition-all flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                    <Fuel className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">{log.driverName}</span>
-                      <span className="font-mono text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-[#1a253e] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                        {log.vehiclePlate}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                      <span>{log.stationName} • {log.liters} L</span>
-                      {log.gpsCoordinates && (
-                        <span className="text-[10px] font-mono text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-1 rounded inline-flex items-center gap-0.5">
-                          <MapPin className="w-2.5 h-2.5" />
-                          GPS {Number(log.gpsCoordinates.latitude || 0).toFixed(2)}°, {Number(log.gpsCoordinates.longitude || 0).toFixed(2)}°
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-right shrink-0">
-                  <div className="text-xs md:text-sm font-black text-emerald-700 dark:text-emerald-400 font-mono">
-                    +{log.amountDZD.toLocaleString('fr-DZ')} DA
-                  </div>
-                  <span className="inline-block px-1.5 py-0.2 text-[9px] font-bold rounded bg-slate-200/80 dark:bg-[#1a253e] text-slate-700 dark:text-slate-300 mt-0.5">
-                    {log.source === 'pwa_scan' ? 'Scan OCR PWA' : log.source === 'pwa_manual' ? 'PWA Direct' : 'Manuel'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Journal d'Audit & Flux d'Activité Souverain (Traçabilité Loi 18-07) */}
-      <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Journal d'Audit & Flux d'Activité Souverain
-                </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  Loi 18-07 ANPDP
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Traçabilité des accès A2F, odomètres, tickets Naftal et missions en temps réel
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Filter buttons */}
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#222f47]">
-              {(['all', 'security', 'fuel', 'odometer', 'mission'] as const).map((filterKey) => (
-                <button
-                  key={filterKey}
-                  onClick={() => setLogFilter(filterKey)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    logFilter === filterKey
-                      ? 'bg-white dark:bg-[#1c273e] text-emerald-700 dark:text-emerald-300 shadow-xs'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {filterKey === 'all' && `Tous (${activityLogs.length})`}
-                  {filterKey === 'security' && 'Sécurité A2F'}
-                  {filterKey === 'fuel' && 'Carburant'}
-                  {filterKey === 'odometer' && 'Odomètre'}
-                  {filterKey === 'mission' && 'Missions'}
-                </button>
               ))}
             </div>
-
-            {onOpenANPDP && (
-              <button
-                onClick={onOpenANPDP}
-                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer shrink-0 ml-1"
-              >
-                Registre ANPDP <ArrowUpRight className="w-3.5 h-3.5" />
-              </button>
-            )}
           </div>
-        </div>
 
-        {/* Logs Feed */}
-        <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
-          {filteredLogs.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-xs">
-              <Activity className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-60" />
-              Aucun événement pour cette sélection.
+          {/* 2. Surveillance Odométrique & Échéances Vidanges (Palier 10 000 km) */}
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                  <Gauge className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">Surveillance Odométrique & Anticipation des Vidanges (Palier 10 000 km)</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Relevés réels des compteurs vs échéances constructeur</p>
+                </div>
+              </div>
             </div>
-          ) : (
-            filteredLogs.slice(0, 10).map((log) => {
-              const isSecurity = log.title.toLowerCase().includes('a2f') || log.title.toLowerCase().includes('connexion') || log.channel === 'internal_system';
-              const isFuel = log.type === 'fuel';
-              const isOdometer = log.type === 'odometer';
-              const isAccident = log.type === 'accident';
 
-              return (
-                <div
-                  key={log.id}
-                  className="p-3 rounded-xl bg-slate-50/90 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] hover:border-slate-300 dark:hover:border-slate-600 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
-                >
-                  <div className="flex items-start sm:items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                      isSecurity
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                        : isFuel
-                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                        : isOdometer
-                        ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
-                        : isAccident
-                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                        : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
-                    }`}>
-                      {isSecurity ? <ShieldCheck className="w-4 h-4" /> :
-                       isFuel ? <Fuel className="w-4 h-4" /> :
-                       isOdometer ? <TrendingUp className="w-4 h-4" /> :
-                       isAccident ? <AlertTriangle className="w-4 h-4" /> :
-                       <FileText className="w-4 h-4" />}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-[#0c121e] text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-[#222f47]">
+                  <tr>
+                    <th className="py-3 px-4">Véhicule</th>
+                    <th className="py-3 px-4">Matricule</th>
+                    <th className="py-3 px-4">Odomètre Réel</th>
+                    <th className="py-3 px-4">Prochaine Vidange</th>
+                    <th className="py-3 px-4">Écart Restant</th>
+                    <th className="py-3 px-4">Statut Mécanique</th>
+                    <th className="py-3 px-4 text-right">Action Atelier</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-[#1e2a3f]">
+                  {safeVehicles.map((v) => {
+                    const diff = v.nextServiceKm - v.mileage;
+                    const isOverdue = diff <= 0;
+                    return (
+                      <tr key={v.id} className="hover:bg-slate-50/80 dark:hover:bg-[#152033] transition-colors">
+                        <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                          {v.make} {v.model}
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                          {v.plate}
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-semibold text-slate-900 dark:text-white">
+                          {v.mileage.toLocaleString('fr-DZ')} km
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-semibold">
+                          {v.nextServiceKm.toLocaleString('fr-DZ')} km
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold">
+                          {isOverdue ? (
+                            <span className="text-rose-600 dark:text-rose-400">+{Math.abs(diff).toLocaleString('fr-DZ')} km DÉPASSÉ</span>
+                          ) : (
+                            <span className="text-emerald-600 dark:text-emerald-400">{diff.toLocaleString('fr-DZ')} km restants</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
+                            isOverdue 
+                              ? 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20' 
+                              : diff < 3000
+                              ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                              : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                          }`}>
+                            {isOverdue ? 'Vidange Dépassée !' : diff < 3000 ? 'Révision Proche' : 'Conforme'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => onSelectVehicle(v)}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-600 dark:bg-[#1c273e] hover:text-white rounded-lg text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
+                          >
+                            Planifier Vidange
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 3. Jauges Visuelles d'Usure des Pneumatiques */}
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                  <Disc className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">Contrôle de l'Usure des 4 Pneumatiques</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Planification des permutations et détection des usures asymétriques</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {safeVehicles.map((v) => {
+                const tires = v.tires || { frontLeft: 85, frontRight: 82, rearLeft: 90, rearRight: 88 };
+                return (
+                  <div key={v.id} className="p-4 rounded-xl bg-slate-50/90 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f]">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-bold text-slate-900 dark:text-white text-xs">{v.make} {v.model}</span>
+                      <span className="font-mono text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-white dark:bg-[#1a253e] px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                        {v.plate}
+                      </span>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <div className="p-2 rounded-lg bg-white dark:bg-[#151f33] border border-slate-200 dark:border-slate-800">
+                        <span className="text-slate-500 block text-[10px]">AV-Gauche</span>
+                        <span className="font-bold text-slate-900 dark:text-white font-mono">{tires.frontLeft}%</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white dark:bg-[#151f33] border border-slate-200 dark:border-slate-800">
+                        <span className="text-slate-500 block text-[10px]">AV-Droit</span>
+                        <span className="font-bold text-slate-900 dark:text-white font-mono">{tires.frontRight}%</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white dark:bg-[#151f33] border border-slate-200 dark:border-slate-800">
+                        <span className="text-slate-500 block text-[10px]">AR-Gauche</span>
+                        <span className="font-bold text-slate-900 dark:text-white font-mono">{tires.rearLeft}%</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white dark:bg-[#151f33] border border-slate-200 dark:border-slate-800">
+                        <span className="text-slate-500 block text-[10px]">AR-Droit</span>
+                        <span className="font-bold text-slate-900 dark:text-white font-mono">{tires.rearRight}%</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* VUE 3 : CONTRÔLEUR DE GESTION (Carburant Naftal, Barèmes, Surconsommations)*/}
+      {/* ========================================================================= */}
+      {currentRole === 'controller' && (
+        <div className="space-y-6">
+          {/* 1. Barèmes Officiels Naftal & Synthèse des Coûts */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase">Gasoil Réglementé</span>
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded">Naftal Officiel</span>
+              </div>
+              <div className="mt-3">
+                <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">29,01 DA</span>
+                <span className="text-xs text-slate-500 ml-1">/ Litre</span>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Carburant principal de la flotte poids lourd et utilitaires</p>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase">Sans Plomb Réglementé</span>
+                <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded">Naftal Officiel</span>
+              </div>
+              <div className="mt-3">
+                <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">45,62 DA</span>
+                <span className="text-xs text-slate-500 ml-1">/ Litre</span>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Véhicules légers et liaisons urbaines</p>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 uppercase">GPL / Sirghaz</span>
+                <span className="text-xs font-bold text-sky-600 bg-sky-50 dark:bg-sky-950 px-2 py-0.5 rounded">Économique</span>
+              </div>
+              <div className="mt-3">
+                <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">9,00 DA</span>
+                <span className="text-xs text-slate-500 ml-1">/ Litre</span>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">Carburant propre et subventionné</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Audit des Surconsommations (+15% Anormal) */}
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">Détection des Anomalies de Consommation (+15% Seuil d'Alerte)</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Comparatif de la consommation déclarée en direct par rapport aux données constructeur</p>
+                </div>
+              </div>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                1 Cas Critique Détecté
+              </span>
+            </div>
+
+            <div className="p-4 rounded-xl border bg-rose-50/60 dark:bg-[#1d141e] border-rose-200/90 dark:border-rose-500/40">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono font-bold text-xs bg-white dark:bg-[#2a1d2e] px-2 py-0.5 rounded border border-rose-300 dark:border-rose-500/30 text-rose-700 dark:text-rose-300">
+                      00341-319-31
+                    </span>
+                    <strong className="text-xs font-bold text-slate-900 dark:text-white">Toyota Hilux Double Cabine 4x4</strong>
+                    <span className="text-xs text-slate-500">(Chauffeur : Ahmed Benali)</span>
+                  </div>
+                  <p className="text-xs text-rose-700 dark:text-rose-300 font-semibold mt-1">
+                    ⚠️ Consommation anormale calculée à <strong>17,8 L/100km</strong> contre <strong>9,4 L/100km</strong> attendu (+89% d'écart).
+                  </p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+                    Préjudice financier estimé : <strong className="text-rose-600 dark:text-rose-400">+4 200 DA de surcoût par plein</strong>. Action : Contrôler filtre à gasoil, pression des pneus et vérifier l'absence de fuite.
+                  </p>
+                </div>
+                <button
+                  onClick={() => onNavigateTab('fuel')}
+                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shrink-0"
+                >
+                  Auditer l'Historique Pleins
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Réconciliation Comptable & Export CSV */}
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">Rapprochement des Reçus Scannés & Cartes Naftal</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Export comptable pour intégration logicielle (PC Compta / Sage / Odoo)</p>
+                </div>
+              </div>
+              <button
+                onClick={handleExportAccountingCSV}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Télécharger Fichier CSV Comptable</span>
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {safeFuelLogs.slice(0, 6).map((log) => (
+                <div key={log.id} className="p-3 rounded-xl bg-slate-50/90 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-xs">
+                      DA
+                    </div>
                     <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">
-                          {log.title}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">{log.driverName}</span>
+                        <span className="font-mono text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-[#1a253e] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                          {log.vehiclePlate}
                         </span>
-                        {log.vehiclePlate && (
+                        <span className="text-xs text-slate-500">{log.stationName}</span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">{log.liters} L • Date : {log.date}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                      {log.amountDZD.toLocaleString('fr-DZ')} DA
+                    </span>
+                    <span className="block text-[10px] text-slate-500">Certifié PWA</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* VUE 4 : GESTIONNAIRE DE FLOTTE (Opérations, Ordres de Mission, Parc)       */}
+      {/* ========================================================================= */}
+      {currentRole === 'fleet_manager' && (
+        <div className="space-y-6">
+          {/* 1. Grille : Ordres de Mission & Ravitaillements PWA */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-6 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">Ordres de Mission Inter-Wilayas</h2>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Circuits autorisés, per diem et péages</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onNavigateTab('missions')}
+                  className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  Gérer ({safeMissions.length}) <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {safeMissions.slice(0, 3).map((m) => (
+                  <div key={m.id} className="p-3.5 rounded-xl bg-slate-50/90 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f]">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">{m.orderNumber}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        {m.status === 'in_progress' ? 'En Route' : 'Approuvé'}
+                      </span>
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">{m.departureWilaya} → {m.destinationWilaya}</h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Chauffeur : <strong className="text-slate-700 dark:text-slate-200">{m.driverName}</strong> • {m.vehiclePlate}
+                    </p>
+                    <div className="flex items-center justify-between text-[11px] mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800">
+                      <span className="font-mono text-slate-500">Per diem : {m.perDiemDZD} DA</span>
+                      <button onClick={() => onNavigateTab('missions')} className="text-xs text-indigo-600 font-bold hover:underline">
+                        Imprimer OM →
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:col-span-6 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">Derniers Pleins Validés (PWA)</h2>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Reçus Naftal scannés & saisies chauffeurs</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onNavigateTab('fuel')}
+                  className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  Voir tout ({safeFuelLogs.length}) <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {recentFuelEntries.map((log) => (
+                  <div
+                    key={log.id}
+                    className="p-3 rounded-xl bg-slate-50/90 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                        <Fuel className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">{log.driverName}</span>
                           <span className="font-mono text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-[#1a253e] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                             {log.vehiclePlate}
                           </span>
-                        )}
-                        <span className={`px-2 py-0.2 rounded-full text-[9px] font-bold ${
-                          log.channel === 'pwa_offline'
-                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'
-                            : log.channel === 'pwa_online'
-                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
-                            : 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20'
-                        }`}>
-                          {log.channel === 'pwa_offline' ? '🟠 Sahara (Hors-ligne)' :
-                           log.channel === 'pwa_online' ? '🟢 PWA 4G' : '🔷 Système Interne'}
-                        </span>
-                      </div>
-
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
-                        {log.details}
-                      </p>
-
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                        {log.driverName && <span>Auteur : {log.driverName}</span>}
-                        {log.gpsCoordinates && (
-                          <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
-                            <MapPin className="w-2.5 h-2.5" />
-                            {log.gpsCoordinates.wilaya || `${Number(log.gpsCoordinates.latitude || 0).toFixed(2)}°, ${Number(log.gpsCoordinates.longitude || 0).toFixed(2)}°`}
-                          </span>
-                        )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          {log.stationName} • {log.liters} L
+                        </p>
                       </div>
                     </div>
+                    <div className="text-right">
+                      <div className="text-xs md:text-sm font-black text-emerald-700 dark:text-emerald-400 font-mono">
+                        +{log.amountDZD.toLocaleString('fr-DZ')} DA
+                      </div>
+                      <span className="text-[10px] text-slate-400">{log.source === 'pwa_scan' ? 'Scan OCR' : 'Manuel'}</span>
+                    </div>
                   </div>
-
-                  <div className="text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1">
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-slate-400" />
-                      {log.timestamp}
-                    </span>
-                    <span className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                      Certifié
-                    </span>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      {/* État Actuel du Parc Flotte (Tableau Moderne & Aéré) */}
-      <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-              <Car className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white">État Global du Parc Automobile</h2>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Kilométrage en direct, statut d'affectation et révisions</p>
+                ))}
+              </div>
             </div>
           </div>
-          <button
-            onClick={() => onNavigateTab('vehicles')}
-            className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            Fiches complètes ({vehicles.length}) <ArrowUpRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-[#0c121e] text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-[#222f47]">
-              <tr>
-                <th className="py-3 px-4">Véhicule</th>
-                <th className="py-3 px-4">Matricule (Wilaya)</th>
-                <th className="py-3 px-4">Chauffeur Assigné</th>
-                <th className="py-3 px-4">Statut</th>
-                <th className="py-3 px-4">Odomètre</th>
-                <th className="py-3 px-4">Prochaine Révision</th>
-                <th className="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-[#1e2a3f]">
-              {vehicles.map((v) => {
-                const isOverdue = v.mileage >= v.nextServiceKm;
-                return (
-                  <tr key={v.id} className="hover:bg-slate-50/80 dark:hover:bg-[#152033] transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                      {v.make} {v.model}
-                      <span className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">Année {v.year} • {v.fuelType}</span>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                      {v.plate}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="text-slate-900 dark:text-slate-200 font-semibold">{v.driverName}</span>
-                      <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-mono">{v.driverPhone}</span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
-                        v.status === 'active'
-                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
-                          : v.status === 'maintenance'
-                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
-                          : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
-                      }`}>
-                        {v.status === 'active' ? 'En Service' : v.status === 'maintenance' ? 'En Révision' : 'En Sinistre'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono font-semibold text-slate-800 dark:text-slate-200">
-                      {v.mileage.toLocaleString('fr-DZ')} km
-                    </td>
-                    <td className="py-3.5 px-4 font-mono">
-                      <span className={isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-800 dark:text-slate-200'}>
-                        {v.nextServiceKm.toLocaleString('fr-DZ')} km
-                      </span>
-                      {isOverdue && (
-                        <span className="block text-[9px] text-rose-600 dark:text-rose-400 font-sans font-bold">Vidange Dépassée !</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => onSelectVehicle(v)}
-                        className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-white bg-slate-100 dark:bg-[#1c273e] hover:bg-emerald-600 dark:hover:bg-emerald-600 rounded-lg transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
-                      >
-                        Consulter
-                      </button>
-                    </td>
+          {/* 2. État Global du Parc Automobile */}
+          <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                  <Car className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">État Global du Parc Automobile</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Kilométrage en direct, statut d'affectation et révisions</p>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigateTab('vehicles')}
+                className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                Fiches complètes ({safeVehicles.length}) <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-[#0c121e] text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider border-b border-slate-200 dark:border-[#222f47]">
+                  <tr>
+                    <th className="py-3 px-4">Véhicule</th>
+                    <th className="py-3 px-4">Matricule (Wilaya)</th>
+                    <th className="py-3 px-4">Chauffeur Assigné</th>
+                    <th className="py-3 px-4">Statut</th>
+                    <th className="py-3 px-4">Odomètre</th>
+                    <th className="py-3 px-4">Prochaine Révision</th>
+                    <th className="py-3 px-4 text-right">Action</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-[#1e2a3f]">
+                  {safeVehicles.map((v) => {
+                    const isOverdue = v.mileage >= v.nextServiceKm;
+                    return (
+                      <tr key={v.id} className="hover:bg-slate-50/80 dark:hover:bg-[#152033] transition-colors">
+                        <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                          {v.make} {v.model}
+                          <span className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">Année {v.year} • {v.fuelType}</span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                          {v.plate}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="text-slate-900 dark:text-slate-200 font-semibold">{v.driverName}</span>
+                          <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-mono">{v.driverPhone}</span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
+                            v.status === 'active'
+                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                              : v.status === 'maintenance'
+                              ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                              : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
+                          }`}>
+                            {v.status === 'active' ? 'En Service' : v.status === 'maintenance' ? 'En Révision' : 'En Sinistre'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-semibold text-slate-800 dark:text-slate-200">
+                          {v.mileage.toLocaleString('fr-DZ')} km
+                        </td>
+                        <td className="py-3.5 px-4 font-mono">
+                          <span className={isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-800 dark:text-slate-200'}>
+                            {v.nextServiceKm.toLocaleString('fr-DZ')} km
+                          </span>
+                          {isOverdue && (
+                            <span className="block text-[9px] text-rose-600 dark:text-rose-400 font-sans font-bold">Vidange Dépassée !</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => onSelectVehicle(v)}
+                            className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-white bg-slate-100 dark:bg-[#1c273e] hover:bg-emerald-600 dark:hover:bg-emerald-600 rounded-lg transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+                          >
+                            Consulter
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

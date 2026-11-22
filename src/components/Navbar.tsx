@@ -11,7 +11,9 @@ import {
   Sun, 
   Moon,
   Sparkles,
-  LogOut
+  LogOut,
+  TrendingUp,
+  Key
 } from 'lucide-react';
 import { UserSession } from '../types.js';
 
@@ -77,40 +79,53 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const navItems: { id: ActiveTab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { 
-      id: 'dashboard', 
-      label: 'Flotte', 
-      icon: <Car className="w-4 h-4" />, 
-      badge: activeAlertsCount > 0 ? activeAlertsCount : undefined 
-    },
-    { 
-      id: 'missions', 
-      label: 'Missions', 
-      icon: <FileText className="w-4 h-4" /> 
-    },
-    { 
-      id: 'drivers', 
-      label: 'Chauffeurs', 
-      icon: <Users className="w-4 h-4" /> 
-    },
-    { 
-      id: 'vehicles', 
-      label: 'Véhicules', 
-      icon: <Wrench className="w-4 h-4" /> 
-    },
-    { 
-      id: 'fuel', 
-      label: 'Carburant', 
-      icon: <Fuel className="w-4 h-4" /> 
-    },
-    { 
-      id: 'accidents', 
-      label: 'Sinistres', 
-      icon: <AlertTriangle className="w-4 h-4" />,
-      badge: openClaimsCount > 0 ? openClaimsCount : undefined
-    },
-  ];
+  const getNavItems = (): { id: ActiveTab; label: string; icon: React.ReactNode; badge?: number }[] => {
+    switch (userSession?.role) {
+      case 'super_admin':
+        return [
+          { id: 'dashboard', label: 'Sécurité & Audit', icon: <ShieldCheck className="w-4 h-4" /> },
+          { id: 'vehicles', label: 'Parc Flotte', icon: <Car className="w-4 h-4" /> },
+          { id: 'drivers', label: 'Chauffeurs & Accès', icon: <Users className="w-4 h-4" /> },
+          { id: 'missions', label: 'Missions', icon: <FileText className="w-4 h-4" /> },
+          { id: 'fuel', label: 'Carburant', icon: <Fuel className="w-4 h-4" /> },
+        ];
+      case 'fleet_manager':
+        return [
+          { id: 'dashboard', label: 'Flotte & Opérations', icon: <Car className="w-4 h-4" /> },
+          { id: 'missions', label: 'Ordres de Mission', icon: <FileText className="w-4 h-4" /> },
+          { id: 'drivers', label: 'Chauffeurs & QR', icon: <Users className="w-4 h-4" /> },
+          { id: 'vehicles', label: 'Parc Véhicules', icon: <Wrench className="w-4 h-4" /> },
+          { id: 'accidents', label: 'Sinistres', icon: <AlertTriangle className="w-4 h-4" />, badge: openClaimsCount > 0 ? openClaimsCount : undefined },
+          { id: 'fuel', label: 'Carburant Naftal', icon: <Fuel className="w-4 h-4" /> },
+        ];
+      case 'maintenance_lead':
+        return [
+          { id: 'dashboard', label: 'Maintenance & Vidanges', icon: <Wrench className="w-4 h-4" />, badge: activeAlertsCount > 0 ? activeAlertsCount : undefined },
+          { id: 'vehicles', label: 'Santé Parc & Pneus', icon: <Car className="w-4 h-4" /> },
+          { id: 'accidents', label: 'Dégâts & Réparations', icon: <AlertTriangle className="w-4 h-4" />, badge: openClaimsCount > 0 ? openClaimsCount : undefined },
+          { id: 'fuel', label: 'Relevés Odomètre', icon: <Fuel className="w-4 h-4" /> },
+        ];
+      case 'controller':
+        return [
+          { id: 'dashboard', label: 'Contrôle Financier (DA)', icon: <TrendingUp className="w-4 h-4" /> },
+          { id: 'fuel', label: 'Audit Carburant Naftal', icon: <Fuel className="w-4 h-4" /> },
+          { id: 'missions', label: 'Budgets & Per Diem', icon: <FileText className="w-4 h-4" /> },
+          { id: 'vehicles', label: 'Parc Automobile', icon: <Car className="w-4 h-4" /> },
+          { id: 'accidents', label: 'Dépenses Sinistres', icon: <AlertTriangle className="w-4 h-4" /> },
+        ];
+      default:
+        return [
+          { id: 'dashboard', label: 'Flotte', icon: <Car className="w-4 h-4" />, badge: activeAlertsCount > 0 ? activeAlertsCount : undefined },
+          { id: 'missions', label: 'Missions', icon: <FileText className="w-4 h-4" /> },
+          { id: 'drivers', label: 'Chauffeurs', icon: <Users className="w-4 h-4" /> },
+          { id: 'vehicles', label: 'Véhicules', icon: <Wrench className="w-4 h-4" /> },
+          { id: 'fuel', label: 'Carburant', icon: <Fuel className="w-4 h-4" /> },
+          { id: 'accidents', label: 'Sinistres', icon: <AlertTriangle className="w-4 h-4" />, badge: openClaimsCount > 0 ? openClaimsCount : undefined },
+        ];
+    }
+  };
+
+  const navItems = getNavItems();
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0c121e]/95 backdrop-blur-md border-b border-slate-200/90 dark:border-[#222f47] transition-colors duration-200">
