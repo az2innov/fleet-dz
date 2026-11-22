@@ -24,7 +24,7 @@ import {
   Download,
   Trash2
 } from 'lucide-react';
-import { MissionOrder, Vehicle, Driver } from '../types.js';
+import { MissionOrder, Vehicle, Driver, UserSession } from '../types.js';
 
 interface MissionsManagerProps {
   missions: MissionOrder[];
@@ -32,6 +32,7 @@ interface MissionsManagerProps {
   drivers: Driver[];
   onRefreshData: () => void;
   onNavigateTab: (tab: any) => void;
+  userSession?: UserSession;
 }
 
 export const MissionsManager: React.FC<MissionsManagerProps> = ({
@@ -40,6 +41,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
   drivers,
   onRefreshData,
   onNavigateTab,
+  userSession,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -210,14 +212,32 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Créer un Ordre de Mission
-        </button>
+        {userSession?.role === 'super_admin' ? (
+          <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+            <ShieldCheck className="w-4 h-4 text-amber-500" />
+            <span>Mode Audit DSI (Lecture Seule)</span>
+          </div>
+        ) : (
+          <button
+            onClick={handleOpenCreate}
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            Créer un Ordre de Mission
+          </button>
+        )}
       </div>
+
+      {/* Bannière d'avertissement Moindre Privilège pour le Super Admin */}
+      {userSession?.role === 'super_admin' && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
+          <ShieldCheck className="w-5 h-5 text-amber-500 shrink-0" />
+          <div>
+            <strong>Gouvernance & Moindre Privilège (Loi 18-07) : </strong>
+            En tant que Super Administrateur (DSI), ce module est accessible en <strong>consultation et audit</strong>. La création opérationnelle d'Ordres de Mission est strictement réservée au <strong>Gestionnaire de Flotte</strong>.
+          </div>
+        </div>
+      )}
 
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

@@ -83,11 +83,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     switch (userSession?.role) {
       case 'super_admin':
         return [
-          { id: 'dashboard', label: 'Sécurité & Audit', icon: <ShieldCheck className="w-4 h-4" /> },
-          { id: 'vehicles', label: 'Parc Flotte', icon: <Car className="w-4 h-4" /> },
-          { id: 'drivers', label: 'Chauffeurs & Accès', icon: <Users className="w-4 h-4" /> },
-          { id: 'missions', label: 'Missions', icon: <FileText className="w-4 h-4" /> },
-          { id: 'fuel', label: 'Carburant', icon: <Fuel className="w-4 h-4" /> },
+          { id: 'dashboard', label: 'Sécurité & Audit DSI', icon: <ShieldCheck className="w-4 h-4" /> },
+          { id: 'vehicles', label: 'Audit Parc', icon: <Car className="w-4 h-4" /> },
+          { id: 'drivers', label: 'Audit Chauffeurs', icon: <Users className="w-4 h-4" /> },
+          { id: 'missions', label: 'Audit Missions', icon: <FileText className="w-4 h-4" /> },
+          { id: 'fuel', label: 'Audit Carburant', icon: <Fuel className="w-4 h-4" /> },
         ];
       case 'fleet_manager':
         return [

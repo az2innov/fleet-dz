@@ -15,18 +15,20 @@ import {
   ExternalLink,
   AlertTriangle 
 } from 'lucide-react';
-import { FuelLog, Vehicle } from '../types.js';
+import { FuelLog, Vehicle, UserSession } from '../types.js';
 
 interface FuelTrackingProps {
   fuelLogs: FuelLog[];
   vehicles: Vehicle[];
   onNavigateTab: (tab: any) => void;
+  userSession?: UserSession;
 }
 
 export const FuelTracking: React.FC<FuelTrackingProps> = ({
   fuelLogs,
   vehicles,
   onNavigateTab,
+  userSession,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVehiclePlate, setSelectedVehiclePlate] = useState<string>('all');
@@ -160,14 +162,32 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
             </button>
 
             {/* New Fuel via PWA button */}
-            <button
-              onClick={() => onNavigateTab('pwa_driver')}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" /> Déclarer un plein (PWA Chauffeur)
-            </button>
+            {userSession?.role !== 'super_admin' ? (
+              <button
+                onClick={() => onNavigateTab('pwa_driver')}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> Déclarer un plein (PWA Chauffeur)
+              </button>
+            ) : (
+              <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" />
+                <span>Mode Audit DSI</span>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Bannière Moindre Privilège pour le Super Admin */}
+        {userSession?.role === 'super_admin' && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-amber-500 shrink-0" />
+            <div>
+              <strong>Gouvernance & Moindre Privilège (Loi 18-07) : </strong>
+              Ce journal est en <strong>audit financier et contrôle</strong>. La déclaration des pleins de carburant est réalisée sur le terrain par les <strong>Chauffeurs via la PWA</strong>.
+            </div>
+          </div>
+        )}
 
         {/* Logs Table */}
         <div className="overflow-x-auto">

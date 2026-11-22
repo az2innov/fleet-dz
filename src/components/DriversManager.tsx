@@ -24,13 +24,14 @@ import {
   Copy,
   Smartphone
 } from 'lucide-react';
-import { Driver, Vehicle, DriverStatus, LicenseCategory } from '../types.js';
+import { Driver, Vehicle, DriverStatus, LicenseCategory, UserSession } from '../types.js';
 
 interface DriversManagerProps {
   drivers: Driver[];
   vehicles: Vehicle[];
   onRefreshData: () => void;
   onNavigateTab: (tab: any) => void;
+  userSession?: UserSession;
 }
 
 export const DriversManager: React.FC<DriversManagerProps> = ({
@@ -38,6 +39,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
   vehicles,
   onRefreshData,
   onNavigateTab,
+  userSession,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -212,14 +214,32 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Nouveau Chauffeur
-        </button>
+        {userSession?.role === 'super_admin' ? (
+          <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+            <ShieldCheck className="w-4 h-4 text-amber-500" />
+            <span>Mode Audit DSI (Lecture Seule)</span>
+          </div>
+        ) : (
+          <button
+            onClick={handleOpenCreate}
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            Nouveau Chauffeur
+          </button>
+        )}
       </div>
+
+      {/* Bannière Moindre Privilège pour le Super Admin */}
+      {userSession?.role === 'super_admin' && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
+          <ShieldCheck className="w-5 h-5 text-amber-500 shrink-0" />
+          <div>
+            <strong>Gouvernance & Moindre Privilège (Loi 18-07) : </strong>
+            En tant que Super Administrateur (DSI), ce module est en <strong>consultation et audit</strong>. La création de profils chauffeurs et l'appairage QR code sont réservés au <strong>Gestionnaire de Flotte</strong>.
+          </div>
+        </div>
+      )}
 
       {/* Search & Filter Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-4 shadow-xs">

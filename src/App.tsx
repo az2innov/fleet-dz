@@ -264,6 +264,7 @@ export default function App() {
             drivers={drivers}
             onRefreshData={fetchFleetData}
             onNavigateTab={setActiveTab}
+            userSession={userSession}
           />
         )}
 
@@ -273,6 +274,7 @@ export default function App() {
             vehicles={vehicles}
             onRefreshData={fetchFleetData}
             onNavigateTab={setActiveTab}
+            userSession={userSession}
           />
         )}
 
@@ -283,6 +285,7 @@ export default function App() {
             onSelectVehicle={setSelectedVehicle}
             onNavigateTab={setActiveTab}
             onRefreshData={fetchFleetData}
+            userSession={userSession}
           />
         )}
 
@@ -291,6 +294,7 @@ export default function App() {
             fuelLogs={fuelLogs}
             vehicles={vehicles}
             onNavigateTab={setActiveTab}
+            userSession={userSession}
           />
         )}
 
@@ -299,6 +303,7 @@ export default function App() {
             accidentClaims={accidentClaims}
             vehicles={vehicles}
             onNavigateTab={setActiveTab}
+            userSession={userSession}
           />
         )}
       </main>
