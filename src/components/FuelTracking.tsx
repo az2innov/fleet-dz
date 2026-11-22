@@ -13,7 +13,9 @@ import {
   Plus,
   Navigation,
   ExternalLink,
-  AlertTriangle 
+  AlertTriangle,
+  Gauge,
+  Clock
 } from 'lucide-react';
 import { FuelLog, Vehicle, UserSession } from '../types.js';
 
@@ -22,6 +24,7 @@ interface FuelTrackingProps {
   vehicles: Vehicle[];
   onNavigateTab: (tab: any) => void;
   userSession?: UserSession;
+  onRefreshData?: () => void;
 }
 
 export const FuelTracking: React.FC<FuelTrackingProps> = ({
@@ -29,9 +32,29 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
   vehicles,
   onNavigateTab,
   userSession,
+  onRefreshData,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVehiclePlate, setSelectedVehiclePlate] = useState<string>('all');
+  const [validatedLogIds, setValidatedLogIds] = useState<Set<string>>(new Set());
+  const [validatingId, setValidatingId] = useState<string | null>(null);
+
+  const handleValidateFuelLog = async (logId: string) => {
+    setValidatingId(logId);
+    try {
+      await fetch(`/api/fleet/fuel/${logId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'verified' }),
+      });
+      setValidatedLogIds(prev => new Set(prev).add(logId));
+      if (onRefreshData) onRefreshData();
+    } catch (err) {
+      console.error('Failed to validate fuel log:', err);
+    } finally {
+      setValidatingId(null);
+    }
+  };
 
   const filteredLogs = fuelLogs.filter((log) => {
     const matchesSearch =
@@ -152,25 +175,35 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
               />
             </div>
 
-            {/* Export CSV button */}
-            <button
-              onClick={handleExportCSV}
-              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-white border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-              title="Exporter au format comptable"
-            >
-              <Download className="w-3.5 h-3.5" /> Exporter CSV
-            </button>
-
-            {/* New Fuel via PWA button */}
-            {userSession?.role !== 'super_admin' ? (
+            {/* Export CSV button: masqué pour le responsable de maintenance */}
+            {userSession?.role !== 'maintenance_lead' && (
               <button
-                onClick={() => onNavigateTab('pwa_driver')}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-colors cursor-pointer"
+                onClick={handleExportCSV}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-white border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                title="Exporter au format comptable"
               >
-                <Plus className="w-3.5 h-3.5" /> Déclarer un plein (PWA Chauffeur)
+                <Download className="w-3.5 h-3.5" /> Exporter CSV
               </button>
+            )}
+
+            {/* Badges de contrôle et de rôle */}
+            {userSession?.role === 'fleet_manager' ? (
+              <div className="px-3.5 py-2 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
+                <Fuel className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Validation des Pleins Terrain</span>
+              </div>
+            ) : userSession?.role === 'maintenance_lead' ? (
+              <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5">
+                <Gauge className="w-3.5 h-3.5 text-amber-500" />
+                <span>Relevés Odomètre & Consommations</span>
+              </div>
+            ) : userSession?.role === 'controller' ? (
+              <div className="px-3.5 py-2 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/30 text-xs font-bold flex items-center gap-1.5">
+                <FileSpreadsheet className="w-3.5 h-3.5 text-sky-500" />
+                <span>Audit Factures Naftal</span>
+              </div>
             ) : (
-              <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5">
+              <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" />
                 <span>Mode Audit DSI</span>
               </div>
@@ -178,13 +211,33 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
           </div>
         </div>
 
-        {/* Bannière Moindre Privilège pour le Super Admin */}
+        {/* Bannières de rôle & Moindre Privilège */}
         {userSession?.role === 'super_admin' && (
           <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-amber-500 shrink-0" />
             <div>
               <strong>Gouvernance & Moindre Privilège (Loi 18-07) : </strong>
               Ce journal est en <strong>audit financier et contrôle</strong>. La déclaration des pleins de carburant est réalisée sur le terrain par les <strong>Chauffeurs via la PWA</strong>.
+            </div>
+          </div>
+        )}
+
+        {userSession?.role === 'fleet_manager' && (
+          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div>
+              <strong>Gestionnaire de Flotte (Contrôle & Validation des Pleins) : </strong>
+              Les pleins sont saisis sur le terrain par les chauffeurs. En tant que gestionnaire, vous vérifiez la conformité des tickets Naftal et validez les déclarations pour clôturer les comptes.
+            </div>
+          </div>
+        )}
+
+        {userSession?.role === 'maintenance_lead' && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
+            <Gauge className="w-5 h-5 text-amber-500 shrink-0" />
+            <div>
+              <strong>Responsable Maintenance (Relevés Odomètre & Consommation) : </strong>
+              Ce journal technique vous permet de surveiller la progression des odomètres (barème des vidanges à 10 000 km) et de détecter les surconsommations moteur. La déclaration terrain et l'exportation financière ne sont pas de votre ressort.
             </div>
           </div>
         )}
@@ -253,16 +306,59 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
-                    {log.isOverconsumption ? (
-                      <span className="inline-flex items-center gap-1 text-rose-700 dark:text-rose-400 text-[10px] font-bold bg-rose-50 dark:bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-500/30" title={`Consommation réelle calculée : ${log.calculatedConsumption} L/100km`}>
-                        <AlertTriangle className="w-3 h-3 text-rose-500 dark:text-rose-400" />
-                        Surconsommation ({log.calculatedConsumption} L/100km)
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Conforme
-                      </span>
-                    )}
+                    {(() => {
+                      const isValidated = validatedLogIds.has(log.id) || log.status === 'verified';
+                      if (isValidated) {
+                        return (
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/30">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Validé
+                            </span>
+                            {log.isOverconsumption && (
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                Note : Surconso ({log.calculatedConsumption} L/100km)
+                              </span>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (userSession?.role === 'fleet_manager') {
+                        return (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <button
+                              onClick={() => handleValidateFuelLog(log.id)}
+                              disabled={validatingId === log.id}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                              title="Valider la déclaration de plein transmise par le conducteur"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {validatingId === log.id ? 'Validation...' : 'Valider le Plein'}
+                            </button>
+                            {log.isOverconsumption && (
+                              <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-500/20">
+                                ⚠️ Surconso (+{log.calculatedConsumption} L/100km)
+                              </span>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (log.isOverconsumption) {
+                        return (
+                          <span className="inline-flex items-center gap-1 text-rose-700 dark:text-rose-400 text-[10px] font-bold bg-rose-50 dark:bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-500/30" title={`Consommation réelle calculée : ${log.calculatedConsumption} L/100km`}>
+                            <AlertTriangle className="w-3 h-3 text-rose-500 dark:text-rose-400" />
+                            Surconsommation ({log.calculatedConsumption} L/100km)
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
+                          <Clock className="w-3 h-3 text-slate-400" /> En attente validation
+                        </span>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}

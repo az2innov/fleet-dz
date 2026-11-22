@@ -295,6 +295,7 @@ export default function App() {
             vehicles={vehicles}
             onNavigateTab={setActiveTab}
             userSession={userSession}
+            onRefreshData={fetchFleetData}
           />
         )}
 
@@ -304,6 +305,7 @@ export default function App() {
             vehicles={vehicles}
             onNavigateTab={setActiveTab}
             userSession={userSession}
+            onRefreshData={fetchFleetData}
           />
         )}
       </main>

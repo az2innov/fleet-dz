@@ -221,6 +221,16 @@ async function startServer() {
     }
   });
 
+  app.put('/api/fleet/fuel/:id', (req: Request, res: Response) => {
+    try {
+      const updated = fleetDb.updateFuelLog(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: 'Ravitaillement non trouvé' });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Fleet Maintenance records
   app.get('/api/fleet/maintenance', (_req: Request, res: Response) => {
     res.json(fleetDb.getMaintenanceRecords());
@@ -229,6 +239,16 @@ async function startServer() {
   // Fleet Accident / Claims & Insurance Transmission
   app.get('/api/fleet/accidents', (_req: Request, res: Response) => {
     res.json(fleetDb.getAccidentClaims());
+  });
+
+  app.put('/api/fleet/accidents/:id', (req: Request, res: Response) => {
+    try {
+      const updated = fleetDb.updateAccidentClaim(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: 'Dossier sinistre non trouvé' });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.post('/api/fleet/accidents/:id/transmit', (req: Request, res: Response) => {

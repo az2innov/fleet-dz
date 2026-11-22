@@ -13,24 +13,100 @@ import {
   Phone, 
   Building2,
   Navigation,
-  ExternalLink 
+  ExternalLink,
+  Edit3,
+  X,
+  Save,
+  Wrench,
+  ShieldCheck,
+  FileText
 } from 'lucide-react';
-import { AccidentClaim, Vehicle } from '../types.js';
+import { AccidentClaim, Vehicle, UserSession } from '../types.js';
 
 interface AccidentsManagerProps {
   accidentClaims: AccidentClaim[];
   vehicles: Vehicle[];
   onNavigateTab: (tab: any) => void;
+  userSession?: UserSession;
+  onRefreshData?: () => void;
 }
 
 export const AccidentsManager: React.FC<AccidentsManagerProps> = ({
   accidentClaims,
   vehicles,
   onNavigateTab,
+  userSession,
+  onRefreshData,
 }) => {
   const [selectedClaimId, setSelectedClaimId] = useState<string>(accidentClaims[0]?.id || '');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Edit Modal form fields
+  const [editLocation, setEditLocation] = useState('');
+  const [editSeverity, setEditSeverity] = useState<'minor' | 'moderate' | 'severe'>('moderate');
+  const [editEstimatedCost, setEditEstimatedCost] = useState<string>('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editPoliceReport, setEditPoliceReport] = useState(false);
+  const [editThirdPartyInvolved, setEditThirdPartyInvolved] = useState(false);
+  const [editThirdPartyName, setEditThirdPartyName] = useState('');
+  const [editThirdPartyPhone, setEditThirdPartyPhone] = useState('+213');
+  const [editThirdPartyInsurance, setEditThirdPartyInsurance] = useState('CAAT');
+  const [editThirdPartyPlate, setEditThirdPartyPlate] = useState('');
 
   const selectedClaim = accidentClaims.find(c => c.id === selectedClaimId) || accidentClaims[0];
+
+  const handleOpenEditModal = (claim: AccidentClaim) => {
+    setEditLocation(claim.location || '');
+    setEditSeverity(claim.severity || 'moderate');
+    setEditEstimatedCost(claim.estimatedCostDZD ? String(claim.estimatedCostDZD) : '');
+    setEditDescription(claim.description || '');
+    setEditPoliceReport(!!claim.policeReportFiled);
+    setEditThirdPartyInvolved(!!claim.thirdPartyInfo?.involved);
+    setEditThirdPartyName(claim.thirdPartyInfo?.name || '');
+    setEditThirdPartyPhone(claim.thirdPartyInfo?.phone || '+213');
+    setEditThirdPartyInsurance(claim.thirdPartyInfo?.insuranceCompany || 'CAAT');
+    setEditThirdPartyPlate(claim.thirdPartyInfo?.plateNumber || '');
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveClaimEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClaim) return;
+    setIsSaving(true);
+    try {
+      const payload: Partial<AccidentClaim> = {
+        location: editLocation.trim(),
+        severity: editSeverity,
+        estimatedCostDZD: editEstimatedCost ? Number(editEstimatedCost) : undefined,
+        description: editDescription.trim(),
+        policeReportFiled: editPoliceReport,
+        thirdPartyInfo: editThirdPartyInvolved ? {
+          involved: true,
+          name: editThirdPartyName.trim(),
+          phone: editThirdPartyPhone.trim(),
+          insuranceCompany: editThirdPartyInsurance.trim(),
+          plateNumber: editThirdPartyPlate.trim(),
+        } : { involved: false },
+      };
+
+      const res = await fetch(`/api/fleet/accidents/${selectedClaim.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        Object.assign(selectedClaim, payload);
+        setIsEditModalOpen(false);
+        if (onRefreshData) onRefreshData();
+      }
+    } catch (err) {
+      console.error('Failed to update claim:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -49,14 +125,63 @@ export const AccidentsManager: React.FC<AccidentsManagerProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => onNavigateTab('pwa_driver')}
-          className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-orange-600/20 cursor-pointer"
-        >
-          <AlertTriangle className="w-4 h-4" />
-          Déclaration Sinistre via PWA
-        </button>
+        {/* Boutons d'en-tête selon les rôles (Interdiction de déclaration PWA pour les gestionnaires) */}
+        {userSession?.role === 'fleet_manager' ? (
+          <div className="px-3.5 py-2 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+            <ShieldAlert className="w-4 h-4 text-emerald-600" />
+            <span>Instruction & Transmission Assurances</span>
+          </div>
+        ) : userSession?.role === 'maintenance_lead' ? (
+          <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+            <Wrench className="w-4 h-4 text-amber-500" />
+            <span>Expertise Dégâts & Atelier</span>
+          </div>
+        ) : userSession?.role === 'super_admin' ? (
+          <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+            <ShieldCheck className="w-4 h-4 text-amber-500" />
+            <span>Mode Audit DSI (Lecture Seule)</span>
+          </div>
+        ) : (
+          <button
+            onClick={() => onNavigateTab('pwa_driver')}
+            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-orange-600/20 cursor-pointer"
+          >
+            <AlertTriangle className="w-4 h-4" />
+            Déclaration Sinistre via PWA
+          </button>
+        )}
       </div>
+
+      {/* Bannières de Gouvernance & Moindre Privilège */}
+      {userSession?.role === 'fleet_manager' && (
+        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-3">
+          <ShieldAlert className="w-5 h-5 text-emerald-600 shrink-0" />
+          <div>
+            <strong>Gestionnaire de Flotte (Instruction & Transmission Assurances) : </strong>
+            Les déclarations initiales et photos sont transmises depuis le terrain par les chauffeurs via la PWA. En tant que gestionnaire, vous avez la possibilité de <strong>modifier et compléter le dossier</strong> (constat, coordonnées tiers, devis estimatif) avant de transmettre le dossier à la compagnie d'assurance conventionnée (SAA, CAAT, CASH, CIAR).
+          </div>
+        </div>
+      )}
+
+      {userSession?.role === 'maintenance_lead' && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
+          <Wrench className="w-5 h-5 text-amber-500 shrink-0" />
+          <div>
+            <strong>Responsable Maintenance (Atelier & Dégâts Véhicules) : </strong>
+            Vous évaluez l'impact mécanique et de carrosserie pour préparer les réparations d'atelier. La modification juridique du constat et la transmission aux compagnies d'assurance sont strictement réservées au <strong>Gestionnaire de Flotte</strong>.
+          </div>
+        </div>
+      )}
+
+      {userSession?.role === 'super_admin' && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
+          <ShieldCheck className="w-5 h-5 text-amber-500 shrink-0" />
+          <div>
+            <strong>Gouvernance & Moindre Privilège (Loi 18-07) : </strong>
+            En tant que Super Administrateur (DSI), ce module est accessible en <strong>consultation et audit</strong>.
+          </div>
+        </div>
+      )}
 
       {accidentClaims.length === 0 ? (
         <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-12 text-center text-slate-500 dark:text-slate-400 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
@@ -136,7 +261,7 @@ export const AccidentsManager: React.FC<AccidentsManagerProps> = ({
           {selectedClaim && (
             <div className="lg:col-span-7 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-6 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] space-y-6">
               {/* Header Info */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-[#1e2a3f] pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-[#1e2a3f] pb-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400">
@@ -169,11 +294,25 @@ export const AccidentsManager: React.FC<AccidentsManagerProps> = ({
                   )}
                 </div>
 
-                <div className="text-right">
-                  <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">Coût estimatif réparations</span>
-                  <span className="text-lg font-black font-mono text-amber-600 dark:text-amber-400">
-                    {selectedClaim.estimatedCostDZD ? `${selectedClaim.estimatedCostDZD.toLocaleString('fr-DZ')} DA` : 'En cours d\'expertise'}
-                  </span>
+                <div className="flex flex-col items-end gap-2">
+                  {/* Possibilité pour le Gestionnaire de Flotte de modifier le sinistre avant envoi assurance */}
+                  {userSession?.role === 'fleet_manager' && (
+                    <button
+                      onClick={() => handleOpenEditModal(selectedClaim)}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Modifier les détails du sinistre avant transmission à l'assurance"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Modifier le Dossier Sinistre
+                    </button>
+                  )}
+
+                  <div className="text-right">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">Coût estimatif réparations</span>
+                    <span className="text-lg font-black font-mono text-amber-600 dark:text-amber-400">
+                      {selectedClaim.estimatedCostDZD ? `${selectedClaim.estimatedCostDZD.toLocaleString('fr-DZ')} DA` : 'En cours d\'expertise'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -229,20 +368,26 @@ export const AccidentsManager: React.FC<AccidentsManagerProps> = ({
                   <p className="text-slate-900 dark:text-white font-bold">{selectedClaim.driverName}</p>
                   <p className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">{selectedClaim.driverPhone}</p>
                   <p className="text-emerald-700 dark:text-emerald-400 text-[11px] mt-1 font-mono font-bold">Véhicule : {selectedClaim.vehiclePlate}</p>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Constat Police / Gendarmerie : <strong className={selectedClaim.policeReportFiled ? 'text-emerald-600' : 'text-slate-500'}>{selectedClaim.policeReportFiled ? 'Déposé ✓' : 'Non requis'}</strong>
+                  </p>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f]">
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-semibold mb-1">
                     Tiers & Compagnie d'Assurance :
                   </span>
-                  {selectedClaim.thirdPartyInfo ? (
+                  {selectedClaim.thirdPartyInfo?.involved ? (
                     <>
                       <p className="text-slate-900 dark:text-white font-bold">{selectedClaim.thirdPartyInfo.name || 'Tiers identifié'}</p>
                       <p className="text-slate-500 dark:text-slate-300 text-[11px]">{selectedClaim.thirdPartyInfo.insuranceCompany || 'Assurance en attente'}</p>
                       <p className="text-slate-600 dark:text-slate-400 font-mono text-[11px] mt-1">Immat: {selectedClaim.thirdPartyInfo.plateNumber || 'N/A'}</p>
+                      {selectedClaim.thirdPartyInfo.phone && (
+                        <p className="text-slate-500 font-mono text-[11px]">Tél: {selectedClaim.thirdPartyInfo.phone}</p>
+                      )}
                     </>
                   ) : (
-                    <p className="text-slate-400">Aucun tiers impliqué (accident isolé).</p>
+                    <p className="text-slate-400">Aucun tiers impliqué (accident isolé sans partie adverse).</p>
                   )}
                 </div>
               </div>
@@ -264,47 +409,62 @@ export const AccidentsManager: React.FC<AccidentsManagerProps> = ({
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <select
-                    defaultValue="SAA"
-                    id="insurance-company-select"
-                    className="w-full sm:w-auto bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
-                  >
-                    <option value="SAA">SAA Assurances (Société Nationale d'Assurance)</option>
-                    <option value="CAAT">CAAT (Caisse Algérienne d'Assurance et de Réassurance)</option>
-                    <option value="CASH">CASH Assurances (Hydrocarbures & Flottes)</option>
-                    <option value="CIAR">CIAR Assurances</option>
-                    <option value="2A">2A Assurances</option>
-                    <option value="GAM">GAM Assurances</option>
-                  </select>
+                  {/* Seul le Gestionnaire de Flotte peut transmettre à l'assurance */}
+                  {userSession?.role === 'fleet_manager' ? (
+                    <>
+                      <select
+                        defaultValue="SAA"
+                        id="insurance-company-select"
+                        className="w-full sm:w-auto bg-white dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none"
+                      >
+                        <option value="SAA">SAA Assurances (Société Nationale d'Assurance)</option>
+                        <option value="CAAT">CAAT (Caisse Algérienne d'Assurance et de Réassurance)</option>
+                        <option value="CASH">CASH Assurances (Hydrocarbures & Flottes)</option>
+                        <option value="CIAR">CIAR Assurances</option>
+                        <option value="2A">2A Assurances</option>
+                        <option value="GAM">GAM Assurances</option>
+                      </select>
 
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const select = document.getElementById('insurance-company-select') as HTMLSelectElement;
-                      const company = select?.value || 'SAA';
-                      try {
-                        await fetch(`/api/fleet/accidents/${selectedClaim.id}/transmit`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ company }),
-                        });
-                        selectedClaim.insuranceTransmitted = true;
-                        selectedClaim.insuranceTransmittedTo = company as any;
-                        alert(`Dossier sinistre ${selectedClaim.claimNumber} transmis avec succès à ${company} (constat, photos, GPS et rapport d'expertise IA inclus).`);
-                      } catch (err) {
-                        console.error('Failed to transmit claim:', err);
-                      }
-                    }}
-                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold shadow-md shadow-orange-950/40 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                    Transmettre le Dossier à l'Assurance
-                  </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const select = document.getElementById('insurance-company-select') as HTMLSelectElement;
+                          const company = select?.value || 'SAA';
+                          try {
+                            await fetch(`/api/fleet/accidents/${selectedClaim.id}/transmit`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ company }),
+                            });
+                            selectedClaim.insuranceTransmitted = true;
+                            selectedClaim.insuranceTransmittedTo = company as any;
+                            if (onRefreshData) onRefreshData();
+                            alert(`Dossier sinistre ${selectedClaim.claimNumber} transmis avec succès à ${company} (constat complété, photos, coordonnées GPS et rapport d'expertise IA inclus).`);
+                          } catch (err) {
+                            console.error('Failed to transmit claim:', err);
+                          }
+                        }}
+                        className="w-full sm:w-auto px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold shadow-md shadow-orange-950/40 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        Transmettre le Dossier à l'Assurance
+                      </button>
+                    </>
+                  ) : userSession?.role === 'maintenance_lead' ? (
+                    <div className="text-xs text-amber-700 dark:text-amber-400 bg-amber-500/10 px-3.5 py-2.5 rounded-xl border border-amber-500/20 font-medium flex items-center gap-2">
+                      <Wrench className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span>La transmission du dossier à l'assurance est réservée au Gestionnaire de Flotte. Utilisez le rapport ci-contre pour vos devis et travaux d'atelier.</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-amber-700 dark:text-amber-400 bg-amber-500/10 px-3.5 py-2.5 rounded-xl border border-amber-500/20 font-medium">
+                      <span>Mode Consultation & Audit (Lecture Seule)</span>
+                    </div>
+                  )}
 
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer ml-auto"
                   >
                     Imprimer Rapport d'Expertise IA
                   </button>
@@ -312,6 +472,192 @@ export const AccidentsManager: React.FC<AccidentsManagerProps> = ({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* MODAL MODIFICATION DU SINISTRE (GESTIONNAIRE DE FLOTTE) */}
+      {isEditModalOpen && selectedClaim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 dark:bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-100 dark:border-[#1e2a3f] bg-slate-50/80 dark:bg-[#0c121e] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                    Modifier le Dossier Sinistre ({selectedClaim.claimNumber})
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Compléter les informations avant transmission officielle à l'assurance conventionnée
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSaveClaimEdit} className="p-6 overflow-y-auto space-y-5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Lieu & Wilaya de l'accident
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Niveau de Gravité
+                  </label>
+                  <select
+                    value={editSeverity}
+                    onChange={(e) => setEditSeverity(e.target.value as any)}
+                    className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-slate-900 dark:text-white"
+                  >
+                    <option value="minor">Légère (Dégâts cosmétiques / tôle superficielle)</option>
+                    <option value="moderate">Moyenne (Carrosserie / bloc optique / roulant)</option>
+                    <option value="severe">Élevée (Véhicule immobilisé / châssis ou moteur)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Coût estimatif des réparations (DA)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Ex: 85000"
+                  value={editEstimatedCost}
+                  onChange={(e) => setEditEstimatedCost(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Récit des circonstances & Constat circonstancié
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl p-3 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-[#1e2a3f]">
+                <input
+                  type="checkbox"
+                  id="police-report-check"
+                  checked={editPoliceReport}
+                  onChange={(e) => setEditPoliceReport(e.target.checked)}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <label htmlFor="police-report-check" className="font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                  Constat de Police / Gendarmerie Nationale déposé
+                </label>
+              </div>
+
+              {/* Section Tiers */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 dark:text-white">Implication d'une Partie adverse / Tiers</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editThirdPartyInvolved}
+                      onChange={(e) => setEditThirdPartyInvolved(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+
+                {editThirdPartyInvolved && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div>
+                      <label className="block text-slate-500 mb-1">Nom du conducteur tiers</label>
+                      <input
+                        type="text"
+                        value={editThirdPartyName}
+                        onChange={(e) => setEditThirdPartyName(e.target.value)}
+                        placeholder="Ex: Mourad Azzi"
+                        className="w-full bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-xl px-3 py-2 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 mb-1">Téléphone du tiers</label>
+                      <input
+                        type="text"
+                        value={editThirdPartyPhone}
+                        onChange={(e) => setEditThirdPartyPhone(e.target.value)}
+                        className="w-full bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 mb-1">Compagnie d'assurance du tiers</label>
+                      <select
+                        value={editThirdPartyInsurance}
+                        onChange={(e) => setEditThirdPartyInsurance(e.target.value)}
+                        className="w-full bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-xl px-3 py-2 text-slate-900 dark:text-white"
+                      >
+                        <option value="CAAT">CAAT</option>
+                        <option value="SAA">SAA Assurances</option>
+                        <option value="CASH">CASH Assurances</option>
+                        <option value="CIAR">CIAR Assurances</option>
+                        <option value="2A">2A Assurances</option>
+                        <option value="GAM">GAM Assurances</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 mb-1">Matricule du véhicule tiers</label>
+                      <input
+                        type="text"
+                        value={editThirdPartyPlate}
+                        onChange={(e) => setEditThirdPartyPlate(e.target.value)}
+                        placeholder="Ex: 15235-117-16"
+                        className="w-full bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-[#1e2a3f]">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSaving ? 'Enregistrement...' : 'Enregistrer les Modifications'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

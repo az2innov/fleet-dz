@@ -474,9 +474,9 @@ export class FleetDatabase {
       odometerKm: 87450,
       stationName: 'Naftal El Mouradia',
       city: 'Alger',
-      status: 'verified',
+      status: 'pending',
       source: 'pwa_manual',
-      notes: 'Plein saisi et validé par le terminal PWA Chauffeur',
+      notes: 'Plein saisi via terminal PWA Chauffeur (En attente de validation gestionnaire)',
       gpsCoordinates: { latitude: 36.7412, longitude: 3.0515, accuracy: 12, wilaya: '16 - Alger' },
       isOverconsumption: false,
       calculatedConsumption: 7.4,
@@ -514,9 +514,9 @@ export class FleetDatabase {
       odometerKm: 141950,
       stationName: 'Naftal Es Senia',
       city: 'Oran',
-      status: 'verified',
+      status: 'pending',
       source: 'pwa_manual',
-      notes: 'Gasoil plein complet trajet Oran-Mostaganem saisi via PWA',
+      notes: 'Gasoil plein trajet Oran-Mostaganem saisi via PWA (Surconsommation à valider)',
       gpsCoordinates: { latitude: 35.6512, longitude: -0.6214, accuracy: 10, wilaya: '31 - Oran' },
       isOverconsumption: true,
       calculatedConsumption: 12.8, // Constructeur 9.4 -> surconsommation anormale détectée!
@@ -969,6 +969,7 @@ export class FleetDatabase {
     const newLog: FuelLog = {
       ...log,
       id: `fl-${Date.now()}`,
+      status: log.status || 'pending',
       isOverconsumption: isOverconsumption || log.isOverconsumption,
       calculatedConsumption: calculatedConsumption || log.calculatedConsumption,
     };
@@ -980,6 +981,20 @@ export class FleetDatabase {
     }
 
     return newLog;
+  }
+
+  updateAccidentClaim(id: string, updates: Partial<AccidentClaim>): AccidentClaim | undefined {
+    const claim = this.accidentClaims.find(c => c.id === id);
+    if (!claim) return undefined;
+    Object.assign(claim, updates);
+    return claim;
+  }
+
+  updateFuelLog(id: string, updates: Partial<FuelLog>): FuelLog | undefined {
+    const log = this.fuelLogs.find(l => l.id === id);
+    if (!log) return undefined;
+    Object.assign(log, updates);
+    return log;
   }
 
   // ===================== MAINTENANCE & ACCIDENTS =====================
