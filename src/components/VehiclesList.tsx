@@ -105,23 +105,48 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset]">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-              <Car className="w-3.5 h-3.5" />
-              Parc Automobile & Mobilité
-            </span>
+        {userSession?.role === 'maintenance_lead' ? (
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                <Wrench className="w-3.5 h-3.5" />
+                Atelier & Disponibilité Technique
+              </span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Santé Technique du Parc & Pneumatiques</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">
+              Supervision des {vehicles.length} véhicules : odomètre, pneumatiques (%), cycle de vidange Naftal et révisions atelier
+            </p>
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Parc Automobile de l'Entreprise</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">
-            Suivi des {vehicles.length} véhicules, fiches techniques, pneumatiques et échéances réglementaires (Algérie)
-          </p>
-        </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                <Car className="w-3.5 h-3.5" />
+                Parc Automobile & Mobilité
+              </span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Parc Automobile de l'Entreprise</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">
+              Suivi des {vehicles.length} véhicules, fiches techniques, pneumatiques et échéances réglementaires (Algérie)
+            </p>
+          </div>
+        )}
 
         {userSession?.role === 'super_admin' ? (
           <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
             <ShieldCheck className="w-4 h-4 text-amber-500" />
             <span>Mode Audit DSI (Lecture Seule)</span>
+          </div>
+        ) : userSession?.role === 'maintenance_lead' ? (
+          <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+            <Wrench className="w-4 h-4 text-amber-500" />
+            <span>Supervision Atelier & Entretien</span>
+          </div>
+        ) : userSession?.role === 'controller' ? (
+          <div className="px-3.5 py-2 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+            <Shield className="w-4 h-4 text-sky-500" />
+            <span>Audit Actifs & Amortissements</span>
           </div>
         ) : (
           <button
@@ -134,13 +159,33 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
         )}
       </div>
 
-      {/* Bannière Moindre Privilège pour le Super Admin */}
+      {/* Bannières de Gouvernance & Moindre Privilège */}
       {userSession?.role === 'super_admin' && (
         <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
           <ShieldCheck className="w-5 h-5 text-amber-500 shrink-0" />
           <div>
             <strong>Gouvernance & Moindre Privilège (Loi 18-07) : </strong>
             En tant que Super Administrateur (DSI), ce module est en <strong>consultation et audit</strong>. L'enregistrement (CRUD) de nouveaux véhicules appartient au <strong>Gestionnaire de Flotte</strong>.
+          </div>
+        </div>
+      )}
+
+      {userSession?.role === 'maintenance_lead' && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-center gap-3">
+          <Wrench className="w-5 h-5 text-amber-500 shrink-0" />
+          <div>
+            <strong>Rôle Responsable Maintenance (Atelier & Santé Véhicules) : </strong>
+            Vous supervisez l'état mécanique, les pneumatiques et les passages en révision atelier. L'ajout de véhicules, la modification des fiches administratives et la mise en réforme sont strictement réservés au <strong>Gestionnaire de Flotte</strong>.
+          </div>
+        </div>
+      )}
+
+      {userSession?.role === 'controller' && (
+        <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-800 dark:text-sky-300 text-xs flex items-center gap-3">
+          <Shield className="w-5 h-5 text-sky-500 shrink-0" />
+          <div>
+            <strong>Contrôle de Gestion (Audit du Parc) : </strong>
+            Ce module est accessible en consultation financière pour le suivi des amortissements et des coûts d'exploitation.
           </div>
         </div>
       )}
@@ -250,7 +295,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
                     </p>
                   </div>
 
-                  {userSession?.role !== 'super_admin' && (
+                  {userSession?.role === 'fleet_manager' && (
                     <div className="flex items-center gap-1">
                       <button
                         onClick={(e) => handleOpenEdit(v, e)}
@@ -339,7 +384,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
                   Fiche Détaillée & Entretien →
                 </span>
 
-                {userSession?.role !== 'super_admin' ? (
+                {(userSession?.role === 'fleet_manager' || userSession?.role === 'maintenance_lead') ? (
                   <div className="flex items-center gap-1.5">
                     {v.status === 'active' && (
                       <button
@@ -359,7 +404,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
                         Remettre en Service
                       </button>
                     )}
-                    {v.status !== 'retired' && (
+                    {userSession?.role === 'fleet_manager' && v.status !== 'retired' && (
                       <button
                         onClick={(e) => handleUpdateStatus(v.id, 'retired', e)}
                         className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 text-[10px] font-bold"

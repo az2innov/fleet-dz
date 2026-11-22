@@ -212,12 +212,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
           </p>
         </div>
 
-        {userSession?.role === 'super_admin' ? (
-          <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
-            <ShieldCheck className="w-4 h-4 text-amber-500" />
-            <span>Mode Audit DSI (Lecture Seule)</span>
-          </div>
-        ) : (
+        {userSession?.role === 'fleet_manager' ? (
           <button
             onClick={handleOpenCreate}
             className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto"
@@ -225,6 +220,11 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
             <Plus className="w-4 h-4" />
             Créer un Ordre de Mission
           </button>
+        ) : (
+          <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+            <ShieldCheck className="w-4 h-4 text-amber-500" />
+            <span>Mode Consultation & Audit</span>
+          </div>
         )}
       </div>
 
@@ -418,7 +418,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {userSession?.role !== 'super_admin' && mission.status === 'approved' && (
+                  {userSession?.role === 'fleet_manager' && mission.status === 'approved' && (
                     <button
                       onClick={() => handleStatusChange(mission.id, 'in_progress')}
                       className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
@@ -426,7 +426,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       Démarrer
                     </button>
                   )}
-                  {userSession?.role !== 'super_admin' && mission.status === 'in_progress' && (
+                  {userSession?.role === 'fleet_manager' && mission.status === 'in_progress' && (
                     <button
                       onClick={() => handleStatusChange(mission.id, 'completed')}
                       className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
@@ -443,7 +443,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                     <span>Imprimer OM</span>
                   </button>
 
-                  {userSession?.role !== 'super_admin' ? (
+                  {userSession?.role === 'fleet_manager' ? (
                     <button
                       onClick={() => handleDeleteMission(mission.id, mission.orderNumber)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"

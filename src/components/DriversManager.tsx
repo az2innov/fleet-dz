@@ -215,12 +215,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
           </p>
         </div>
 
-        {userSession?.role === 'super_admin' ? (
-          <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
-            <ShieldCheck className="w-4 h-4 text-amber-500" />
-            <span>Mode Audit DSI (Lecture Seule)</span>
-          </div>
-        ) : (
+        {userSession?.role === 'fleet_manager' ? (
           <button
             onClick={handleOpenCreate}
             className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto"
@@ -228,6 +223,11 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
             <Plus className="w-4 h-4" />
             Nouveau Chauffeur
           </button>
+        ) : (
+          <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
+            <ShieldCheck className="w-4 h-4 text-amber-500" />
+            <span>Mode Consultation (Lecture Seule)</span>
+          </div>
         )}
       </div>
 
@@ -431,7 +431,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
 
               {/* Card Actions */}
               <div className="flex items-center justify-between gap-2 pt-4 mt-4 border-t border-slate-100 dark:border-[#1e2a3f]">
-                {userSession?.role !== 'super_admin' ? (
+                {userSession?.role === 'fleet_manager' ? (
                   <>
                     <div className="flex items-center gap-2">
                       <button
