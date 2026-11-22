@@ -15,7 +15,8 @@ import {
   Plus,
   Edit3,
   Trash2,
-  Archive
+  Archive,
+  ShieldCheck
 } from 'lucide-react';
 import { Vehicle, Driver, UserSession } from '../types.js';
 import { VehicleFormModal } from './VehicleFormModal.js';
@@ -249,15 +250,17 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={(e) => handleOpenEdit(v, e)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                      title="Modifier la fiche technique"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {userSession?.role !== 'super_admin' && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => handleOpenEdit(v, e)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        title="Modifier la fiche technique"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Driver & Assignment */}
@@ -336,35 +339,41 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
                   Fiche Détaillée & Entretien →
                 </span>
 
-                <div className="flex items-center gap-1.5">
-                  {v.status === 'active' && (
-                    <button
-                      onClick={(e) => handleUpdateStatus(v.id, 'maintenance', e)}
-                      className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 dark:bg-[#201a14] dark:hover:bg-[#2c221a] dark:text-amber-300 dark:border-amber-500/30 text-[10px] font-bold cursor-pointer"
-                      title="Mettre en maintenance / révision atelier"
-                    >
-                      Mettre en Révision
-                    </button>
-                  )}
-                  {v.status === 'maintenance' && (
-                    <button
-                      onClick={(e) => handleUpdateStatus(v.id, 'active', e)}
-                      className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/60 text-[10px] font-bold"
-                      title="Remettre en service opérationnel"
-                    >
-                      Remettre en Service
-                    </button>
-                  )}
-                  {v.status !== 'retired' && (
-                    <button
-                      onClick={(e) => handleUpdateStatus(v.id, 'retired', e)}
-                      className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 text-[10px] font-bold"
-                      title="Mettre en réforme administrative"
-                    >
-                      Réforme
-                    </button>
-                  )}
-                </div>
+                {userSession?.role !== 'super_admin' ? (
+                  <div className="flex items-center gap-1.5">
+                    {v.status === 'active' && (
+                      <button
+                        onClick={(e) => handleUpdateStatus(v.id, 'maintenance', e)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 dark:bg-[#201a14] dark:hover:bg-[#2c221a] dark:text-amber-300 dark:border-amber-500/30 text-[10px] font-bold cursor-pointer"
+                        title="Mettre en maintenance / révision atelier"
+                      >
+                        Mettre en Révision
+                      </button>
+                    )}
+                    {v.status === 'maintenance' && (
+                      <button
+                        onClick={(e) => handleUpdateStatus(v.id, 'active', e)}
+                        className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800/60 text-[10px] font-bold"
+                        title="Remettre en service opérationnel"
+                      >
+                        Remettre en Service
+                      </button>
+                    )}
+                    {v.status !== 'retired' && (
+                      <button
+                        onClick={(e) => handleUpdateStatus(v.id, 'retired', e)}
+                        className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 text-[10px] font-bold"
+                        title="Mettre en réforme administrative"
+                      >
+                        Réforme
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium">
+                    Lecture Seule (Audit)
+                  </span>
+                )}
               </div>
             </div>
           );

@@ -22,7 +22,8 @@ import {
   Check,
   QrCode,
   Copy,
-  Smartphone
+  Smartphone,
+  ShieldCheck
 } from 'lucide-react';
 import { Driver, Vehicle, DriverStatus, LicenseCategory, UserSession } from '../types.js';
 
@@ -430,47 +431,68 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
 
               {/* Card Actions */}
               <div className="flex items-center justify-between gap-2 pt-4 mt-4 border-t border-slate-100 dark:border-[#1e2a3f]">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleOpenEdit(driver)}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-slate-200 dark:hover:text-white text-xs font-medium transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
-                    title="Modifier la fiche chauffeur"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteDriver(driver.id, driver.name)}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 dark:bg-[#1c273e] dark:hover:bg-rose-950/60 dark:text-slate-400 dark:hover:text-rose-400 text-xs font-medium transition-colors cursor-pointer"
-                    title="Supprimer ou archiver"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {userSession?.role !== 'super_admin' ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenEdit(driver)}
+                        className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-slate-200 dark:hover:text-white text-xs font-medium transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+                        title="Modifier la fiche chauffeur"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDriver(driver.id, driver.name)}
+                        className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 dark:bg-[#1c273e] dark:hover:bg-rose-950/60 dark:text-slate-400 dark:hover:text-rose-400 text-xs font-medium transition-colors cursor-pointer"
+                        title="Supprimer ou archiver"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
 
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      setQrDriver(driver);
-                      setCopiedLink(false);
-                    }}
-                    className="px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 dark:bg-sky-600/20 dark:hover:bg-sky-600/30 dark:text-sky-300 dark:border-sky-500/40 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
-                    title={`Générer le QR Code PWA personnalisé pour ${driver.name}`}
-                  >
-                    <QrCode className="w-3.5 h-3.5" />
-                    QR Chauffeur
-                  </button>
-                  <button
-                    onClick={() => {
-                      try { localStorage.setItem('dz_fleet_authenticated_driver_id', driver.id); } catch {}
-                      onNavigateTab('pwa_driver');
-                    }}
-                    className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/40 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
-                    title={`Ouvrir le compagnon PWA en tant que ${driver.name}`}
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    PWA
-                  </button>
-                </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          setQrDriver(driver);
+                          setCopiedLink(false);
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 dark:bg-sky-600/20 dark:hover:bg-sky-600/30 dark:text-sky-300 dark:border-sky-500/40 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                        title={`Générer le QR Code PWA personnalisé pour ${driver.name}`}
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        QR Chauffeur
+                      </button>
+                      <button
+                        onClick={() => {
+                          try { localStorage.setItem('dz_fleet_authenticated_driver_id', driver.id); } catch {}
+                          onNavigateTab('pwa_driver');
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-600/20 dark:hover:bg-emerald-600/30 dark:text-emerald-300 dark:border-emerald-500/40 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                        title={`Ouvrir le compagnon PWA en tant que ${driver.name}`}
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        PWA
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-[11px] px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium">
+                      Audit Conformité Loi 18-07 (Lecture Seule)
+                    </span>
+                    <button
+                      onClick={() => {
+                        setQrDriver(driver);
+                        setCopiedLink(false);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#1c273e] dark:hover:bg-[#253452] text-slate-700 dark:text-slate-300 text-xs font-medium flex items-center gap-1.5 cursor-pointer"
+                      title="Inspecter le token d'accès PWA"
+                    >
+                      <QrCode className="w-3.5 h-3.5 text-slate-500" />
+                      Voir Token PWA
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );

@@ -418,7 +418,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {mission.status === 'approved' && (
+                  {userSession?.role !== 'super_admin' && mission.status === 'approved' && (
                     <button
                       onClick={() => handleStatusChange(mission.id, 'in_progress')}
                       className="px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
@@ -426,7 +426,7 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                       Démarrer
                     </button>
                   )}
-                  {mission.status === 'in_progress' && (
+                  {userSession?.role !== 'super_admin' && mission.status === 'in_progress' && (
                     <button
                       onClick={() => handleStatusChange(mission.id, 'completed')}
                       className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-colors shadow-xs"
@@ -443,13 +443,19 @@ export const MissionsManager: React.FC<MissionsManagerProps> = ({
                     <span>Imprimer OM</span>
                   </button>
 
-                  <button
-                    onClick={() => handleDeleteMission(mission.id, mission.orderNumber)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                    title="Supprimer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {userSession?.role !== 'super_admin' ? (
+                    <button
+                      onClick={() => handleDeleteMission(mission.id, mission.orderNumber)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium">
+                      Lecture Seule
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
