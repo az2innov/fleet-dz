@@ -179,19 +179,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Right Action Controls */}
           <div className="flex items-center gap-2">
             
-            {/* PWA Mobile quick access */}
-            <button
-              onClick={() => setActiveTab('pwa_driver')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                activeTab === 'pwa_driver'
-                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
-                  : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20'
-              }`}
-              title="Ouvrir l'application conducteur PWA"
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">PWA Chauffeur</span>
-            </button>
+            {/* PWA Mobile quick access - Réservé exclusivement au Super Admin et Gestionnaire de Flotte */}
+            {(userSession?.role === 'super_admin' || userSession?.role === 'fleet_manager') && (
+              <button
+                onClick={() => setActiveTab('pwa_driver')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'pwa_driver'
+                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                    : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20'
+                }`}
+                title="Ouvrir l'application conducteur PWA"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">PWA Chauffeur</span>
+              </button>
+            )}
 
             {/* ANPDP Loi 18-07 Badge */}
             {onOpenANPDP && (
@@ -268,16 +270,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             {item.label}
           </button>
         ))}
-        <button
-          onClick={() => setActiveTab('pwa_driver')}
-          className={`px-2 py-1 text-xs rounded-lg whitespace-nowrap font-bold flex items-center gap-1 ${
-            activeTab === 'pwa_driver' 
-              ? 'bg-emerald-600 text-white' 
-              : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-          }`}
-        >
-          <Smartphone className="w-3.5 h-3.5" /> PWA
-        </button>
+        {(userSession?.role === 'super_admin' || userSession?.role === 'fleet_manager') && (
+          <button
+            onClick={() => setActiveTab('pwa_driver')}
+            className={`px-2 py-1 text-xs rounded-lg whitespace-nowrap font-bold flex items-center gap-1 ${
+              activeTab === 'pwa_driver' 
+                ? 'bg-emerald-600 text-white' 
+                : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+            }`}
+          >
+            <Smartphone className="w-3.5 h-3.5" /> PWA
+          </button>
+        )}
         {onLogout && userSession?.twoFactorVerified && (
           <button
             type="button"

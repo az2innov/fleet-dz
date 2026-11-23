@@ -309,14 +309,16 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                 <FileText className="w-3.5 h-3.5 text-emerald-500" />
                 <span>+ Ordre de Mission</span>
               </button>
-              <button
-                type="button"
-                onClick={() => onNavigateTab('pwa_driver')}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>PWA Chauffeur</span>
-              </button>
+              {(currentRole === 'super_admin' || currentRole === 'fleet_manager') && (
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab('pwa_driver')}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>PWA Chauffeur</span>
+                </button>
+              )}
             </>
           ),
         };
