@@ -24,7 +24,8 @@ import {
   Eye,
   FileText,
   DollarSign,
-  X
+  X,
+  RotateCcw
 } from 'lucide-react';
 import { Vehicle, Driver, UserSession, VehicleCategory, OperationalMissionStatus } from '../types.js';
 import { VehicleFormModal } from './VehicleFormModal.js';
@@ -48,10 +49,40 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [operationalStatusFilter, setOperationalStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [fuelFilter, setFuelFilter] = useState<string>('all');
+  const [yearFilter, setYearFilter] = useState<string>('all');
+  const [makeFilter, setMakeFilter] = useState<string>('all');
+  const [mileageRangeFilter, setMileageRangeFilter] = useState<string>('all');
+
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<Vehicle | null>(null);
   const [previewCarteGrise, setPreviewCarteGrise] = useState<{ title: string; url: string } | null>(null);
+
+  // Valeurs uniques dynamiques pour les sélecteurs de filtres
+  const availableMakes = Array.from(new Set(vehicles.map(v => v.make))).filter(Boolean).sort();
+  const availableYears = Array.from(new Set(vehicles.map(v => v.year))).filter(Boolean).sort((a, b) => b - a);
+
+  const hasActiveFilters = searchTerm !== '' || 
+    statusFilter !== 'all' || 
+    operationalStatusFilter !== 'all' || 
+    categoryFilter !== 'all' || 
+    fuelFilter !== 'all' || 
+    yearFilter !== 'all' || 
+    makeFilter !== 'all' || 
+    mileageRangeFilter !== 'all';
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setOperationalStatusFilter('all');
+    setCategoryFilter('all');
+    setFuelFilter('all');
+    setYearFilter('all');
+    setMakeFilter('all');
+    setMileageRangeFilter('all');
+  };
 
   const handleOpenAdd = () => {
     setVehicleToEdit(null);
@@ -100,18 +131,53 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
     }
   };
 
+  // Filtrage multi-critères approfondi du Parc Automobile
   const filteredVehicles = vehicles.filter((v) => {
-    const matchesSearch = 
-      v.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (v.chassisNumber && v.chassisNumber.toLowerCase().includes(searchTerm.toLowerCase()));
+    // 1. Recherche textuelle multi-champs
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch = !q ||
+      v.plate.toLowerCase().includes(q) ||
+      v.make.toLowerCase().includes(q) ||
+      v.model.toLowerCase().includes(q) ||
+      (v.driverName && v.driverName.toLowerCase().includes(q)) ||
+      (v.chassisNumber && v.chassisNumber.toLowerCase().includes(q));
 
+    // 2. Statut rapide (cycle de vie principal)
     const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
-    const matchesCategory = categoryFilter === 'all' || (v.vehicleCategory || 'VP') === categoryFilter;
 
-    return matchesSearch && matchesStatus && matchesCategory;
+    // 3. Statut opérationnel d'affectation
+    const matchesOpStatus = operationalStatusFilter === 'all' || 
+      v.operationalMissionStatus === operationalStatusFilter;
+
+    // 4. Catégorie / Type de véhicule (VP, VU, PL, SM, Bus)
+    const matchesCategory = categoryFilter === 'all' || 
+      (v.vehicleCategory || 'VP') === categoryFilter;
+
+    // 5. Type de carburant / Motorisation (diesel, essence, gpl)
+    const matchesFuel = fuelFilter === 'all' || 
+      v.fuelType === fuelFilter;
+
+    // 6. Année de mise en circulation
+    const matchesYear = yearFilter === 'all' || 
+      String(v.year) === yearFilter;
+
+    // 7. Marque du constructeur
+    const matchesMake = makeFilter === 'all' || 
+      v.make.toLowerCase() === makeFilter.toLowerCase();
+
+    // 8. Tranches de kilométrage
+    let matchesMileage = true;
+    if (mileageRangeFilter === '0-50000') {
+      matchesMileage = v.mileage < 50000;
+    } else if (mileageRangeFilter === '50000-100000') {
+      matchesMileage = v.mileage >= 50000 && v.mileage <= 100000;
+    } else if (mileageRangeFilter === '100000-200000') {
+      matchesMileage = v.mileage > 100000 && v.mileage <= 200000;
+    } else if (mileageRangeFilter === '200000+') {
+      matchesMileage = v.mileage > 200000;
+    }
+
+    return matchesSearch && matchesStatus && matchesOpStatus && matchesCategory && matchesFuel && matchesYear && matchesMake && matchesMileage;
   });
 
   const getOperationalStatusBadge = (status?: OperationalMissionStatus) => {
@@ -250,15 +316,74 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
         </div>
       )}
 
-      {/* Filters: Category & Search & Status */}
-      <div className="space-y-3">
-        {/* Category Filter Pills (8. Type de Véhicule) */}
+      {/* ========================================================================= */}
+      {/* BARRE DE RECHERCHE & FILTRES MULTI-CRITÈRES AVANCÉS DU PARC              */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs space-y-4">
+        {/* Ligne 1 : Recherche textuelle + Filtres Statut Rapides */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="relative flex-1 min-w-[260px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Recherche par matricule (ex: 04512-118-16), marque, modèle, chauffeur, châssis..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#1e2a3f] text-xs flex-wrap">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'all' ? 'bg-white dark:bg-[#1c273e] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Tous ({vehicles.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('active')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'active' ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-600/30 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              En service ({vehicles.filter(v => v.status === 'active').length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('maintenance')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'maintenance' ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-600/30 dark:text-amber-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              En révision ({vehicles.filter(v => v.status === 'maintenance' || v.operationalMissionStatus === 'maintenance').length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('accident')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'accident' ? 'bg-rose-500/15 text-rose-700 dark:bg-rose-600/30 dark:text-rose-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Sinistre ({vehicles.filter(v => v.status === 'accident' || v.operationalMissionStatus === 'sinistre').length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('retired')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'retired' ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Réforme ({vehicles.filter(v => v.status === 'retired').length})
+            </button>
+          </div>
+        </div>
+
+        {/* Ligne 2 : Type de Véhicule (Catégories VP, VU, PL, SM, Bus) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
           <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
-            <Truck className="w-3.5 h-3.5" /> Catégorie :
+            <Truck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Type :
           </span>
           {[
-            { id: 'all', label: `Tous les types (${vehicles.length})` },
+            { id: 'all', label: `Tous types (${vehicles.length})` },
             { id: 'VP', label: `VP - Particulier (${vehicles.filter(v => (v.vehicleCategory || 'VP') === 'VP').length})` },
             { id: 'VU', label: `VU - Utilitaire (${vehicles.filter(v => v.vehicleCategory === 'VU').length})` },
             { id: 'PL', label: `PL - Poids Lourd (${vehicles.filter(v => v.vehicleCategory === 'PL').length})` },
@@ -279,59 +404,117 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
           ))}
         </div>
 
-        {/* Search & Status Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-4 shadow-xs">
-          <div className="relative flex-1 min-w-[240px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Matricule, marque, chauffeur, VIN châssis..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
+        {/* Ligne 3 : Filtres Combinatoires Détaillés (Marque/Modèle, Année, Kilométrage, Carburant, Affectation) */}
+        <div className="pt-3 border-t border-slate-100 dark:border-[#1e2a3f] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+          {/* 1. Marque */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Marque
+            </label>
+            <select
+              value={makeFilter}
+              onChange={(e) => setMakeFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold"
+            >
+              <option value="all">Toutes les marques ({availableMakes.length})</option>
+              {availableMakes.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#1e2a3f] text-xs">
+          {/* 2. Année du véhicule */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Année
+            </label>
+            <select
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono font-bold"
+            >
+              <option value="all">Toutes les années</option>
+              {availableYears.map((yr) => (
+                <option key={yr} value={String(yr)}>Année {yr}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. Kilométrage (Tranches d'odomètre) */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Kilométrage
+            </label>
+            <select
+              value={mileageRangeFilter}
+              onChange={(e) => setMileageRangeFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+            >
+              <option value="all">Tous kilométrages</option>
+              <option value="0-50000">&lt; 50 000 km (Faible roulage)</option>
+              <option value="50000-100000">50 000 à 100 000 km</option>
+              <option value="100000-200000">100 000 à 200 000 km</option>
+              <option value="200000+">&gt; 200 000 km (Grand roulage)</option>
+            </select>
+          </div>
+
+          {/* 4. Type de Carburant / Motorisation */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Carburant
+            </label>
+            <select
+              value={fuelFilter}
+              onChange={(e) => setFuelFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+            >
+              <option value="all">Tous carburants</option>
+              <option value="diesel">Gasoil / Diesel (Naftal)</option>
+              <option value="essence">Sans Plomb / Essence</option>
+              <option value="gpl">GPL / Sirghaz</option>
+            </select>
+          </div>
+
+          {/* 5. Affectation & Statut Opérationnel */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Affectation Mission
+            </label>
+            <select
+              value={operationalStatusFilter}
+              onChange={(e) => setOperationalStatusFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+            >
+              <option value="all">Toutes affectations</option>
+              <option value="reserve_depot">En Réserve (Dépôt)</option>
+              <option value="en_mission">En Mission Active</option>
+              <option value="retour_mission">Retour de Mission</option>
+              <option value="maintenance">En Révision Atelier</option>
+              <option value="sinistre">En Sinistre</option>
+              <option value="reforme">Réforme Administrative</option>
+            </select>
+          </div>
+
+          {/* 6. Compteur de véhicules & Bouton Réinitialiser */}
+          <div className="flex items-end gap-2">
+            <div className="flex-1 bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2 py-1.5 text-center">
+              <span className="text-[10px] text-slate-400 block font-medium">Affichage</span>
+              <strong className="text-xs text-emerald-600 dark:text-emerald-400 font-mono">
+                {filteredVehicles.length} / {vehicles.length}
+              </strong>
+            </div>
+
             <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                statusFilter === 'all' ? 'bg-white dark:bg-[#1c273e] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              onClick={handleResetFilters}
+              disabled={!hasActiveFilters}
+              title="Réinitialiser tous les filtres"
+              className={`p-2 rounded-xl transition-all flex items-center justify-center ${
+                hasActiveFilters
+                  ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 cursor-pointer shadow-xs'
+                  : 'bg-slate-100 dark:bg-[#1c273e] text-slate-400 cursor-not-allowed opacity-50'
               }`}
             >
-              Tous ({vehicles.length})
-            </button>
-            <button
-              onClick={() => setStatusFilter('active')}
-              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                statusFilter === 'active' ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-600/30 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              En service
-            </button>
-            <button
-              onClick={() => setStatusFilter('maintenance')}
-              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                statusFilter === 'maintenance' ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-600/30 dark:text-amber-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              En révision
-            </button>
-            <button
-              onClick={() => setStatusFilter('accident')}
-              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                statusFilter === 'accident' ? 'bg-rose-500/15 text-rose-700 dark:bg-rose-600/30 dark:text-rose-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Sinistre
-            </button>
-            <button
-              onClick={() => setStatusFilter('retired')}
-              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-                statusFilter === 'retired' ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Réforme
+              <RotateCcw className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -591,6 +774,24 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
           );
         })}
       </div>
+
+      {/* État vide si aucun véhicule ne correspond aux filtres */}
+      {filteredVehicles.length === 0 && (
+        <div className="text-center py-12 bg-white dark:bg-[#121929] rounded-3xl border border-slate-200 dark:border-[#1e2a3f] p-8 space-y-3 shadow-xs">
+          <Car className="w-12 h-12 text-slate-400 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">Aucun véhicule trouvé</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            Aucun véhicule ne correspond aux critères de recherche sélectionnés (Année, Catégorie, Kilométrage, Statut, Carburant, Marque).
+          </p>
+          <button
+            onClick={handleResetFilters}
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Réinitialiser tous les filtres</span>
+          </button>
+        </div>
+      )}
 
       {/* Vehicle Add / Edit Modal */}
       <VehicleFormModal
