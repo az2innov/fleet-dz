@@ -159,6 +159,57 @@ export interface GPSLocation {
   wilaya?: string;
 }
 
+export type RefuelType = 'partiel_appoint' | 'plein_complet' | 'dotation_mission';
+
+export interface PrepaidFuelCard {
+  id: string;
+  cardNumber: string; // e.g. "NAFTAL-CORP-0145"
+  cardName: string; // e.g. "Carte Naftal Entreprise - Station Chéraga"
+  stationName: string; // Station d'essence dépositaire
+  stationCity: string; // Ville / Wilaya
+  initialBalanceDZD: number; // Dotation initiale approvisionnée
+  currentBalanceDZD: number; // Solde restant
+  depositDate: string; // Date de mise à disposition à la station
+  status: 'active' | 'low_balance' | 'depleted';
+  notes?: string;
+}
+
+export interface FuelVoucher {
+  id: string;
+  voucherNumber: string; // e.g. "BR-2026-0089"
+  date: string; // YYYY-MM-DD (date d'émission)
+  vehicleId: string;
+  vehiclePlate: string;
+  vehicleModel: string;
+  driverId: string;
+  driverName: string;
+  driverPhone?: string;
+  stationName: string;
+  stationCity: string;
+  fuelType: 'diesel' | 'essence' | 'gpl';
+  refuelType: RefuelType; // "Dotation Partielle / Appoint" ou "Plein Complet" ou "Mission"
+  quantityRequestedLiters: number; // Quantité allouée en litres
+  estimatedAmountDZD: number; // Montant prévisionnel en DA
+  prepaidCardId?: string; // Carte prépayée déposée en station
+  prepaidCardNumber?: string;
+  issuedBy: string; // Nom du gestionnaire (ex: Karim Ziani)
+  issuedAt: string; // Date et heure de délivrance
+  notes?: string;
+  status: 'emis' | 'ravitaille' | 'annule';
+
+  // Données du reçu après ravitaillement à la station
+  stationReceiptNumber?: string; // N° reçu délivré par la station
+  actualDate?: string; // Date & heure réelles
+  actualQuantityLiters?: number; // Litres réels servis
+  actualAmountDZD?: number; // Montant réel débité
+  odometerKm?: number; // Kilométrage au compteur lors du ravitaillement
+  previousOdometerKm?: number; // Kilométrage précédent
+  distanceDrivenKm?: number; // Kilométrage parcouru (delta km)
+  calculatedConsumption?: number; // Consommation calculée L/100km
+  receiptPhotoUrl?: string; // Scan du reçu station
+  completedAt?: string;
+}
+
 export interface FuelLog {
   id: string;
   vehicleId: string;
@@ -170,15 +221,21 @@ export interface FuelLog {
   pricePerLiterDZD: number;
   date: string;
   odometerKm?: number;
+  previousOdometerKm?: number;
+  distanceDrivenKm?: number;
   stationName: string;
   city: string;
   receiptPhotoUrl?: string;
   status: 'verified' | 'pending' | 'flagged';
-  source: 'pwa_scan' | 'pwa_manual' | 'manual';
+  source: 'pwa_scan' | 'pwa_manual' | 'manual' | 'voucher_receipt';
   notes?: string;
   gpsCoordinates?: GPSLocation;
   isOverconsumption?: boolean;
   calculatedConsumption?: number; // L/100km
+  refuelType?: RefuelType;
+  voucherNumber?: string;
+  stationReceiptNumber?: string;
+  prepaidCardNumber?: string;
 }
 
 export interface MaintenanceRecord {

@@ -309,6 +309,45 @@ async function startServer() {
     }
   });
 
+  // Cartes Prépayées Déposées en Station
+  app.get('/api/fleet/fuel/prepaid-cards', (_req: Request, res: Response) => {
+    res.json(fleetDb.getPrepaidFuelCards());
+  });
+
+  app.post('/api/fleet/fuel/prepaid-cards', (req: Request, res: Response) => {
+    try {
+      const card = fleetDb.addPrepaidFuelCard(req.body);
+      res.status(201).json(card);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Bons de Ravitaillement en Carburant (Délivrés par le Gestionnaire de Flotte)
+  app.get('/api/fleet/fuel/vouchers', (_req: Request, res: Response) => {
+    res.json(fleetDb.getFuelVouchers());
+  });
+
+  app.post('/api/fleet/fuel/vouchers', (req: Request, res: Response) => {
+    try {
+      const voucher = fleetDb.addFuelVoucher(req.body);
+      res.status(201).json(voucher);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Rapprochement & Saisie du Reçu Station (avec Odomètre et calcul automatique de consommation L/100km)
+  app.post('/api/fleet/fuel/vouchers/:id/receipt', (req: Request, res: Response) => {
+    try {
+      const result = fleetDb.completeFuelVoucher(req.params.id, req.body);
+      if (!result) return res.status(404).json({ error: 'Bon de ravitaillement non trouvé' });
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Fleet Maintenance records
   app.get('/api/fleet/maintenance', (_req: Request, res: Response) => {
     res.json(fleetDb.getMaintenanceRecords());

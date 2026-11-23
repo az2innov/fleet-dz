@@ -299,6 +299,7 @@ export default function App() {
           <FuelTracking
             fuelLogs={fuelLogs}
             vehicles={vehicles}
+            drivers={drivers}
             onNavigateTab={setActiveTab}
             userSession={userSession}
             onRefreshData={fetchFleetData}

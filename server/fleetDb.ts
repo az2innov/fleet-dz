@@ -2,6 +2,8 @@ import {
   Vehicle, 
   Driver, 
   FuelLog, 
+  PrepaidFuelCard,
+  FuelVoucher,
   MaintenanceRecord, 
   AccidentClaim, 
   FleetAlert, 
@@ -62,6 +64,180 @@ export const generateSampleCarteGrise = (
     <circle cx="680" cy="452" r="24" fill="#e8f5e9" stroke="#006233" stroke-width="2"/>
     <text x="680" y="452" font-family="system-ui, sans-serif" font-size="8" font-weight="bold" fill="#006233" text-anchor="middle">OFFICIEL</text>
     <text x="680" y="462" font-family="system-ui, sans-serif" font-size="7" fill="#006233" text-anchor="middle">WILAYA</text>
+  </svg>`;
+  return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+};
+
+// Générateur de Bon de Ravitaillement Officiel (Délivré par le Gestionnaire de Flotte)
+export const generateSampleFuelVoucherSvg = (
+  voucherNumber: string,
+  date: string,
+  plate: string,
+  model: string,
+  driver: string,
+  station: string,
+  liters: number,
+  amountDZD: number,
+  cardNum?: string,
+  refuelType: string = 'Dotation Partielle / Appoint'
+): string => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 580" width="100%" height="100%">
+    <rect width="100%" height="100%" fill="#ffffff" stroke="#047857" stroke-width="5" rx="16"/>
+    <rect x="20" y="20" width="760" height="540" fill="none" stroke="#a7f3d0" stroke-width="2" rx="12"/>
+    
+    <!-- Header -->
+    <rect x="25" y="25" width="750" height="90" fill="#ecfdf5" rx="10"/>
+    <text x="50" y="55" font-family="system-ui, sans-serif" font-size="18" font-weight="900" fill="#065f46">DZ-FLEET MOBILITY ALGERIA</text>
+    <text x="50" y="75" font-family="system-ui, sans-serif" font-size="11" fill="#047857">Direction Centrale des Moyens Généraux &amp; Gestion de Flotte Automobile</text>
+    <text x="50" y="93" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280">Système Souverain d'Approvisionnement Carburant — Décret Exécutif N° 04-381</text>
+    
+    <rect x="520" y="38" width="235" height="64" fill="#047857" rx="8"/>
+    <text x="637" y="60" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#a7f3d0" text-anchor="middle">BON DE RAVITAILLEMENT CARBURANT</text>
+    <text x="637" y="86" font-family="monospace" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">${voucherNumber}</text>
+
+    <!-- Informations Générales -->
+    <line x1="50" y1="130" x2="750" y2="130" stroke="#e5e7eb" stroke-width="1.5"/>
+
+    <text x="50" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280">Date d'Émission :</text>
+    <text x="50" y="180" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#111827">${date}</text>
+
+    <text x="280" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280">Type de Ravitaillement :</text>
+    <text x="280" y="180" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#047857">${refuelType}</text>
+
+    <text x="530" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280">Mode de Règlement :</text>
+    <text x="530" y="180" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#b45309">Carte Prépayée ${cardNum || 'Déposée en Station'}</text>
+
+    <!-- Détails Véhicule & Chauffeur -->
+    <rect x="50" y="205" width="700" height="95" fill="#f8fafc" stroke="#e2e8f0" rx="10"/>
+    <text x="70" y="230" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#334155">AFFECTATION DU VÉHICULE &amp; CONDUCTEUR BÉNÉFICIAIRE</text>
+
+    <text x="70" y="258" font-family="system-ui, sans-serif" font-size="11" fill="#64748b">Matricule Officiel :</text>
+    <text x="70" y="280" font-family="monospace" font-size="15" font-weight="bold" fill="#0f172a">${plate}</text>
+
+    <text x="280" y="258" font-family="system-ui, sans-serif" font-size="11" fill="#64748b">Marque / Modèle :</text>
+    <text x="280" y="280" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#0f172a">${model}</text>
+
+    <text x="510" y="258" font-family="system-ui, sans-serif" font-size="11" fill="#64748b">Conducteur Titulaire :</text>
+    <text x="510" y="280" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#0f172a">${driver}</text>
+
+    <!-- Dotation & Station Partenaire -->
+    <rect x="50" y="315" width="700" height="110" fill="#fffbeb" stroke="#fde68a" rx="10"/>
+    <text x="70" y="340" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#92400e">STATION D'ESSENCE &amp; QUANTITÉ AUTORISÉE</text>
+
+    <text x="70" y="370" font-family="system-ui, sans-serif" font-size="11" fill="#78350f">Station Dépositaire Conventionnée :</text>
+    <text x="70" y="392" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#1e293b">${station}</text>
+    <text x="70" y="410" font-family="system-ui, sans-serif" font-size="10" fill="#6b7280">Carte Prépayée N° : ${cardNum || 'Convention Naftal Flotte'}</text>
+
+    <text x="430" y="370" font-family="system-ui, sans-serif" font-size="11" fill="#78350f">Volume Alloué :</text>
+    <text x="430" y="395" font-family="monospace" font-size="18" font-weight="bold" fill="#047857">${liters} Litres</text>
+
+    <text x="580" y="370" font-family="system-ui, sans-serif" font-size="11" fill="#78350f">Budget Prévisionnel :</text>
+    <text x="580" y="395" font-family="monospace" font-size="18" font-weight="bold" fill="#b45309">${amountDZD.toLocaleString('fr-DZ')} DA</text>
+
+    <!-- Signatures & Cachet -->
+    <rect x="50" y="440" width="340" height="105" fill="#f8fafc" stroke="#e2e8f0" rx="8"/>
+    <text x="65" y="462" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#475569">VISA &amp; SIGNATURE GESTIONNAIRE DU PARC</text>
+    <text x="65" y="482" font-family="system-ui, sans-serif" font-size="11" fill="#1e293b">Émis par : Karim Ziani (Exploitation Flotte)</text>
+    <circle cx="310" cy="495" r="28" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+    <text x="310" y="492" font-family="system-ui, sans-serif" font-size="8" font-weight="bold" fill="#047857" text-anchor="middle">GESTION</text>
+    <text x="310" y="504" font-family="system-ui, sans-serif" font-size="7" fill="#047857" text-anchor="middle">PARC AUTO</text>
+
+    <rect x="410" y="440" width="340" height="105" fill="#f8fafc" stroke="#e2e8f0" rx="8"/>
+    <text x="425" y="462" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#475569">CACHET STATION D'ESSENCE APRÈS RAVITAILLEMENT</text>
+    <text x="425" y="482" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">À remplir par le pompiste lors de la délivrance du reçu.</text>
+    <text x="425" y="500" font-family="monospace" font-size="10" fill="#0369a1">Relevé Odomètre obligatoire à la pompe</text>
+    <text x="425" y="520" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Document certifié pour le contrôle de gestion.</text>
+  </svg>`;
+  return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+};
+
+// Générateur de Reçu de Caisse Numérisé de la Station d'Essence Naftal
+export const generateSampleStationReceipt = (
+  receiptNumber: string,
+  date: string,
+  station: string,
+  plate: string,
+  driver: string,
+  liters: number,
+  amountDZD: number,
+  odometerKm: number
+): string => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 700" width="100%" height="100%">
+    <rect width="100%" height="100%" fill="#fffdfa" stroke="#d1d5db" stroke-width="2" rx="10"/>
+    <line x1="20" y1="20" x2="480" y2="20" stroke="#f59e0b" stroke-width="6"/>
+
+    <!-- Header Naftal -->
+    <text x="250" y="55" font-family="system-ui, sans-serif" font-size="20" font-weight="900" fill="#d97706" text-anchor="middle">NAFTAL SPA 🇩🇿</text>
+    <text x="250" y="75" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#4b5563" text-anchor="middle">BRANCHE COMMERCIALISATION CARBURANTS</text>
+    <text x="250" y="95" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#111827" text-anchor="middle">${station}</text>
+    
+    <line x1="40" y1="110" x2="460" y2="110" stroke="#e5e7eb" stroke-dasharray="4,4"/>
+
+    <!-- Ticket Details -->
+    <text x="50" y="135" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280">REÇU DE CARBURANT / TICKET STATION :</text>
+    <text x="450" y="135" font-family="monospace" font-size="12" font-weight="bold" fill="#111827" text-anchor="end">${receiptNumber}</text>
+
+    <text x="50" y="160" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280">Date &amp; Heure du service :</text>
+    <text x="450" y="160" font-family="monospace" font-size="11" font-weight="bold" fill="#111827" text-anchor="end">${date.replace('T', ' ').substring(0, 16)}</text>
+
+    <text x="50" y="185" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280">Mode de Paiement :</text>
+    <text x="450" y="185" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#047857" text-anchor="end">Carte Prépayée Entreprise</text>
+
+    <line x1="40" y1="205" x2="460" y2="205" stroke="#e5e7eb" stroke-dasharray="4,4"/>
+
+    <!-- Véhicule & Kilométrage -->
+    <rect x="40" y="220" width="420" height="90" fill="#f8fafc" stroke="#e2e8f0" rx="8"/>
+    <text x="55" y="245" font-family="system-ui, sans-serif" font-size="11" fill="#64748b">Véhicule Servi (Matricule) :</text>
+    <text x="445" y="245" font-family="monospace" font-size="14" font-weight="bold" fill="#0f172a" text-anchor="end">${plate}</text>
+
+    <text x="55" y="270" font-family="system-ui, sans-serif" font-size="11" fill="#64748b">Chauffeur :</text>
+    <text x="445" y="270" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#0f172a" text-anchor="end">${driver}</text>
+
+    <text x="55" y="295" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" fill="#0369a1">Odomètre Relevé (Compteur) :</text>
+    <text x="445" y="295" font-family="monospace" font-size="14" font-weight="bold" fill="#0369a1" text-anchor="end">${odometerKm.toLocaleString('fr-DZ')} KM</text>
+
+    <line x1="40" y1="325" x2="460" y2="325" stroke="#e5e7eb" stroke-dasharray="4,4"/>
+
+    <!-- Pompe & Prix -->
+    <text x="50" y="355" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280">Volume Réel Délivré :</text>
+    <text x="450" y="355" font-family="monospace" font-size="18" font-weight="bold" fill="#047857" text-anchor="end">${liters} Litres</text>
+
+    <text x="50" y="385" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280">Prix Unitaire Officiel :</text>
+    <text x="450" y="385" font-family="monospace" font-size="12" fill="#374151" text-anchor="end">${(amountDZD / liters).toFixed(2)} DA / L</text>
+
+    <rect x="40" y="410" width="420" height="60" fill="#ecfdf5" stroke="#a7f3d0" rx="8"/>
+    <text x="60" y="445" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#065f46">TOTAL DÉBITÉ CARTE :</text>
+    <text x="440" y="448" font-family="monospace" font-size="22" font-weight="black" fill="#047857" text-anchor="end">${amountDZD.toLocaleString('fr-DZ')} DA</text>
+
+    <!-- Code Barre & Certification -->
+    <rect x="80" y="500" width="340" height="50" fill="#ffffff" stroke="#e5e7eb"/>
+    <line x1="90" y1="505" x2="90" y2="545" stroke="#000000" stroke-width="3"/>
+    <line x1="100" y1="505" x2="100" y2="545" stroke="#000000" stroke-width="1.5"/>
+    <line x1="110" y1="505" x2="110" y2="545" stroke="#000000" stroke-width="4"/>
+    <line x1="125" y1="505" x2="125" y2="545" stroke="#000000" stroke-width="2"/>
+    <line x1="135" y1="505" x2="135" y2="545" stroke="#000000" stroke-width="3"/>
+    <line x1="150" y1="505" x2="150" y2="545" stroke="#000000" stroke-width="1.5"/>
+    <line x1="160" y1="505" x2="160" y2="545" stroke="#000000" stroke-width="4"/>
+    <line x1="180" y1="505" x2="180" y2="545" stroke="#000000" stroke-width="2"/>
+    <line x1="200" y1="505" x2="200" y2="545" stroke="#000000" stroke-width="3"/>
+    <line x1="215" y1="505" x2="215" y2="545" stroke="#000000" stroke-width="1.5"/>
+    <line x1="230" y1="505" x2="230" y2="545" stroke="#000000" stroke-width="3"/>
+    <line x1="250" y1="505" x2="250" y2="545" stroke="#000000" stroke-width="4"/>
+    <line x1="270" y1="505" x2="270" y2="545" stroke="#000000" stroke-width="2"/>
+    <line x1="290" y1="505" x2="290" y2="545" stroke="#000000" stroke-width="1.5"/>
+    <line x1="310" y1="505" x2="310" y2="545" stroke="#000000" stroke-width="4"/>
+    <line x1="330" y1="505" x2="330" y2="545" stroke="#000000" stroke-width="3"/>
+    <line x1="350" y1="505" x2="350" y2="545" stroke="#000000" stroke-width="2"/>
+    <line x1="370" y1="505" x2="370" y2="545" stroke="#000000" stroke-width="3"/>
+    <line x1="390" y1="505" x2="390" y2="545" stroke="#000000" stroke-width="4"/>
+    <line x1="410" y1="505" x2="410" y2="545" stroke="#000000" stroke-width="2"/>
+
+    <text x="250" y="575" font-family="monospace" font-size="11" fill="#6b7280" text-anchor="middle">* NAFTAL-POS-${receiptNumber} *</text>
+
+    <!-- Stamp -->
+    <circle cx="250" cy="635" r="30" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="3,3"/>
+    <text x="250" y="632" font-family="system-ui, sans-serif" font-size="8" font-weight="bold" fill="#d97706" text-anchor="middle">NAFTAL REÇU</text>
+    <text x="250" y="644" font-family="system-ui, sans-serif" font-size="7" fill="#d97706" text-anchor="middle">CARTE PAYÉE</text>
   </svg>`;
   return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
 };
@@ -977,6 +1153,170 @@ export class FleetDatabase {
     }
   ];
 
+  private prepaidFuelCards: PrepaidFuelCard[] = [
+    {
+      id: 'pfc-1',
+      cardNumber: 'NAFTAL-CORP-1601',
+      cardName: 'Carte Naftal Flotte — Station Rocade Sud',
+      stationName: 'Station Naftal Rocade Sud (Chéraga)',
+      stationCity: '16 - Alger',
+      initialBalanceDZD: 300000,
+      currentBalanceDZD: 218400,
+      depositDate: '2026-09-01',
+      status: 'active',
+      notes: 'Convention d\'approvisionnement flotte véhicules légers et utilitaires Direction Générale.'
+    },
+    {
+      id: 'pfc-2',
+      cardNumber: 'NAFTAL-CORP-1602',
+      cardName: 'Carte Naftal Flotte — Station El Mouradia',
+      stationName: 'Station Naftal El Mouradia',
+      stationCity: '16 - Alger',
+      initialBalanceDZD: 200000,
+      currentBalanceDZD: 142800,
+      depositDate: '2026-09-15',
+      status: 'active',
+      notes: 'Dotation carburant réservée aux déplacements urbains et navettes administratives.'
+    },
+    {
+      id: 'pfc-3',
+      cardNumber: 'NAFTAL-CORP-3101',
+      cardName: 'Carte Naftal Région Ouest — Es Senia',
+      stationName: 'Station Naftal Es Senia',
+      stationCity: '31 - Oran',
+      initialBalanceDZD: 250000,
+      currentBalanceDZD: 185500,
+      depositDate: '2026-08-20',
+      status: 'active',
+      notes: 'Convention dédiée aux ordres de mission région Ouest et desserte portuaire.'
+    },
+    {
+      id: 'pfc-4',
+      cardNumber: 'NAFTAL-CORP-3001',
+      cardName: 'Carte Naftal Sud & Poids Lourds — Hassi Messaoud',
+      stationName: 'Station Naftal Base 24 Février',
+      stationCity: '30 - Ouargla',
+      initialBalanceDZD: 500000,
+      currentBalanceDZD: 384000,
+      depositDate: '2026-08-01',
+      status: 'active',
+      notes: 'Dépôt gros volumes camions porteurs PL et semi-remorques transport saharien.'
+    }
+  ];
+
+  private fuelVouchers: FuelVoucher[] = [
+    {
+      id: 'bv-1',
+      voucherNumber: 'BR-2026-0141',
+      date: '2026-10-04',
+      vehicleId: 'v-3',
+      vehiclePlate: '00341-319-31',
+      vehicleModel: 'Toyota Hilux 4x4',
+      driverId: 'd-3',
+      driverName: 'Ahmed Benali',
+      driverPhone: '+213770456789',
+      stationName: 'Station Naftal Base 24 Février',
+      stationCity: '30 - Ouargla',
+      fuelType: 'diesel',
+      refuelType: 'dotation_mission',
+      quantityRequestedLiters: 70,
+      estimatedAmountDZD: 2030,
+      prepaidCardId: 'pfc-4',
+      prepaidCardNumber: 'NAFTAL-CORP-3001',
+      issuedBy: 'Karim Ziani (Gestionnaire Flotte)',
+      issuedAt: '2026-10-04T08:15:00Z',
+      notes: 'Dotation mission OM-2026-0891 Alger -> Hassi Messaoud',
+      status: 'ravitaille',
+      stationReceiptNumber: 'REC-NAFTAL-88912',
+      actualDate: '2026-10-04T18:45:00Z',
+      actualQuantityLiters: 70,
+      actualAmountDZD: 2030,
+      odometerKm: 142300,
+      previousOdometerKm: 141480,
+      distanceDrivenKm: 820,
+      calculatedConsumption: 8.5,
+      completedAt: '2026-10-04T19:00:00Z',
+    },
+    {
+      id: 'bv-2',
+      voucherNumber: 'BR-2026-0142',
+      date: '2026-10-06',
+      vehicleId: 'v-2',
+      vehiclePlate: '12890-120-16',
+      vehicleModel: 'Peugeot 208 HDi',
+      driverId: 'd-2',
+      driverName: 'Youcef Amrani',
+      driverPhone: '+213661789012',
+      stationName: 'Station Naftal Rocade Sud (Chéraga)',
+      stationCity: '16 - Alger',
+      fuelType: 'diesel',
+      refuelType: 'partiel_appoint',
+      quantityRequestedLiters: 25,
+      estimatedAmountDZD: 725,
+      prepaidCardId: 'pfc-1',
+      prepaidCardNumber: 'NAFTAL-CORP-1601',
+      issuedBy: 'Karim Ziani (Gestionnaire Flotte)',
+      issuedAt: '2026-10-06T07:15:00Z',
+      notes: 'Appoint carburant départ mission Oran OM-2026-0892',
+      status: 'ravitaille',
+      stationReceiptNumber: 'REC-NAFTAL-90114',
+      actualDate: '2026-10-06T07:45:00Z',
+      actualQuantityLiters: 25,
+      actualAmountDZD: 725,
+      odometerKm: 64200,
+      previousOdometerKm: 63710,
+      distanceDrivenKm: 490,
+      calculatedConsumption: 5.1,
+      completedAt: '2026-10-06T08:00:00Z',
+    },
+    {
+      id: 'bv-3',
+      voucherNumber: 'BR-2026-0143',
+      date: '2026-10-07',
+      vehicleId: 'v-1',
+      vehiclePlate: '04512-118-16',
+      vehicleModel: 'Renault Symbol 1.6 Expression',
+      driverId: 'd-1',
+      driverName: 'Karim Belkacem',
+      driverPhone: '+213550123456',
+      stationName: 'Station Naftal El Mouradia',
+      stationCity: '16 - Alger',
+      fuelType: 'essence',
+      refuelType: 'partiel_appoint',
+      quantityRequestedLiters: 30,
+      estimatedAmountDZD: 1368,
+      prepaidCardId: 'pfc-2',
+      prepaidCardNumber: 'NAFTAL-CORP-1602',
+      issuedBy: 'Karim Ziani (Gestionnaire Flotte)',
+      issuedAt: '2026-10-07T08:30:00Z',
+      notes: 'Dotation appoint pour courriers ministériels',
+      status: 'emis',
+    },
+    {
+      id: 'bv-4',
+      voucherNumber: 'BR-2026-0144',
+      date: '2026-10-07',
+      vehicleId: 'v-7',
+      vehiclePlate: '01450-418-16',
+      vehicleModel: 'Renault Trucks K440 P 6x4 Benne',
+      driverId: 'd-3',
+      driverName: 'Ahmed Benali',
+      driverPhone: '+213770456789',
+      stationName: 'Station Naftal Rocade Sud (Chéraga)',
+      stationCity: '16 - Alger',
+      fuelType: 'diesel',
+      refuelType: 'plein_complet',
+      quantityRequestedLiters: 200,
+      estimatedAmountDZD: 5802,
+      prepaidCardId: 'pfc-1',
+      prepaidCardNumber: 'NAFTAL-CORP-1601',
+      issuedBy: 'Karim Ziani (Gestionnaire Flotte)',
+      issuedAt: '2026-10-07T10:00:00Z',
+      notes: 'Plein complet pour rotation chantier carrières Tipaza',
+      status: 'emis',
+    }
+  ];
+
   private fuelLogs: FuelLog[] = [
     {
       id: 'fl-1',
@@ -989,14 +1329,20 @@ export class FleetDatabase {
       pricePerLiterDZD: 45.62,
       date: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
       odometerKm: 87450,
+      previousOdometerKm: 86800,
+      distanceDrivenKm: 650,
       stationName: 'Naftal El Mouradia',
       city: 'Alger',
       status: 'pending',
       source: 'pwa_manual',
-      notes: 'Plein saisi via terminal PWA Chauffeur (En attente de validation gestionnaire)',
+      refuelType: 'plein_complet',
+      notes: 'Plein complet saisi via terminal PWA Chauffeur (En attente de validation gestionnaire)',
       gpsCoordinates: { latitude: 36.7412, longitude: 3.0515, accuracy: 12, wilaya: '16 - Alger' },
       isOverconsumption: false,
       calculatedConsumption: 7.4,
+      stationReceiptNumber: 'REC-NAFTAL-77124',
+      prepaidCardNumber: 'NAFTAL-CORP-1602',
+      receiptPhotoUrl: generateSampleStationReceipt('REC-NAFTAL-77124', new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), 'Naftal El Mouradia (Wilaya 16)', '04512-118-16', 'Karim Belkacem', 48, 7200, 87450),
     },
     {
       id: 'fl-2',
@@ -1009,14 +1355,21 @@ export class FleetDatabase {
       pricePerLiterDZD: 29.01,
       date: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
       odometerKm: 64180,
+      previousOdometerKm: 63330,
+      distanceDrivenKm: 850,
       stationName: 'Naftal Rocade Sud Chéraga',
       city: 'Alger',
       status: 'verified',
-      source: 'pwa_scan',
-      notes: 'Ticket de carburant Naftal numérisé via OCR souverain local PWA',
+      source: 'voucher_receipt',
+      refuelType: 'partiel_appoint',
+      voucherNumber: 'BR-2026-0142',
+      stationReceiptNumber: 'REC-NAFTAL-90114',
+      prepaidCardNumber: 'NAFTAL-CORP-1601',
+      notes: 'Rapprochement validé Bon BR-2026-0142 et reçu officiel Naftal',
       gpsCoordinates: { latitude: 36.7645, longitude: 2.9528, accuracy: 15, wilaya: '16 - Alger' },
       isOverconsumption: false,
       calculatedConsumption: 5.3,
+      receiptPhotoUrl: generateSampleStationReceipt('REC-NAFTAL-90114', new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(), 'Naftal Rocade Sud (Chéraga)', '12890-120-16', 'Youcef Amrani', 45, 2900, 64180),
     },
     {
       id: 'fl-3',
@@ -1029,14 +1382,21 @@ export class FleetDatabase {
       pricePerLiterDZD: 29.01,
       date: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
       odometerKm: 141950,
+      previousOdometerKm: 141400,
+      distanceDrivenKm: 550,
       stationName: 'Naftal Es Senia',
       city: 'Oran',
       status: 'pending',
       source: 'pwa_manual',
-      notes: 'Gasoil plein trajet Oran-Mostaganem saisi via PWA (Surconsommation à valider)',
+      refuelType: 'dotation_mission',
+      voucherNumber: 'BR-2026-0141',
+      stationReceiptNumber: 'REC-NAFTAL-88912',
+      prepaidCardNumber: 'NAFTAL-CORP-3101',
+      notes: 'Dotation mission Oran-Mostaganem — Surconsommation détectée vs 9.4 constructeur',
       gpsCoordinates: { latitude: 35.6512, longitude: -0.6214, accuracy: 10, wilaya: '31 - Oran' },
       isOverconsumption: true,
-      calculatedConsumption: 12.8, // Constructeur 9.4 -> surconsommation anormale détectée!
+      calculatedConsumption: 12.7,
+      receiptPhotoUrl: generateSampleStationReceipt('REC-NAFTAL-88912', new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), 'Naftal Es Senia (Oran)', '00341-319-31', 'Ahmed Benali', 70, 4500, 141950),
     },
     {
       id: 'fl-4',
@@ -1049,13 +1409,19 @@ export class FleetDatabase {
       pricePerLiterDZD: 29.01,
       date: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(),
       odometerKm: 38720,
+      previousOdometerKm: 37890,
+      distanceDrivenKm: 830,
       stationName: 'Naftal Bab Ezzouar',
       city: 'Alger',
       status: 'verified',
       source: 'pwa_scan',
-      notes: 'Ticket analysé par reconnaissance souveraine embarquée',
+      refuelType: 'plein_complet',
+      stationReceiptNumber: 'REC-NAFTAL-66521',
+      prepaidCardNumber: 'NAFTAL-CORP-1601',
+      notes: 'Ticket analysé par reconnaissance souveraine embarquée PWA',
       isOverconsumption: false,
       calculatedConsumption: 5.9,
+      receiptPhotoUrl: generateSampleStationReceipt('REC-NAFTAL-66521', new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(), 'Naftal Bab Ezzouar (Alger)', '01923-122-16', 'Reda Khelil', 49, 3200, 38720),
     }
   ];
 
@@ -1765,6 +2131,199 @@ export class FleetDatabase {
     if (!log) return undefined;
     Object.assign(log, updates);
     return log;
+  }
+
+  // ===================== PREPAID CARDS & FUEL VOUCHERS =====================
+
+  getPrepaidFuelCards(): PrepaidFuelCard[] {
+    return this.prepaidFuelCards;
+  }
+
+  addPrepaidFuelCard(card: Omit<PrepaidFuelCard, 'id'>): PrepaidFuelCard {
+    const newCard: PrepaidFuelCard = {
+      ...card,
+      id: `pfc-${Date.now()}`,
+    };
+    this.prepaidFuelCards.push(newCard);
+    return newCard;
+  }
+
+  getFuelVouchers(): FuelVoucher[] {
+    return this.fuelVouchers;
+  }
+
+  addFuelVoucher(data: Partial<FuelVoucher>): FuelVoucher {
+    const vCount = this.fuelVouchers.length + 145;
+    const voucherNumber = `BR-2026-0${vCount}`;
+    const vehicle = this.vehicles.find(v => v.id === data.vehicleId || v.plate === data.vehiclePlate);
+    const driver = this.drivers.find(d => d.id === data.driverId || d.name === data.driverName);
+    const fuelType = data.fuelType || vehicle?.fuelType || 'diesel';
+    const ratePerLiter = fuelType === 'diesel' ? 29.01 : fuelType === 'essence' ? 45.62 : 9.00;
+    const quantity = data.quantityRequestedLiters || 40;
+    const estimatedAmount = data.estimatedAmountDZD || Math.round(quantity * ratePerLiter);
+
+    const newVoucher: FuelVoucher = {
+      id: `bv-${Date.now()}`,
+      voucherNumber,
+      date: data.date || new Date().toISOString().split('T')[0],
+      vehicleId: vehicle?.id || data.vehicleId || 'v-1',
+      vehiclePlate: vehicle?.plate || data.vehiclePlate || '04512-118-16',
+      vehicleModel: vehicle ? `${vehicle.make} ${vehicle.model}` : data.vehicleModel || 'Véhicule',
+      driverId: driver?.id || data.driverId || 'd-1',
+      driverName: driver?.name || data.driverName || 'Chauffeur',
+      driverPhone: driver?.phone || data.driverPhone || '',
+      stationName: data.stationName || 'Station Naftal Rocade Sud (Chéraga)',
+      stationCity: data.stationCity || '16 - Alger',
+      fuelType,
+      refuelType: data.refuelType || 'partiel_appoint',
+      quantityRequestedLiters: quantity,
+      estimatedAmountDZD: estimatedAmount,
+      prepaidCardId: data.prepaidCardId,
+      prepaidCardNumber: data.prepaidCardNumber || 'NAFTAL-CORP-1601',
+      issuedBy: data.issuedBy || 'Karim Ziani (Gestionnaire Flotte)',
+      issuedAt: new Date().toISOString(),
+      notes: data.notes || '',
+      status: 'emis',
+    };
+
+    this.fuelVouchers.unshift(newVoucher);
+
+    this.addActivityLog({
+      channel: 'internal_system',
+      type: 'fuel',
+      title: `Bon de Ravitaillement émis (${voucherNumber})`,
+      details: `${quantity}L de ${fuelType.toUpperCase()} autorisés pour ${newVoucher.vehiclePlate} (${newVoucher.driverName}) à la station ${newVoucher.stationName}.`,
+      timestamp: new Date().toISOString(),
+      status: 'validated',
+      driverName: newVoucher.driverName,
+      vehiclePlate: newVoucher.vehiclePlate,
+    });
+
+    return newVoucher;
+  }
+
+  completeFuelVoucher(
+    voucherId: string, 
+    receiptData: {
+      stationReceiptNumber: string;
+      actualDate: string;
+      actualQuantityLiters: number;
+      actualAmountDZD: number;
+      odometerKm: number;
+      receiptPhotoUrl?: string;
+    }
+  ): { voucher: FuelVoucher; fuelLog: FuelLog } | undefined {
+    const voucher = this.fuelVouchers.find(v => v.id === voucherId);
+    if (!voucher) return undefined;
+
+    const vehicle = this.vehicles.find(v => v.plate === voucher.vehiclePlate);
+    const previousOdometer = vehicle?.mileage || (receiptData.odometerKm - 350);
+    const distance = Math.max(1, receiptData.odometerKm - previousOdometer);
+
+    // Calcul de la consommation réelle en L/100km liée au kilométrage parcouru
+    const consumption = parseFloat(((receiptData.actualQuantityLiters / distance) * 100).toFixed(1));
+
+    // Détection surconsommation
+    const theoreticalConso = vehicle?.averageConsumption || 8.0;
+    const isOverconsumption = consumption > (theoreticalConso * 1.20); // > +20%
+
+    // Débiter la carte prépayée en station
+    if (voucher.prepaidCardId) {
+      const card = this.prepaidFuelCards.find(c => c.id === voucher.prepaidCardId);
+      if (card) {
+        card.currentBalanceDZD = Math.max(0, card.currentBalanceDZD - receiptData.actualAmountDZD);
+        if (card.currentBalanceDZD < 25000) {
+          card.status = 'low_balance';
+        }
+      }
+    }
+
+    // Mise à jour du bon de ravitaillement
+    voucher.status = 'ravitaille';
+    voucher.stationReceiptNumber = receiptData.stationReceiptNumber;
+    voucher.actualDate = receiptData.actualDate;
+    voucher.actualQuantityLiters = receiptData.actualQuantityLiters;
+    voucher.actualAmountDZD = receiptData.actualAmountDZD;
+    voucher.odometerKm = receiptData.odometerKm;
+    voucher.previousOdometerKm = previousOdometer;
+    voucher.distanceDrivenKm = distance;
+    voucher.calculatedConsumption = consumption;
+    voucher.receiptPhotoUrl = receiptData.receiptPhotoUrl || generateSampleStationReceipt(
+      receiptData.stationReceiptNumber,
+      receiptData.actualDate,
+      voucher.stationName,
+      voucher.vehiclePlate,
+      voucher.driverName,
+      receiptData.actualQuantityLiters,
+      receiptData.actualAmountDZD,
+      receiptData.odometerKm
+    );
+    voucher.completedAt = new Date().toISOString();
+
+    // Actualiser l'odomètre du véhicule
+    if (vehicle && receiptData.odometerKm > vehicle.mileage) {
+      vehicle.mileage = receiptData.odometerKm;
+    }
+
+    // Créer l'entrée dans le journal des ravitaillements (FuelLog)
+    const newLog: FuelLog = {
+      id: `fl-${Date.now()}`,
+      vehicleId: voucher.vehicleId,
+      vehiclePlate: voucher.vehiclePlate,
+      driverId: voucher.driverId,
+      driverName: voucher.driverName,
+      amountDZD: receiptData.actualAmountDZD,
+      liters: receiptData.actualQuantityLiters,
+      pricePerLiterDZD: parseFloat((receiptData.actualAmountDZD / receiptData.actualQuantityLiters).toFixed(2)),
+      date: receiptData.actualDate,
+      odometerKm: receiptData.odometerKm,
+      previousOdometerKm: previousOdometer,
+      distanceDrivenKm: distance,
+      stationName: voucher.stationName,
+      city: voucher.stationCity,
+      receiptPhotoUrl: voucher.receiptPhotoUrl,
+      status: 'verified',
+      source: 'voucher_receipt',
+      refuelType: voucher.refuelType,
+      voucherNumber: voucher.voucherNumber,
+      stationReceiptNumber: receiptData.stationReceiptNumber,
+      prepaidCardNumber: voucher.prepaidCardNumber,
+      notes: `Ravitaillement rapproché — Bon ${voucher.voucherNumber} (${voucher.refuelType === 'partiel_appoint' ? 'Appoint' : 'Plein'}) — Carte ${voucher.prepaidCardNumber || 'Prépayée'}`,
+      isOverconsumption,
+      calculatedConsumption: consumption,
+    };
+
+    this.fuelLogs.unshift(newLog);
+
+    // Si surconsommation, générer une alerte automatique
+    if (isOverconsumption && vehicle) {
+      this.alerts.unshift({
+        id: `alt-fuel-${Date.now()}`,
+        vehicleId: vehicle.id,
+        vehiclePlate: vehicle.plate,
+        type: 'surconsommation',
+        severity: 'high',
+        title: `Alerte Surconsommation : ${consumption} L/100km`,
+        message: `Surconsommation anormale relevée sur ${vehicle.plate} (${vehicle.make} ${vehicle.model}). Ravitaillement de ${receiptData.actualQuantityLiters}L pour ${distance} km parcourus (${consumption} L/100km contre ${theoreticalConso} L/100km constructeur, écart +${Math.round(((consumption - theoreticalConso) / theoreticalConso) * 100)}%).`,
+        dueDate: 'Sous 48h',
+        date: new Date().toISOString().split('T')[0],
+        actionRequired: 'Contrôler la pression pneumatique, remplacer les filtres et inspecter le système d\'injection.',
+        resolved: false,
+      });
+    }
+
+    this.addActivityLog({
+      channel: 'internal_system',
+      type: 'fuel',
+      title: `Ravitaillement validé (${receiptData.stationReceiptNumber})`,
+      details: `${receiptData.actualQuantityLiters}L servis (${receiptData.actualAmountDZD.toLocaleString('fr-DZ')} DA). Compteur : ${receiptData.odometerKm} km (Conso : ${consumption} L/100km).`,
+      timestamp: new Date().toISOString(),
+      status: 'validated',
+      driverName: voucher.driverName,
+      vehiclePlate: voucher.vehiclePlate,
+    });
+
+    return { voucher, fuelLog: newLog };
   }
 
   // ===================== MAINTENANCE & ACCIDENTS =====================
