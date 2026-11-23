@@ -6,6 +6,7 @@ import { DriversManager } from './components/DriversManager.js';
 import { MissionsManager } from './components/MissionsManager.js';
 import { FuelTracking } from './components/FuelTracking.js';
 import { AccidentsManager } from './components/AccidentsManager.js';
+import { InterventionsManager } from './components/InterventionsManager.js';
 import { VehicleDetailModal } from './components/VehicleDetailModal.js';
 import { DriverPwaApp } from './components/DriverPwaApp.js';
 import { Auth2FAModal } from './components/Auth2FAModal.js';
@@ -19,6 +20,7 @@ import {
   FleetAlert, 
   SovereignActivityLog,
   MissionOrder,
+  VehicleIntervention,
   UserSession 
 } from './types.js';
 
@@ -60,6 +62,7 @@ export default function App() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [missions, setMissions] = useState<MissionOrder[]>([]);
+  const [interventions, setInterventions] = useState<VehicleIntervention[]>([]);
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [accidentClaims, setAccidentClaims] = useState<AccidentClaim[]>([]);
@@ -91,11 +94,12 @@ export default function App() {
 
   const fetchFleetData = async () => {
     try {
-      const [vRes, dRes, mRes, misRes, fRes, aRes, altRes, actRes] = await Promise.all([
+      const [vRes, dRes, mRes, misRes, itvRes, fRes, aRes, altRes, actRes] = await Promise.all([
         fetch('/api/fleet/vehicles'),
         fetch('/api/fleet/drivers'),
         fetch('/api/fleet/maintenance'),
         fetch('/api/fleet/missions'),
+        fetch('/api/fleet/interventions'),
         fetch('/api/fleet/fuel'),
         fetch('/api/fleet/accidents'),
         fetch('/api/fleet/alerts'),
@@ -106,6 +110,7 @@ export default function App() {
       if (dRes.ok) setDrivers(await dRes.json());
       if (mRes.ok) setMaintenanceRecords(await mRes.json());
       if (misRes.ok) setMissions(await misRes.json());
+      if (itvRes.ok) setInterventions(await itvRes.json());
       if (fRes.ok) setFuelLogs(await fRes.json());
       if (aRes.ok) setAccidentClaims(await aRes.json());
       if (altRes.ok) setAlerts(await altRes.json());
@@ -299,6 +304,17 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'interventions' && (
+          <InterventionsManager
+            interventions={interventions}
+            vehicles={vehicles}
+            drivers={drivers}
+            onRefreshData={fetchFleetData}
+            onNavigateTab={setActiveTab}
+            userSession={userSession}
+          />
+        )}
+
         {activeTab === 'accidents' && (
           <AccidentsManager
             accidentClaims={accidentClaims}
@@ -316,6 +332,7 @@ export default function App() {
           vehicle={selectedVehicle}
           fuelLogs={fuelLogs}
           maintenanceRecords={maintenanceRecords}
+          interventions={interventions}
           onClose={() => setSelectedVehicle(null)}
           onNavigateTab={setActiveTab}
         />

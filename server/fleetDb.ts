@@ -6,7 +6,8 @@ import {
   AccidentClaim, 
   FleetAlert, 
   SovereignActivityLog,
-  MissionOrder 
+  MissionOrder,
+  VehicleIntervention 
 } from '../src/types.js';
 
 // Générateur de Carte Grise Numérisée conforme aux normes du Ministère de l'Intérieur algérien
@@ -798,6 +799,160 @@ export class FleetDatabase {
     }
   ];
 
+  private interventions: VehicleIntervention[] = [
+    {
+      id: 'itv-1',
+      interventionOrderNumber: 'DI-2026-0045',
+      receptionSheetNumber: 'FR-2026-0045',
+      vehicleId: 'v-1',
+      vehiclePlate: '04512-118-16',
+      vehicleMakeModel: 'Renault Symbol 1.6 Expression',
+      vehicleCategory: 'VP',
+      odometerOutKm: 80000,
+      odometerInKm: 80025,
+      driverId: 'd-1',
+      driverName: 'Karim Belkacem',
+      driverPhone: '+213550123456',
+      type: 'vidange_moteur',
+      title: 'Vidange moteur des 80 000 km, filtres Naftal & plaquettes de freins AV',
+      description: 'Entretien périodique programmé des 80 000 km selon le carnet constructeur. Remplacement de l\'huile moteur par Naftal Chems 5W40, filtre à huile, filtre à air et contrôle de l\'usure des plaquettes de freins.',
+      urgency: 'normal',
+      garageType: 'atelier_interne',
+      garageName: 'Atelier Central Flotte & Mécanique (El Mouradia, Alger)',
+      dateSortieIntervention: '2026-10-10T08:30',
+      estimatedDurationDays: 1,
+      requestedBy: 'Karim Ziani (Gestionnaire de Flotte)',
+      requestedByRole: 'fleet_manager',
+      requestDate: '2026-10-09',
+      officialSealDI: true,
+      dateRetourIntervention: '2026-10-11T16:00',
+      coutInterventionDZD: 18500,
+      workDoneDetails: 'Vidange moteur avec huile de synthèse Naftal Chems 5W40 (4.5 L). Remplacement filtre à huile Purflux et filtre à air. Changement des plaquettes de freins avant Ferodo, purge et appoint liquide de frein DOT4. Contrôle géométrie.',
+      partsReplaced: [
+        'Huile Naftal Chems Synthèse 5W40 (5L)',
+        'Filtre à huile Purflux LS932',
+        'Filtre à air moteur',
+        'Jeu de plaquettes de freins avant Ferodo'
+      ],
+      qualityChecks: {
+        brakingTested: true,
+        fluidLevelsChecked: true,
+        tiresInspected: true,
+        dashboardWarningsOff: true,
+        roadTested: true,
+      },
+      receptionDecision: 'conforme_bon_service',
+      receptionNotes: 'Véhicule parfaitement conforme aux exigences de sécurité. Essai sur voie rapide concluant.',
+      receivedBy: 'Mourad Hadj (Responsable Maintenance)',
+      receivedByRole: 'maintenance_lead',
+      receptionDate: '2026-10-11',
+      officialSealFR: true,
+      status: 'cloturee_receptionnee',
+      createdAt: '2026-10-09T10:00:00Z',
+    },
+    {
+      id: 'itv-2',
+      interventionOrderNumber: 'DI-2026-0062',
+      receptionSheetNumber: 'FR-2026-0062',
+      vehicleId: 'v-2',
+      vehiclePlate: '12890-120-16',
+      vehicleMakeModel: 'Peugeot 208 1.6 HDi Active',
+      vehicleCategory: 'VP',
+      odometerOutKm: 60000,
+      odometerInKm: 60018,
+      driverId: 'd-2',
+      driverName: 'Youcef Amrani',
+      driverPhone: '+213661789012',
+      type: 'freinage',
+      title: 'Remplacement disques & plaquettes de freins AV, réglage géométrie',
+      description: 'Vibrations anormales ressenties dans le volant au freinage à plus de 80 km/h signalées par le chauffeur. Remplacement des disques de frein ventilés et contrôle complet du train avant.',
+      urgency: 'urgent',
+      garageType: 'partenaire_conventionne',
+      garageName: 'Garage Partenaire SAA Auto-Service (Bab Ezzouar)',
+      dateSortieIntervention: '2026-10-25T09:00',
+      estimatedDurationDays: 2,
+      requestedBy: 'Karim Ziani (Gestionnaire de Flotte)',
+      requestedByRole: 'fleet_manager',
+      requestDate: '2026-10-24',
+      officialSealDI: true,
+      dateRetourIntervention: '2026-10-27T14:30',
+      coutInterventionDZD: 32000,
+      workDoneDetails: 'Remplacement paire de disques de freins avant ventilés 266mm Valeo, jeu de plaquettes Brembo. Réglage parallélisme et géométrie train avant sur banc laser.',
+      partsReplaced: [
+        'Paire disques avant ventilés Valeo',
+        'Jeu de plaquettes Brembo HP',
+        'Liquide de frein Bendix DOT4'
+      ],
+      qualityChecks: {
+        brakingTested: true,
+        fluidLevelsChecked: true,
+        tiresInspected: true,
+        dashboardWarningsOff: true,
+        roadTested: true,
+      },
+      receptionDecision: 'conforme_bon_service',
+      receptionNotes: 'Freinage progressif et puissant rétabli. Aucune vibration constatée.',
+      receivedBy: 'Mourad Hadj (Responsable Maintenance)',
+      receivedByRole: 'maintenance_lead',
+      receptionDate: '2026-10-27',
+      officialSealFR: true,
+      status: 'cloturee_receptionnee',
+      createdAt: '2026-10-24T14:00:00Z',
+    },
+    {
+      id: 'itv-3',
+      interventionOrderNumber: 'DI-2026-0078',
+      vehicleId: 'v-4',
+      vehiclePlate: '08761-121-09',
+      vehicleMakeModel: 'Hyundai H100 Fourgon Tôlé',
+      vehicleCategory: 'VU',
+      odometerOutKm: 112500,
+      driverId: 'd-4',
+      driverName: 'Sofiane Mansouri',
+      driverPhone: '+213555987654',
+      type: 'carrosserie_tolerie',
+      title: 'Réparation carrosserie aile avant droite & bloc optique suite à sinistre',
+      description: 'Dégâts matériels suite à un accrochage au rond-point Kouba. Redressage de l\'aile avant droite, remplacement bloc optique projecteur droit, antibrouillard et mise en peinture aux teintes constructeur.',
+      urgency: 'critique',
+      garageType: 'concessionnaire',
+      garageName: 'Atelier Agréé Concessionnaire Hyundai (Oued Smar)',
+      dateSortieIntervention: '2026-11-20T10:00',
+      estimatedDurationDays: 5,
+      requestedBy: 'Karim Ziani (Gestionnaire de Flotte)',
+      requestedByRole: 'fleet_manager',
+      requestDate: '2026-11-20',
+      officialSealDI: true,
+      status: 'en_cours_atelier',
+      createdAt: '2026-11-20T10:30:00Z',
+    },
+    {
+      id: 'itv-4',
+      interventionOrderNumber: 'DI-2026-0085',
+      vehicleId: 'v-3',
+      vehiclePlate: '00341-319-31',
+      vehicleMakeModel: 'Toyota Hilux Double Cabine 4x4',
+      vehicleCategory: 'VU',
+      odometerOutKm: 142300,
+      driverId: 'd-3',
+      driverName: 'Ahmed Benali',
+      driverPhone: '+213770456789',
+      type: 'vidange_moteur',
+      title: 'Vidange urgente dépassée (+2 300 km) & révision injecteurs D-4D',
+      description: 'Alerte rouge critique de dépassement kilométrique sur odomètre (142 300 km vs 140 000 km prévus). Remplacement immédiat huile moteur, filtre gasoil avec séparateur d\'eau, contrôle circuit injection haute pression.',
+      urgency: 'urgent',
+      garageType: 'atelier_interne',
+      garageName: 'Atelier Central Flotte & Mécanique (Alger)',
+      dateSortieIntervention: '2026-11-24T08:00',
+      estimatedDurationDays: 1,
+      requestedBy: 'Karim Ziani (Gestionnaire de Flotte)',
+      requestedByRole: 'fleet_manager',
+      requestDate: '2026-11-23',
+      officialSealDI: true,
+      status: 'demande_emise',
+      createdAt: '2026-11-23T16:00:00Z',
+    }
+  ];
+
   private fuelLogs: FuelLog[] = [
     {
       id: 'fl-1',
@@ -1336,6 +1491,172 @@ export class FleetDatabase {
     if (index === -1) return false;
     this.missions.splice(index, 1);
     return true;
+  }
+
+  // ===================== INTERVENTIONS & DOCUMENTS (DI & FR) =====================
+
+  getInterventions(): VehicleIntervention[] {
+    return this.interventions;
+  }
+
+  getInterventionsByVehicle(vehiclePlate: string): VehicleIntervention[] {
+    return this.interventions.filter(i => i.vehiclePlate === vehiclePlate);
+  }
+
+  getInterventionById(id: string): VehicleIntervention | undefined {
+    return this.interventions.find(i => i.id === id);
+  }
+
+  addIntervention(data: Omit<VehicleIntervention, 'id' | 'interventionOrderNumber' | 'createdAt'>): VehicleIntervention {
+    const count = this.interventions.length + 80;
+    const year = new Date().getFullYear();
+    const orderNumber = `DI-${year}-${String(count + 1).padStart(4, '0')}`;
+
+    const newItv: VehicleIntervention = {
+      ...data,
+      id: `itv-${Date.now()}`,
+      interventionOrderNumber: orderNumber,
+      status: 'demande_emise',
+      officialSealDI: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Si urgence critique / immobilisante, basculer le véhicule en atelier
+    const veh = this.vehicles.find(v => v.id === newItv.vehicleId || v.plate === newItv.vehiclePlate);
+    if (veh && newItv.urgency === 'critique') {
+      veh.operationalMissionStatus = 'maintenance';
+      veh.status = 'maintenance';
+    }
+
+    // Journal d'audit souverain
+    this.addActivityLog({
+      channel: 'internal_system',
+      type: 'mission',
+      title: `Demande d'Intervention émise (${orderNumber})`,
+      details: `Véhicule ${newItv.vehiclePlate} — ${newItv.title} assigné à ${newItv.garageName}.`,
+      timestamp: new Date().toISOString(),
+      status: 'validated',
+      driverName: newItv.requestedBy,
+      vehiclePlate: newItv.vehiclePlate
+    });
+
+    this.interventions.unshift(newItv);
+    return newItv;
+  }
+
+  updateIntervention(id: string, updates: Partial<VehicleIntervention>): VehicleIntervention | undefined {
+    const itv = this.interventions.find(i => i.id === id);
+    if (!itv) return undefined;
+    Object.assign(itv, updates);
+    return itv;
+  }
+
+  takeInChargeIntervention(id: string, maintenanceLeadName: string): VehicleIntervention | undefined {
+    const itv = this.interventions.find(i => i.id === id);
+    if (!itv) return undefined;
+    itv.status = 'en_cours_atelier';
+
+    const veh = this.vehicles.find(v => v.id === itv.vehicleId || v.plate === itv.vehiclePlate);
+    if (veh) {
+      veh.operationalMissionStatus = 'maintenance';
+      veh.status = 'maintenance';
+    }
+
+    this.addActivityLog({
+      channel: 'internal_system',
+      type: 'mission',
+      title: `Prise en Charge Atelier (${itv.interventionOrderNumber})`,
+      details: `Véhicule ${itv.vehiclePlate} pris en charge par ${maintenanceLeadName} pour travaux.`,
+      timestamp: new Date().toISOString(),
+      status: 'validated',
+      driverName: maintenanceLeadName,
+      vehiclePlate: itv.vehiclePlate
+    });
+
+    return itv;
+  }
+
+  receptionIntervention(id: string, receptionData: {
+    dateRetourIntervention: string;
+    odometerInKm: number;
+    coutInterventionDZD: number;
+    workDoneDetails: string;
+    partsReplaced?: string[];
+    qualityChecks?: any;
+    receptionDecision: 'conforme_bon_service' | 'avec_reserves';
+    receptionNotes?: string;
+    receivedBy: string;
+    receivedByRole?: 'maintenance_lead' | 'super_admin';
+  }): VehicleIntervention | undefined {
+    const itv = this.interventions.find(i => i.id === id);
+    if (!itv) return undefined;
+
+    const year = new Date().getFullYear();
+    const frCount = this.interventions.filter(i => i.receptionSheetNumber).length + 80;
+    const frNum = `FR-${year}-${String(frCount + 1).padStart(4, '0')}`;
+
+    itv.receptionSheetNumber = frNum;
+    itv.dateRetourIntervention = receptionData.dateRetourIntervention || new Date().toISOString();
+    itv.odometerInKm = Number(receptionData.odometerInKm) || itv.odometerOutKm;
+    itv.coutInterventionDZD = Number(receptionData.coutInterventionDZD) || 0;
+    itv.workDoneDetails = receptionData.workDoneDetails;
+    itv.partsReplaced = receptionData.partsReplaced || [];
+    itv.qualityChecks = receptionData.qualityChecks || {
+      brakingTested: true,
+      fluidLevelsChecked: true,
+      tiresInspected: true,
+      dashboardWarningsOff: true,
+      roadTested: true,
+    };
+    itv.receptionDecision = receptionData.receptionDecision;
+    itv.receptionNotes = receptionData.receptionNotes;
+    itv.receivedBy = receptionData.receivedBy;
+    itv.receivedByRole = receptionData.receivedByRole || 'maintenance_lead';
+    itv.receptionDate = new Date().toISOString().split('T')[0];
+    itv.officialSealFR = true;
+    itv.status = 'cloturee_receptionnee';
+
+    // Réintégration du véhicule au parc si conforme
+    const veh = this.vehicles.find(v => v.id === itv.vehicleId || v.plate === itv.vehiclePlate);
+    if (veh) {
+      if (itv.receptionDecision === 'conforme_bon_service') {
+        veh.operationalMissionStatus = 'reserve_depot';
+        veh.status = 'active';
+        if (itv.odometerInKm && itv.odometerInKm > veh.mileage) {
+          veh.mileage = itv.odometerInKm;
+        }
+        // Si vidange, actualiser échéances
+        if (itv.type === 'vidange_moteur') {
+          veh.lastServiceKm = veh.mileage;
+          veh.nextServiceKm = veh.mileage + 10000;
+        }
+        // Si pneumatiques, remettre les pneus à neuf
+        if (itv.type === 'pneumatiques') {
+          veh.lastTireChangeKm = veh.mileage;
+          veh.tireWearPercentage = 0;
+          if (veh.tires) {
+            veh.tires.frontLeft = 98;
+            veh.tires.frontRight = 98;
+            veh.tires.rearLeft = 98;
+            veh.tires.rearRight = 98;
+          }
+        }
+      }
+    }
+
+    // Journal d'audit souverain
+    this.addActivityLog({
+      channel: 'internal_system',
+      type: 'mission',
+      title: `Fiche de Réception établie (${frNum})`,
+      details: `Véhicule ${itv.vehiclePlate} réceptionné (${itv.coutInterventionDZD.toLocaleString('fr-DZ')} DA). Réintégration au parc validée.`,
+      timestamp: new Date().toISOString(),
+      status: 'validated',
+      driverName: itv.receivedBy,
+      vehiclePlate: itv.vehiclePlate
+    });
+
+    return itv;
   }
 
   // ===================== FUEL LOGS & OVERCONSUMPTION =====================

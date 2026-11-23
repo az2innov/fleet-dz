@@ -306,3 +306,86 @@ export interface ANPDPComplianceReport {
   pwaSandboxed: boolean;
   gpsRetentionDays: number;
 }
+
+// ==============================================================================
+// MODULE GESTION DES INTERVENTIONS & DOCUMENTS NUMÉRIQUES (DI & FR)
+// ==============================================================================
+export type InterventionUrgency = 'normal' | 'urgent' | 'critique';
+
+export type InterventionType = 
+  | 'vidange_moteur'           // Vidange moteur et remplacement filtres Naftal
+  | 'freinage'                 // Plaquettes, disques et liquide de freins
+  | 'pneumatiques'             // Remplacement / permutation train de pneus
+  | 'distribution'             // Kit courroie de distribution & pompe à eau
+  | 'suspension_direction'     // Amortisseurs, rotules, parallélisme
+  | 'electricite_batterie'     // Batterie, alternateur, démarreur
+  | 'climatisation'            // Circuit climatisation / compresseur
+  | 'carrosserie_tolerie'      // Tôlerie, redressage, peinture suite à choc
+  | 'revision_generale'        // Révision générale périodique constructeur
+  | 'controle_technique_repa'; // Réparations suite à contrôle technique
+
+export type InterventionStatus = 
+  | 'demande_emise'       // 1. Demande d'intervention (DI) émise par le Gestionnaire de Flotte
+  | 'en_cours_atelier'    // 2. Pris en charge en atelier par le Responsable de Maintenance
+  | 'cloturee_receptionnee' // 3. Travaux terminés, Fiche de Réception (FR) validée et signée
+  | 'annulee';            // 4. Annulée
+
+export interface InterventionQualityChecks {
+  brakingTested: boolean;      // Essai système de freinage satisfaisant
+  fluidLevelsChecked: boolean; // Niveaux liquides moteur et refroidissement conformes
+  tiresInspected: boolean;     // Pression et serrage pneumatiques contrôlés
+  dashboardWarningsOff: boolean; // Absence de voyants d'alerte allumés au tableau de bord
+  roadTested: boolean;         // Essai dynamique sur route concluant
+}
+
+export interface VehicleIntervention {
+  id: string;
+  // Numérotation officielle
+  interventionOrderNumber: string; // Numéro de Demande d'Intervention : e.g. "DI-2026-0082"
+  receptionSheetNumber?: string;   // Numéro de Fiche de Réception : e.g. "FR-2026-0082"
+  
+  // Véhicule concerné
+  vehicleId: string;
+  vehiclePlate: string; // e.g. "04512-118-16"
+  vehicleMakeModel: string; // e.g. "Renault Symbol 1.6 Expression"
+  vehicleCategory?: VehicleCategory; // VP, VU, PL, SM, Bus
+  odometerOutKm: number; // Kilométrage odomètre à la sortie intervention
+  odometerInKm?: number; // Kilométrage odomètre au retour intervention
+  
+  // Chauffeur associé
+  driverId?: string;
+  driverName?: string;
+  driverPhone?: string;
+
+  // Volet 1 : Demande d'Intervention (Générée par le Gestionnaire de Parc)
+  type: InterventionType;
+  title: string;
+  description: string;
+  urgency: InterventionUrgency;
+  garageType: 'atelier_interne' | 'concessionnaire' | 'partenaire_conventionne';
+  garageName: string; // e.g. "Atelier Central Mécanique (Alger)" ou "Concessionnaire Renault Oued Smar"
+  dateSortieIntervention: string; // Date et heure de sortie atelier (YYYY-MM-DDTHH:mm)
+  estimatedDurationDays?: number;
+  requestedBy: string; // e.g. "Karim Ziani (Gestionnaire de Flotte)"
+  requestedByRole: 'fleet_manager' | 'super_admin';
+  requestDate: string; // YYYY-MM-DD
+  officialSealDI: boolean;
+
+  // Volet 2 : Fiche de Réception après Intervention (Générée par le Responsable de Maintenance)
+  dateRetourIntervention?: string; // Date et heure de retour au parc (YYYY-MM-DDTHH:mm)
+  coutInterventionDZD?: number; // Coût réel de l'intervention en Dinars Algériens (DA)
+  workDoneDetails?: string; // Description détaillée des pièces et opérations effectuées
+  partsReplaced?: string[]; // Liste des pièces neuves installées
+  qualityChecks?: InterventionQualityChecks;
+  receptionDecision?: 'conforme_bon_service' | 'avec_reserves';
+  receptionNotes?: string;
+  receivedBy?: string; // e.g. "Mourad Hadj (Responsable Maintenance)"
+  receivedByRole?: 'maintenance_lead' | 'super_admin';
+  receptionDate?: string; // YYYY-MM-DD
+  officialSealFR?: boolean;
+
+  // Statut global et métadonnées
+  status: InterventionStatus;
+  notes?: string;
+  createdAt: string;
+}

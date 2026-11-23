@@ -22,6 +22,7 @@ export type ActiveTab =
   | 'missions' 
   | 'drivers' 
   | 'vehicles' 
+  | 'interventions'
   | 'fuel' 
   | 'accidents' 
   | 'pwa_driver';
@@ -87,6 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           { id: 'vehicles', label: 'Audit Parc', icon: <Car className="w-4 h-4" /> },
           { id: 'drivers', label: 'Audit Chauffeurs', icon: <Users className="w-4 h-4" /> },
           { id: 'missions', label: 'Audit Missions', icon: <FileText className="w-4 h-4" /> },
+          { id: 'interventions', label: 'Audit Interventions', icon: <Wrench className="w-4 h-4" /> },
           { id: 'fuel', label: 'Audit Carburant', icon: <Fuel className="w-4 h-4" /> },
         ];
       case 'fleet_manager':
@@ -94,7 +96,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           { id: 'dashboard', label: 'Flotte & Opérations', icon: <Car className="w-4 h-4" /> },
           { id: 'missions', label: 'Ordres de Mission', icon: <FileText className="w-4 h-4" /> },
           { id: 'drivers', label: 'Chauffeurs & QR', icon: <Users className="w-4 h-4" /> },
-          { id: 'vehicles', label: 'Parc Véhicules', icon: <Wrench className="w-4 h-4" /> },
+          { id: 'vehicles', label: 'Parc Véhicules', icon: <Car className="w-4 h-4" /> },
+          { id: 'interventions', label: 'Interventions (DI/FR)', icon: <Wrench className="w-4 h-4" /> },
           { id: 'accidents', label: 'Sinistres', icon: <AlertTriangle className="w-4 h-4" />, badge: openClaimsCount > 0 ? openClaimsCount : undefined },
           { id: 'fuel', label: 'Carburant Naftal', icon: <Fuel className="w-4 h-4" /> },
         ];
@@ -102,6 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         return [
           { id: 'dashboard', label: 'Maintenance & Vidanges', icon: <Wrench className="w-4 h-4" />, badge: activeAlertsCount > 0 ? activeAlertsCount : undefined },
           { id: 'vehicles', label: 'Santé Parc & Pneus', icon: <Car className="w-4 h-4" /> },
+          { id: 'interventions', label: 'Interventions & Réceptions', icon: <Wrench className="w-4 h-4" /> },
           { id: 'accidents', label: 'Dégâts & Réparations', icon: <AlertTriangle className="w-4 h-4" />, badge: openClaimsCount > 0 ? openClaimsCount : undefined },
           { id: 'fuel', label: 'Relevés Odomètre', icon: <Fuel className="w-4 h-4" /> },
         ];
@@ -110,6 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           { id: 'dashboard', label: 'Contrôle Financier (DA)', icon: <TrendingUp className="w-4 h-4" /> },
           { id: 'fuel', label: 'Audit Carburant Naftal', icon: <Fuel className="w-4 h-4" /> },
           { id: 'missions', label: 'Budgets & Per Diem', icon: <FileText className="w-4 h-4" /> },
+          { id: 'interventions', label: 'Coûts Interventions (DA)', icon: <Wrench className="w-4 h-4" /> },
           { id: 'vehicles', label: 'Parc Automobile', icon: <Car className="w-4 h-4" /> },
           { id: 'accidents', label: 'Dépenses Sinistres', icon: <AlertTriangle className="w-4 h-4" /> },
         ];
@@ -118,7 +123,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           { id: 'dashboard', label: 'Flotte', icon: <Car className="w-4 h-4" />, badge: activeAlertsCount > 0 ? activeAlertsCount : undefined },
           { id: 'missions', label: 'Missions', icon: <FileText className="w-4 h-4" /> },
           { id: 'drivers', label: 'Chauffeurs', icon: <Users className="w-4 h-4" /> },
-          { id: 'vehicles', label: 'Véhicules', icon: <Wrench className="w-4 h-4" /> },
+          { id: 'vehicles', label: 'Véhicules', icon: <Car className="w-4 h-4" /> },
+          { id: 'interventions', label: 'Interventions', icon: <Wrench className="w-4 h-4" /> },
           { id: 'fuel', label: 'Carburant', icon: <Fuel className="w-4 h-4" /> },
           { id: 'accidents', label: 'Sinistres', icon: <AlertTriangle className="w-4 h-4" />, badge: openClaimsCount > 0 ? openClaimsCount : undefined },
         ];

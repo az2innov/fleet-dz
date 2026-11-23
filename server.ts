@@ -227,6 +227,64 @@ async function startServer() {
     }
   });
 
+  // ===================== INTERVENTIONS CRUD & DOCUMENTS (DI & FR) =====================
+  app.get('/api/fleet/interventions', (req: Request, res: Response) => {
+    const plate = req.query.plate as string | undefined;
+    if (plate) {
+      return res.json(fleetDb.getInterventionsByVehicle(plate));
+    }
+    res.json(fleetDb.getInterventions());
+  });
+
+  app.get('/api/fleet/interventions/:id', (req: Request, res: Response) => {
+    const itv = fleetDb.getInterventionById(req.params.id);
+    if (!itv) return res.status(404).json({ error: 'Intervention non trouvée' });
+    res.json(itv);
+  });
+
+  // Émettre une Demande d'Intervention (DI) par le Gestionnaire de Flotte
+  app.post('/api/fleet/interventions', (req: Request, res: Response) => {
+    try {
+      const newItv = fleetDb.addIntervention(req.body);
+      res.status(201).json(newItv);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Mettre à jour une intervention
+  app.put('/api/fleet/interventions/:id', (req: Request, res: Response) => {
+    try {
+      const updated = fleetDb.updateIntervention(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: 'Intervention non trouvée' });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Prise en charge atelier par le responsable maintenance
+  app.post('/api/fleet/interventions/:id/take-in-charge', (req: Request, res: Response) => {
+    try {
+      const updated = fleetDb.takeInChargeIntervention(req.params.id, req.body.maintenanceLeadName || 'Mourad Hadj (Responsable Maintenance)');
+      if (!updated) return res.status(404).json({ error: 'Intervention non trouvée' });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Établir et valider la Fiche de Réception après travaux (FR)
+  app.post('/api/fleet/interventions/:id/reception', (req: Request, res: Response) => {
+    try {
+      const updated = fleetDb.receptionIntervention(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: 'Intervention non trouvée' });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Fleet Fuel logs
   app.get('/api/fleet/fuel', (_req: Request, res: Response) => {
     res.json(fleetDb.getFuelLogs());
