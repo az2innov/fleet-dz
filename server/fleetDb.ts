@@ -220,6 +220,15 @@ export class FleetDatabase {
       hiringDate: '2022-03-01',
       bloodGroup: 'O+',
       managerNotes: 'Chauffeur de test dédié pour la validation PWA Souveraine et les alertes Naftal. Ponctuel et rigoureux.',
+      comments: [
+        {
+          id: 'cmt-test-1',
+          text: 'Chauffeur de test dédié pour la validation PWA Souveraine et les alertes Naftal. Ponctuel et rigoureux.',
+          date: '2026-11-20T14:30:00.000Z',
+          author: 'Karim Ziani (Exploitation)',
+          authorRole: 'fleet_manager',
+        }
+      ],
       emergencyContact: {
         name: 'Fatima Belkacem',
         phone: '+213550998811',
@@ -246,6 +255,15 @@ export class FleetDatabase {
       hiringDate: '2020-01-15',
       bloodGroup: 'A+',
       managerNotes: 'Conducteur titulaire Pool Direction Générale. Conduite défensive validée et habilitation protocolaire.',
+      comments: [
+        {
+          id: 'cmt-1-1',
+          text: 'Conducteur titulaire Pool Direction Générale. Conduite défensive validée et habilitation protocolaire.',
+          date: '2026-11-15T09:15:00.000Z',
+          author: 'Karim Ziani (Exploitation)',
+          authorRole: 'fleet_manager',
+        }
+      ],
       emergencyContact: {
         name: 'Nadia Belkacem',
         phone: '+213550443322',
@@ -272,6 +290,15 @@ export class FleetDatabase {
       hiringDate: '2021-06-01',
       bloodGroup: 'B+',
       managerNotes: 'Visite médicale périodique arrive à échéance sous 30 jours. Prendre rendez-vous au centre de médecine du travail.',
+      comments: [
+        {
+          id: 'cmt-2-1',
+          text: 'Visite médicale périodique arrive à échéance sous 30 jours. Prendre rendez-vous au centre de médecine du travail.',
+          date: '2026-11-18T11:45:00.000Z',
+          author: 'Karim Ziani (Exploitation)',
+          authorRole: 'fleet_manager',
+        }
+      ],
       emergencyContact: {
         name: 'Samir Amrani',
         phone: '+213661223344',
@@ -298,6 +325,15 @@ export class FleetDatabase {
       hiringDate: '2019-09-10',
       bloodGroup: 'O+',
       managerNotes: 'Spécialiste liaisons régionales Ouest et convois poids lourds. Très bonne maîtrise de la consommation de carburant.',
+      comments: [
+        {
+          id: 'cmt-3-1',
+          text: 'Spécialiste liaisons régionales Ouest et convois poids lourds. Très bonne maîtrise de la consommation de carburant.',
+          date: '2026-11-10T16:20:00.000Z',
+          author: 'Karim Ziani (Exploitation)',
+          authorRole: 'fleet_manager',
+        }
+      ],
       emergencyContact: {
         name: 'Khadidja Benali',
         phone: '+213770112233',
@@ -324,6 +360,15 @@ export class FleetDatabase {
       hiringDate: '2021-11-15',
       bloodGroup: 'AB+',
       managerNotes: 'Visite médicale expirée ! Suspension provisoire d’émission d’ordres de mission jusqu’à renouvellement du certificat d’aptitude.',
+      comments: [
+        {
+          id: 'cmt-4-1',
+          text: 'Visite médicale expirée ! Suspension provisoire d’émission d’ordres de mission jusqu’à renouvellement du certificat d’aptitude.',
+          date: '2026-11-12T08:30:00.000Z',
+          author: 'Karim Ziani (Exploitation)',
+          authorRole: 'fleet_manager',
+        }
+      ],
       emergencyContact: {
         name: 'Mustapha Mansouri',
         phone: '+213555332211',
@@ -350,6 +395,15 @@ export class FleetDatabase {
       hiringDate: '2023-02-01',
       bloodGroup: 'A-',
       managerNotes: 'Titulaire permis D et Transport en Commun. Assure régulièrement le transport d’employés et délégations.',
+      comments: [
+        {
+          id: 'cmt-5-1',
+          text: 'Titulaire permis D et Transport en Commun. Assure régulièrement le transport d’employés et délégations.',
+          date: '2026-11-14T10:00:00.000Z',
+          author: 'Karim Ziani (Exploitation)',
+          authorRole: 'fleet_manager',
+        }
+      ],
       emergencyContact: {
         name: 'Yasmine Khelil',
         phone: '+213662887766',
@@ -376,6 +430,15 @@ export class FleetDatabase {
       hiringDate: '2018-04-10',
       bloodGroup: 'O-',
       managerNotes: 'Expert conduite tout-terrain désertique et pistes sahariennes. Habilité sur les sites pétroliers fermés.',
+      comments: [
+        {
+          id: 'cmt-6-1',
+          text: 'Expert conduite tout-terrain désertique et pistes sahariennes. Habilité sur les sites pétroliers fermés.',
+          date: '2026-11-05T15:10:00.000Z',
+          author: 'Karim Ziani (Exploitation)',
+          authorRole: 'fleet_manager',
+        }
+      ],
       emergencyContact: {
         name: 'Ali Dahmani',
         phone: '+213670112244',
@@ -871,19 +934,75 @@ export class FleetDatabase {
   }
 
   addDriver(driver: Omit<Driver, 'id'>): Driver {
+    const comments = driver.comments || (driver.managerNotes ? [{
+      id: `cmt-${Date.now()}`,
+      text: driver.managerNotes,
+      date: new Date().toISOString(),
+      author: 'Karim Ziani (Exploitation)',
+      authorRole: 'fleet_manager',
+    }] : []);
+
     const newDriver: Driver = {
       ...driver,
       id: `d-${Date.now()}`,
+      comments,
     };
     this.drivers.unshift(newDriver);
     return newDriver;
   }
 
-  updateDriver(id: string, updates: Partial<Driver>): Driver | undefined {
+  updateDriver(id: string, updates: Partial<Driver> & { newCommentText?: string; commentAuthor?: string; commentAuthorRole?: string }): Driver | undefined {
     const d = this.drivers.find(drv => drv.id === id);
     if (!d) return undefined;
+
+    if (!d.comments) d.comments = [];
+
+    // Si un nouveau commentaire est transmis, on l'archive avec date et heure précises
+    if (updates.newCommentText && updates.newCommentText.trim()) {
+      const newComment = {
+        id: `cmt-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        text: updates.newCommentText.trim(),
+        date: new Date().toISOString(),
+        author: updates.commentAuthor || 'Karim Ziani (Exploitation)',
+        authorRole: updates.commentAuthorRole || 'fleet_manager',
+      };
+      d.comments.unshift(newComment);
+      d.managerNotes = newComment.text;
+      delete updates.newCommentText;
+      delete updates.commentAuthor;
+      delete updates.commentAuthorRole;
+    } else if (updates.managerNotes && updates.managerNotes.trim() && updates.managerNotes !== d.managerNotes) {
+      // Si le champ managerNotes est directement mis à jour avec un texte nouveau, on l'archive aussi automatiquement
+      const exists = d.comments.some(c => c.text === updates.managerNotes?.trim());
+      if (!exists) {
+        d.comments.unshift({
+          id: `cmt-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          text: updates.managerNotes.trim(),
+          date: new Date().toISOString(),
+          author: updates.commentAuthor || 'Karim Ziani (Exploitation)',
+          authorRole: updates.commentAuthorRole || 'fleet_manager',
+        });
+      }
+    }
+
     Object.assign(d, updates);
     return d;
+  }
+
+  addDriverComment(driverId: string, comment: { text: string; author?: string; authorRole?: string; date?: string }) {
+    const driver = this.drivers.find(d => d.id === driverId);
+    if (!driver) return undefined;
+    if (!driver.comments) driver.comments = [];
+    const newComment = {
+      id: `cmt-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      text: comment.text.trim(),
+      date: comment.date || new Date().toISOString(),
+      author: comment.author || 'Karim Ziani (Exploitation)',
+      authorRole: comment.authorRole || 'fleet_manager',
+    };
+    driver.comments.unshift(newComment);
+    driver.managerNotes = newComment.text;
+    return newComment;
   }
 
   deleteDriver(id: string): boolean {

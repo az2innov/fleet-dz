@@ -55,6 +55,14 @@ export type DriverStatus = 'available' | 'on_mission' | 'on_leave' | 'in_trainin
 export type LicenseCategory = 'B' | 'C' | 'D' | 'E' | 'transport_commun';
 export type EducationLevel = 'Primaire' | 'Moyen' | 'Secondaire' | 'Universitaire';
 
+export interface DriverComment {
+  id: string;
+  text: string;
+  date: string; // ISO 8601 string (date et heure précises d'insertion)
+  author?: string; // Nom de l'auteur du commentaire
+  authorRole?: string; // Rôle (ex: fleet_manager)
+}
+
 export interface Driver {
   id: string;
   name: string;
@@ -77,7 +85,8 @@ export interface Driver {
   hiringDate: string; // YYYY-MM-DD
   avatar?: string;
   bloodGroup?: string;
-  managerNotes?: string; // 6. Commentaire archivé à la disposition du gestionnaire du parc
+  managerNotes?: string; // 6. Dernier commentaire ou résumé
+  comments?: DriverComment[]; // 6. Historique immuable des commentaires archivés (datés et horodatés)
   emergencyContact?: {
     name: string;
     phone: string;

@@ -33,7 +33,7 @@ import {
   Eye,
   Upload
 } from 'lucide-react';
-import { Driver, Vehicle, DriverStatus, LicenseCategory, EducationLevel, UserSession } from '../types.js';
+import { Driver, Vehicle, DriverStatus, LicenseCategory, EducationLevel, DriverComment, UserSession } from '../types.js';
 
 interface DriversManagerProps {
   drivers: Driver[];
@@ -62,6 +62,11 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [previewDoc, setPreviewDoc] = useState<{ title: string; url: string } | null>(null);
 
+  // Modal d'ajout rapide de commentaire horodaté
+  const [quickCommentDriver, setQuickCommentDriver] = useState<Driver | null>(null);
+  const [quickCommentText, setQuickCommentText] = useState('');
+  const [isSavingQuickComment, setIsSavingQuickComment] = useState(false);
+
   // Form Fields (inclus les 6 nouveaux champs demandés)
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('+213');
@@ -72,7 +77,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
   const [educationLevel, setEducationLevel] = useState<EducationLevel>('Secondaire'); // 2. Niveau d'instruction
   const [photo, setPhoto] = useState<string | undefined>(undefined); // 3. Photo du conducteur
   const [licenseDocument, setLicenseDocument] = useState<string | undefined>(undefined); // 5. Permis (upload)
-  const [managerNotes, setManagerNotes] = useState(''); // 6. Commentaire archivé du gestionnaire
+  const [managerNotes, setManagerNotes] = useState(''); // 6. Nouveau commentaire à archiver
   const [department, setDepartment] = useState('Direction des Moyens Généraux');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [licenseCategories, setLicenseCategories] = useState<LicenseCategory[]>(['B']);
@@ -86,6 +91,24 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
   const [emergencyName, setEmergencyName] = useState('');
   const [emergencyPhone, setEmergencyPhone] = useState('+213');
   const [emergencyRelation, setEmergencyRelation] = useState('Conjoint(e)');
+
+  // Formatter la date et l'heure en français (Algérie)
+  const formatCommentDateTime = (isoDateString?: string): string => {
+    if (!isoDateString) return 'Date inconnue';
+    try {
+      const d = new Date(isoDateString);
+      if (isNaN(d.getTime())) return isoDateString;
+      return new Intl.DateTimeFormat('fr-DZ', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(d);
+    } catch {
+      return isoDateString;
+    }
+  };
 
   // Calcul dynamique de l'âge à partir de la date de naissance
   const calculateAge = (birthDateString?: string): number | null => {
@@ -170,7 +193,7 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
     setEducationLevel(driver.educationLevel || 'Secondaire');
     setPhoto(driver.photo || driver.avatar || undefined);
     setLicenseDocument(driver.licenseDocument || undefined);
-    setManagerNotes(driver.managerNotes || '');
+    setManagerNotes(''); // Prêt pour saisir une NOUVELLE note à archiver
     setDepartment(driver.department);
     setLicenseNumber(driver.licenseNumber);
     setLicenseCategories(driver.licenseCategories);
@@ -199,6 +222,22 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
 
   const handleSaveDriver = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Construire la liste des commentaires archivés
+    const existingComments = editingDriver?.comments || [];
+    let updatedComments = [...existingComments];
+
+    if (managerNotes.trim()) {
+      const newCmt: DriverComment = {
+        id: `cmt-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        text: managerNotes.trim(),
+        date: new Date().toISOString(),
+        author: userSession?.name || 'Karim Ziani (Exploitation)',
+        authorRole: userSession?.role || 'fleet_manager',
+      };
+      updatedComments.unshift(newCmt);
+    }
+
     const payload = {
       name: name.trim(),
       phone: phone.trim(),
@@ -209,7 +248,11 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
       educationLevel,
       photo: photo || undefined,
       licenseDocument: licenseDocument || undefined,
-      managerNotes: managerNotes.trim() || undefined,
+      managerNotes: managerNotes.trim() ? managerNotes.trim() : (editingDriver?.managerNotes || undefined),
+      newCommentText: managerNotes.trim() || undefined,
+      commentAuthor: userSession?.name || 'Karim Ziani (Exploitation)',
+      commentAuthorRole: userSession?.role || 'fleet_manager',
+      comments: updatedComments,
       department: department.trim(),
       licenseNumber: licenseNumber.trim(),
       licenseCategories,
@@ -245,6 +288,32 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
       onRefreshData();
     } catch (err) {
       console.error('Failed to save driver:', err);
+    }
+  };
+
+  // Enregistrer rapidement une nouvelle note horodatée depuis la carte
+  const handleSaveQuickComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickCommentDriver || !quickCommentText.trim()) return;
+
+    setIsSavingQuickComment(true);
+    try {
+      await fetch(`/api/fleet/drivers/${quickCommentDriver.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: quickCommentText.trim(),
+          author: userSession?.name || 'Karim Ziani (Exploitation)',
+          authorRole: userSession?.role || 'fleet_manager',
+        }),
+      });
+      setQuickCommentDriver(null);
+      setQuickCommentText('');
+      onRefreshData();
+    } catch (err) {
+      console.error('Failed to add driver comment:', err);
+    } finally {
+      setIsSavingQuickComment(false);
     }
   };
 
@@ -588,26 +657,68 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                   </span>
                 </div>
 
-                {/* 6. Commentaire archivé à la disposition du Gestionnaire du Parc */}
-                <div className="pt-2 border-t border-slate-100 dark:border-[#1e2a3f]">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                    <span className="flex items-center gap-1">
-                      <MessageSquare className="w-3 h-3 text-amber-500" />
-                      Note Gestionnaire de Parc :
+                {/* 6. Commentaires Archivés du Gestionnaire de Parc avec Date et Heure d'Insertion */}
+                <div className="pt-2 border-t border-slate-100 dark:border-[#1e2a3f] space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
+                      Commentaires Archivés ({driver.comments?.length || (driver.managerNotes ? 1 : 0)}) :
                     </span>
-                    {driver.managerNotes && (
-                      <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                        Archivée
-                      </span>
+                    {userSession?.role === 'fleet_manager' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuickCommentDriver(driver);
+                          setQuickCommentText('');
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Ajouter une nouvelle note horodatée"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Ajouter Note
+                      </button>
                     )}
                   </div>
-                  {driver.managerNotes ? (
-                    <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border-l-2 border-amber-500 text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed italic">
-                      "{driver.managerNotes}"
+
+                  {driver.comments && driver.comments.length > 0 ? (
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {driver.comments.map((comment) => (
+                        <div 
+                          key={comment.id} 
+                          className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border-l-2 border-amber-500 text-xs text-slate-700 dark:text-slate-300 space-y-1 shadow-2xs"
+                        >
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                            <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-bold">
+                              <Clock className="w-3 h-3" />
+                              {formatCommentDateTime(comment.date)}
+                            </span>
+                            {comment.author && (
+                              <span className="truncate max-w-[130px] text-[10px] text-slate-400">
+                                {comment.author}
+                              </span>
+                            )}
+                          </div>
+                          <p className="italic text-[11px] leading-relaxed text-slate-800 dark:text-slate-200">
+                            "{comment.text}"
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : driver.managerNotes ? (
+                    <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border-l-2 border-amber-500 text-xs text-slate-700 dark:text-slate-300 space-y-1 shadow-2xs">
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                        <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-bold">
+                          <Clock className="w-3 h-3" />
+                          Archivée
+                        </span>
+                      </div>
+                      <p className="italic text-[11px] leading-relaxed text-slate-800 dark:text-slate-200">
+                        "{driver.managerNotes}"
+                      </p>
                     </div>
                   ) : (
                     <p className="text-[11px] text-slate-400 italic">
-                      Aucun commentaire archivé. Modifiez le profil pour ajouter des remarques sur le conducteur.
+                      Aucun commentaire archivé. Cliquez sur « Ajouter Note » pour consigner une observation horodatée.
                     </p>
                   )}
                 </div>
@@ -1183,20 +1294,82 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                     <MessageSquare className="w-4 h-4" />
                     7. Commentaires & Notes Archivées du Gestionnaire
                   </h4>
-                  <span className="text-[10px] text-slate-400">Archivé dans le profil</span>
+                  <span className="text-[10px] text-slate-400">Archivage permanent avec date & heure</span>
                 </div>
 
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Ce champ est réservé à l'équipe de gestion de la flotte pour consigner les observations comportementales, ponctualité, historique d'astreinte, incidents légers ou consignes spécifiques.
+                  Ce volet consigne l'historique immuable des observations du gestionnaire (ponctualité, comportement, astreintes, habilitations). Chaque note est horodatée avec précision.
                 </p>
 
-                <textarea
-                  rows={3}
-                  value={managerNotes}
-                  onChange={(e) => setManagerNotes(e.target.value)}
-                  placeholder="Ex: Conducteur exemplaire et ponctuel. Habilité missions longue distance Sahara et convoi exceptionnel..."
-                  className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-slate-400"
-                />
+                {/* Historique des notes déjà archivées */}
+                {editingDriver && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        Historique des observations ({editingDriver.comments?.length || (editingDriver.managerNotes ? 1 : 0)})
+                      </span>
+                    </div>
+
+                    {editingDriver.comments && editingDriver.comments.length > 0 ? (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {editingDriver.comments.map((cmt) => (
+                          <div
+                            key={cmt.id}
+                            className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border-l-2 border-amber-500 text-xs space-y-1"
+                          >
+                            <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                              <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400 font-bold">
+                                <Clock className="w-3 h-3" />
+                                {formatCommentDateTime(cmt.date)}
+                              </span>
+                              {cmt.author && (
+                                <span className="text-slate-400">{cmt.author}</span>
+                              )}
+                            </div>
+                            <p className="italic text-[11px] leading-relaxed text-slate-800 dark:text-slate-200">
+                              "{cmt.text}"
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : editingDriver.managerNotes ? (
+                      <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border-l-2 border-amber-500 text-xs space-y-1">
+                        <div className="flex items-center justify-between text-[10px] text-amber-700 dark:text-amber-400 font-bold">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Note Initiale Archivée
+                          </span>
+                        </div>
+                        <p className="italic text-[11px] leading-relaxed text-slate-800 dark:text-slate-200">
+                          "{editingDriver.managerNotes}"
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] text-center">
+                        <p className="text-[11px] text-slate-400 italic">Aucune note enregistrée dans le profil pour l'instant.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Saisie d'une nouvelle note à archiver */}
+                <div className="pt-2">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {editingDriver ? 'Ajouter une nouvelle note au dossier :' : 'Première observation / commentaire :'}
+                  </label>
+                  <p className="text-[10px] text-slate-400 mb-1.5 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-emerald-500" />
+                    Sera archivé avec la date et l'heure actuelles ({formatCommentDateTime(new Date().toISOString())})
+                  </p>
+                  <textarea
+                    rows={3}
+                    value={managerNotes}
+                    onChange={(e) => setManagerNotes(e.target.value)}
+                    placeholder="Ex: Conducteur exemplaire et ponctuel. Habilité missions longue distance Sahara et convoi exceptionnel..."
+                    className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-slate-400"
+                  />
+                </div>
               </div>
 
               {/* Form Footer */}
@@ -1259,6 +1432,77 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 Fermer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL : AJOUT RAPIDE D'UNE NOTE HORODATÉE ================= */}
+      {quickCommentDriver && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-3xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-[#1e2a3f]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm">Ajouter une Note Horodatée</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[280px]">
+                    Conducteur : <strong>{quickCommentDriver.name}</strong> ({quickCommentDriver.assignedVehiclePlate || 'Sans véhicule'})
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setQuickCommentDriver(null)} 
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveQuickComment} className="space-y-4">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                <div>
+                  <p className="font-semibold">Archivage automatique & immuable</p>
+                  <p className="text-[11px] opacity-90 mt-0.5">
+                    Cette note sera immédiatement enregistrée avec la date et l'heure courante (<strong>{formatCommentDateTime(new Date().toISOString())}</strong>) et signée par <strong>{userSession?.name || 'Gestionnaire de Flotte'}</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Observation ou consigne opérationnelle <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={quickCommentText}
+                  onChange={(e) => setQuickCommentText(e.target.value)}
+                  placeholder="Ex: Contrôle de départ effectué. Consignes de sécurité rappelées. Prévoir vidange à 90 000 km..."
+                  className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500 placeholder-slate-400 resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-[#1e2a3f]">
+                <button
+                  type="button"
+                  onClick={() => setQuickCommentDriver(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-[#1c273e] hover:bg-slate-200 dark:hover:bg-[#253452] text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingQuickComment || !quickCommentText.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold shadow-lg shadow-amber-600/20 flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSavingQuickComment ? 'Archivage en cours...' : 'Archiver la Note'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

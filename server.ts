@@ -174,6 +174,26 @@ async function startServer() {
     }
   });
 
+  // Ajouter et archiver un commentaire horodaté dans le profil conducteur
+  app.post('/api/fleet/drivers/:id/comments', (req: Request, res: Response) => {
+    try {
+      const { text, author, authorRole } = req.body;
+      if (!text || !text.trim()) {
+        return res.status(400).json({ error: 'Le texte du commentaire est requis' });
+      }
+      const newComment = fleetDb.addDriverComment(req.params.id, {
+        text: text.trim(),
+        author: author || 'Karim Ziani (Exploitation)',
+        authorRole: authorRole || 'fleet_manager',
+        date: new Date().toISOString(),
+      });
+      if (!newComment) return res.status(404).json({ error: 'Chauffeur non trouvé' });
+      res.status(201).json(newComment);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Fleet Missions & Ordres de Mission CRUD
   app.get('/api/fleet/missions', (_req: Request, res: Response) => {
     res.json(fleetDb.getMissions());
