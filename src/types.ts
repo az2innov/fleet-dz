@@ -51,7 +51,8 @@ export interface Vehicle {
   plate: string; // e.g. "04512-118-16" (Wilaya 16 - Alger)
   make: string;
   model: string;
-  year: number;
+  year: number; // Année de mise en circulation
+  registrationYear?: number; // Année d'immatriculation officielle (carte grise)
   driverId: string;
   driverName: string;
   driverPhone: string;

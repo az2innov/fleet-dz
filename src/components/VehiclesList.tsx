@@ -54,6 +54,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
   const [fuelFilter, setFuelFilter] = useState<string>('all');
   const [yearFilter, setYearFilter] = useState<string>('all');
   const [makeFilter, setMakeFilter] = useState<string>('all');
+  const [modelFilter, setModelFilter] = useState<string>('all');
   const [mileageRangeFilter, setMileageRangeFilter] = useState<string>('all');
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -62,7 +63,12 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
 
   // Valeurs uniques dynamiques pour les sélecteurs de filtres
   const availableMakes = Array.from(new Set(vehicles.map(v => v.make))).filter(Boolean).sort();
-  const availableYears = Array.from(new Set(vehicles.map(v => v.year))).filter(Boolean).sort((a, b) => b - a);
+  const availableModels = Array.from(new Set(
+    vehicles
+      .filter(v => makeFilter === 'all' || v.make.toLowerCase() === makeFilter.toLowerCase())
+      .map(v => v.model)
+  )).filter(Boolean).sort();
+  const availableYears = Array.from(new Set(vehicles.map(v => v.registrationYear || v.year))).filter(Boolean).sort((a, b) => b - a);
 
   const hasActiveFilters = searchTerm !== '' || 
     statusFilter !== 'all' || 
@@ -71,6 +77,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
     fuelFilter !== 'all' || 
     yearFilter !== 'all' || 
     makeFilter !== 'all' || 
+    modelFilter !== 'all' ||
     mileageRangeFilter !== 'all';
 
   const handleResetFilters = () => {
@@ -81,6 +88,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
     setFuelFilter('all');
     setYearFilter('all');
     setMakeFilter('all');
+    setModelFilter('all');
     setMileageRangeFilter('all');
   };
 
@@ -157,15 +165,20 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
     const matchesFuel = fuelFilter === 'all' || 
       v.fuelType === fuelFilter;
 
-    // 6. Année de mise en circulation
+    // 6. Année d'immatriculation / mise en circulation
+    const vehicleRegYear = String(v.registrationYear || v.year);
     const matchesYear = yearFilter === 'all' || 
-      String(v.year) === yearFilter;
+      vehicleRegYear === yearFilter;
 
     // 7. Marque du constructeur
     const matchesMake = makeFilter === 'all' || 
       v.make.toLowerCase() === makeFilter.toLowerCase();
 
-    // 8. Tranches de kilométrage
+    // 8. Modèle de véhicule
+    const matchesModel = modelFilter === 'all' ||
+      v.model.toLowerCase() === modelFilter.toLowerCase();
+
+    // 9. Tranches de kilométrage
     let matchesMileage = true;
     if (mileageRangeFilter === '0-50000') {
       matchesMileage = v.mileage < 50000;
@@ -177,7 +190,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
       matchesMileage = v.mileage > 200000;
     }
 
-    return matchesSearch && matchesStatus && matchesOpStatus && matchesCategory && matchesFuel && matchesYear && matchesMake && matchesMileage;
+    return matchesSearch && matchesStatus && matchesOpStatus && matchesCategory && matchesFuel && matchesYear && matchesMake && matchesModel && matchesMileage;
   });
 
   const getOperationalStatusBadge = (status?: OperationalMissionStatus) => {
@@ -404,69 +417,75 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
           ))}
         </div>
 
-        {/* Ligne 3 : Filtres Combinatoires Détaillés (Marque/Modèle, Année, Kilométrage, Carburant, Affectation) */}
-        <div className="pt-3 border-t border-slate-100 dark:border-[#1e2a3f] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+        {/* Ligne 3 : Filtres Combinatoires Détaillés (Marque, Modèle, Année d'immatriculation, Kilométrage, Carburant, Affectation) */}
+        <div className="pt-3 border-t border-slate-100 dark:border-[#1e2a3f] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
           {/* 1. Marque */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
               Marque
             </label>
             <select
               value={makeFilter}
-              onChange={(e) => setMakeFilter(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold"
+              onChange={(e) => {
+                setMakeFilter(e.target.value);
+                setModelFilter('all');
+              }}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="all">Toutes les marques ({availableMakes.length})</option>
+              <option value="all">Toutes marques ({availableMakes.length})</option>
               {availableMakes.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
           </div>
 
-          {/* 2. Année du véhicule */}
+          {/* 2. Modèle */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-              Année
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+              Modèle
             </label>
             <select
-              value={yearFilter}
-              onChange={(e) => setYearFilter(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono font-bold"
+              value={modelFilter}
+              onChange={(e) => setModelFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="all">Toutes les années</option>
-              {availableYears.map((yr) => (
-                <option key={yr} value={String(yr)}>Année {yr}</option>
+              <option value="all">
+                {makeFilter !== 'all' ? `Tous modèles ${makeFilter}` : `Tous modèles (${availableModels.length})`}
+              </option>
+              {availableModels.map((mod) => (
+                <option key={mod} value={mod}>{mod}</option>
               ))}
             </select>
           </div>
 
-          {/* 3. Kilométrage (Tranches d'odomètre) */}
+          {/* 3. Année d'immatriculation */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-              Kilométrage
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+              Année Immat.
             </label>
             <select
-              value={mileageRangeFilter}
-              onChange={(e) => setMileageRangeFilter(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="all">Tous kilométrages</option>
-              <option value="0-50000">&lt; 50 000 km (Faible roulage)</option>
-              <option value="50000-100000">50 000 à 100 000 km</option>
-              <option value="100000-200000">100 000 à 200 000 km</option>
-              <option value="200000+">&gt; 200 000 km (Grand roulage)</option>
+              <option value="all">Toutes années ({availableYears.length})</option>
+              {availableYears.map((yr) => (
+                <option key={yr} value={String(yr)}>Immat. {yr}</option>
+              ))}
             </select>
           </div>
 
           {/* 4. Type de Carburant / Motorisation */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-              Carburant
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+              <Fuel className="w-3 h-3 text-sky-500" />
+              Type Carburant
             </label>
             <select
               value={fuelFilter}
               onChange={(e) => setFuelFilter(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               <option value="all">Tous carburants</option>
               <option value="diesel">Gasoil / Diesel (Naftal)</option>
@@ -475,15 +494,34 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
             </select>
           </div>
 
-          {/* 5. Affectation & Statut Opérationnel */}
+          {/* 5. Kilométrage (Tranches d'odomètre) */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-              Affectation Mission
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+              <Gauge className="w-3 h-3 text-amber-500" />
+              Kilométrage
+            </label>
+            <select
+              value={mileageRangeFilter}
+              onChange={(e) => setMileageRangeFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            >
+              <option value="all">Tous kilométrages</option>
+              <option value="0-50000">&lt; 50 000 km</option>
+              <option value="50000-100000">50 000 - 100 000 km</option>
+              <option value="100000-200000">100 000 - 200 000 km</option>
+              <option value="200000+">&gt; 200 000 km</option>
+            </select>
+          </div>
+
+          {/* 6. Affectation & Statut Opérationnel */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+              Affectation
             </label>
             <select
               value={operationalStatusFilter}
               onChange={(e) => setOperationalStatusFilter(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               <option value="all">Toutes affectations</option>
               <option value="reserve_depot">En Réserve (Dépôt)</option>
@@ -495,7 +533,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
             </select>
           </div>
 
-          {/* 6. Compteur de véhicules & Bouton Réinitialiser */}
+          {/* 7. Compteur de véhicules & Bouton Réinitialiser */}
           <div className="flex items-end gap-2">
             <div className="flex-1 bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2 py-1.5 text-center">
               <span className="text-[10px] text-slate-400 block font-medium">Affichage</span>
@@ -554,14 +592,28 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
                       <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${catBadge.badge}`}>
                         {v.vehicleCategory || 'VP'}
                       </span>
+                      {/* Année d'immatriculation badge */}
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1 shadow-xs">
+                        <Calendar className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        Immat. {v.registrationYear || v.year}
+                      </span>
                     </div>
 
                     <h3 className="text-base font-bold text-slate-900 dark:text-white mt-2">
                       {v.make} {v.model}
                     </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-300">
-                      Année {v.year} • <span className="font-semibold text-slate-700 dark:text-white uppercase">{v.fuelType === 'diesel' ? 'Gasoil' : v.fuelType === 'essence' ? 'Sans Plomb' : 'GPL'}</span>
-                    </p>
+                    
+                    {/* Année d'immatriculation et motorisation */}
+                    <div className="flex items-center gap-2 mt-1.5 text-xs flex-wrap">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-[#162135] px-2 py-0.5 rounded border border-slate-200/80 dark:border-slate-700/80">
+                        <Calendar className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        Année d'immatriculation : <strong className="font-mono text-slate-900 dark:text-white font-bold">{v.registrationYear || v.year}</strong>
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase">
+                        <Fuel className="w-3 h-3 text-sky-500" />
+                        {v.fuelType === 'diesel' ? 'Gasoil' : v.fuelType === 'essence' ? 'Sans Plomb' : 'GPL'}
+                      </span>
+                    </div>
                   </div>
 
                   {/* 1. État du véhicule affecté / sortie des missions */}

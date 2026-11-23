@@ -53,7 +53,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   const [plate, setPlate] = useState(vehicle?.plate || '');
   const [make, setMake] = useState(vehicle?.make || '');
   const [model, setModel] = useState(vehicle?.model || '');
-  const [year, setYear] = useState<number>(vehicle?.year || 2022);
+  const [year, setYear] = useState<number>(vehicle?.registrationYear || vehicle?.year || 2022);
   const [fuelType, setFuelType] = useState<'diesel' | 'essence' | 'gpl'>(vehicle?.fuelType || 'diesel');
   const [status, setStatus] = useState<Vehicle['status']>(vehicle?.status || 'active');
   const [chassisNumber, setChassisNumber] = useState(vehicle?.chassisNumber || '');
@@ -131,7 +131,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
       setPlate(vehicle.plate);
       setMake(vehicle.make);
       setModel(vehicle.model);
-      setYear(vehicle.year);
+      setYear(vehicle.registrationYear || vehicle.year);
       setFuelType(vehicle.fuelType);
       setStatus(vehicle.status);
       setChassisNumber(vehicle.chassisNumber || '');
@@ -191,6 +191,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
       make: make.trim(),
       model: model.trim(),
       year: Number(year),
+      registrationYear: Number(year),
       fuelType,
       status,
       mileage: Number(mileage),
@@ -409,7 +410,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
                 <Car className="w-4 h-4" /> 1. Identification & Statut d'Affectation Opérationnelle
               </h3>
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Matricule Algérien <span className="text-rose-500">*</span>
@@ -422,7 +423,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
                     onChange={(e) => setPlate(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">Format: Numéro-Année-Wilaya (ex: 16 Alger, 30 Ouargla)</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">Format: Numéro-Année-Wilaya</span>
                 </div>
 
                 <div>
@@ -432,11 +433,12 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="Ex: Renault, Toyota, Mercedes-Benz"
+                    placeholder="Ex: Renault, Toyota..."
                     value={make}
                     onChange={(e) => setMake(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">Constructeur automobile</span>
                 </div>
 
                 <div>
@@ -446,11 +448,29 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="Ex: Symbol 1.6, Hilux 4x4, Actros 3344"
+                    placeholder="Ex: Symbol 1.6, Hilux 4x4..."
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">Modèle commercial précis</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                    <span>Année d'Immatriculation <span className="text-rose-500">*</span></span>
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1990"
+                    max="2035"
+                    placeholder="Ex: 2022"
+                    value={year}
+                    onChange={(e) => setYear(Number(e.target.value))}
+                    className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">1ère mise en circulation (Carte Grise)</span>
                 </div>
               </div>
 

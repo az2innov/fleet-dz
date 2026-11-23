@@ -100,6 +100,11 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
               <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-slate-100 dark:bg-[#0c121e] px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1e2a3f] inline-block">
                 {vehicle.plate}
               </span>
+              {/* Année d'immatriculation */}
+              <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                Immat. : {vehicle.registrationYear || vehicle.year}
+              </span>
               {/* 8. Catégorie du véhicule */}
               <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
                 Catégorie : {vehicle.vehicleCategory || 'VP'}
@@ -111,10 +116,16 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             </div>
 
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {vehicle.make} {vehicle.model} ({vehicle.year})
+              {vehicle.make} {vehicle.model}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Motorisation : <strong className="text-slate-700 dark:text-slate-200 uppercase">{vehicle.fuelType}</strong> • Réservoir : {vehicle.tankCapacityLiters} L • Conso mixte : {vehicle.averageConsumption} L/100km
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+              <span>Année d'immatriculation : <strong className="text-slate-900 dark:text-white font-mono">{vehicle.registrationYear || vehicle.year}</strong></span>
+              <span>•</span>
+              <span>Motorisation : <strong className="text-slate-700 dark:text-slate-200 uppercase">{vehicle.fuelType}</strong></span>
+              <span>•</span>
+              <span>Réservoir : {vehicle.tankCapacityLiters} L</span>
+              <span>•</span>
+              <span>Conso mixte : {vehicle.averageConsumption} L/100km</span>
             </p>
           </div>
 
