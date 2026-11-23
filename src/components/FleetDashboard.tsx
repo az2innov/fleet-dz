@@ -77,14 +77,35 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   const totalFuelDZD = safeFuelLogs.reduce((acc, log) => acc + (Number(log?.amountDZD) || 0), 0);
   const totalLiters = safeFuelLogs.reduce((acc, log) => acc + (Number(log?.liters) || 0), 0);
   const activeAlerts = safeAlerts.filter(a => a && !a.resolved);
+  const totalVehiclesCount = safeVehicles.length;
   const activeVehicles = safeVehicles.filter(v => v && v.status === 'active');
+  const operationalCount = activeVehicles.length;
   const openClaims = safeClaims.filter(c => c && c.status !== 'settled');
   
   // Executive Financial & Operational KPIs
   const totalFleetKm = safeVehicles.reduce((acc, v) => acc + (Number(v?.mileage) || 0), 0);
-  const availabilityRate = safeVehicles.length > 0 ? Math.round((activeVehicles.length / safeVehicles.length) * 100) : 100;
+  
+  // 1. Taux de Disponibilité Technique du Parc (Aptitude mécanique, hors atelier ou accident)
+  const availabilityRate = totalVehiclesCount > 0 ? Math.round((operationalCount / totalVehiclesCount) * 100) : 100;
+  
+  // 2. Taux d'Exploitation des Véhicules (Mobilisation réelle sur le terrain)
+  const activeMissions = safeMissions.filter(m => m && (m.status === 'in_progress' || m.status === 'approved'));
+  const deployedVehiclePlates = new Set(activeMissions.map(m => m.vehiclePlate).filter(Boolean));
+  const deployedVehiclesCount = deployedVehiclePlates.size;
+  const idleOperationalCount = Math.max(0, operationalCount - deployedVehiclesCount);
+  
+  // Taux d'exploitation opérationnel (par rapport aux véhicules opérationnels disponibles)
+  const exploitationRate = operationalCount > 0 
+    ? Math.round((deployedVehiclesCount / operationalCount) * 100) 
+    : 0;
+
+  // Taux d'exploitation global par rapport au parc total
+  const globalExploitationRate = totalVehiclesCount > 0
+    ? Math.round((deployedVehiclesCount / totalVehiclesCount) * 100)
+    : 0;
+
   const estimatedCO2Kg = Math.round(totalLiters * 2.65);
-  const activeMissionsCount = safeMissions.filter(m => m && (m.status === 'in_progress' || m.status === 'approved')).length;
+  const activeMissionsCount = activeMissions.length;
   const overconsumptionLogs = safeFuelLogs.filter(f => f && f.isOverconsumption);
   const upcomingServicesCount = safeVehicles.filter(v => v && (v.nextServiceKm - v.mileage <= 5000)).length;
 
@@ -511,66 +532,126 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
 
     // Vue par défaut : Gestionnaire de Flotte (Operations)
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Disponibilité Parc</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <Car className="w-4 h-4" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* CARTE 1 : Disponibilité Technique du Parc */}
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider block">
+                  Disponibilité Parc
+                </span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+                  <Car className="w-3 h-3" /> Aptitude technique
+                </span>
+              </div>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Car className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{availabilityRate}%</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">({operationalCount}/{totalVehiclesCount} en service)</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+                <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${availabilityRate}%` }}></div>
+              </div>
             </div>
           </div>
-          <div className="mt-3">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{availabilityRate}%</span>
-              <span className="text-xs text-slate-500 dark:text-slate-300">({activeVehicles.length}/{safeVehicles.length} en service)</span>
-            </div>
-            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
-              <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${availabilityRate}%` }}></div>
-            </div>
-          </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 truncate">
+            {totalVehiclesCount - operationalCount > 0 
+              ? `${totalVehiclesCount - operationalCount} véhicule immobilisé atelier`
+              : '100% du parc apte à rouler'}
+          </p>
         </div>
 
-        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Missions en Cours</span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-              <FileText className="w-4 h-4" />
+        {/* CARTE 2 : Taux d'Exploitation des Véhicules */}
+        <div className="bg-white dark:bg-[#121929] border border-indigo-200/80 dark:border-indigo-500/30 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider block">
+                  Taux d'Exploitation
+                </span>
+                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1 mt-0.5">
+                  <Activity className="w-3 h-3" /> Mobilisation réelle
+                </span>
+              </div>
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <Activity className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">{exploitationRate}%</span>
+                <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">({deployedVehiclesCount}/{operationalCount} en mission)</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+                <div className="bg-indigo-600 h-full rounded-full transition-all duration-500" style={{ width: `${exploitationRate}%` }}></div>
+              </div>
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{activeMissionsCount} Ordres</span>
-            <button onClick={() => onNavigateTab('missions')} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold mt-2 block">
-              Voir les ordres de mission →
-            </button>
-          </div>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 truncate">
+            {idleOperationalCount} dispo en réserve ({globalExploitationRate}% du parc total)
+          </p>
         </div>
 
-        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Conducteurs Mobilisés</span>
-            <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-              <Users className="w-4 h-4" />
+        {/* CARTE 3 : Missions en Cours */}
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Missions en Cours</span>
+              <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                <FileText className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">{activeMissionsCount} Ordres</span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Trajets inter-wilayas validés</p>
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">5 Chauffeurs</span>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Permis et visites médicales suivis</p>
-          </div>
+          <button onClick={() => onNavigateTab('missions')} className="text-xs text-sky-600 dark:text-sky-400 hover:underline font-bold mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-left block cursor-pointer">
+            Voir les ordres de mission →
+          </button>
         </div>
 
-        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Dossiers Sinistres</span>
-            <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-              <ShieldAlert className="w-4 h-4" />
+        {/* CARTE 4 : Conducteurs Mobilisés */}
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Conducteurs Mobilisés</span>
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                <Users className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">5 Chauffeurs</span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Pool actif avec PWA déployée</p>
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">{openClaims.length} à Instruire</span>
-            <button onClick={() => onNavigateTab('accidents')} className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold mt-2 block">
-              Ouvrir les dossiers d'assurance →
-            </button>
+          <button onClick={() => onNavigateTab('drivers')} className="text-xs text-amber-600 dark:text-amber-400 hover:underline font-bold mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-left block cursor-pointer">
+            Gérer les conducteurs →
+          </button>
+        </div>
+
+        {/* CARTE 5 : Dossiers Sinistres */}
+        <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Dossiers Sinistres</span>
+              <div className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <ShieldAlert className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">{openClaims.length} à Instruire</span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Constats & déclarations reçues</p>
+            </div>
           </div>
+          <button onClick={() => onNavigateTab('accidents')} className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-bold mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-left block cursor-pointer">
+            Ouvrir les dossiers d'assurance →
+          </button>
         </div>
       </div>
     );
@@ -1155,6 +1236,36 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
       {/* ========================================================================= */}
       {currentRole === 'fleet_manager' && (
         <div className="space-y-6">
+          {/* Synthèse Métier : Disponibilité Technique vs Exploitation Réelle */}
+          <div className="bg-gradient-to-r from-emerald-500/10 via-indigo-500/10 to-sky-500/10 border border-slate-200/90 dark:border-[#1e2a3f] rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <Gauge className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                  Distinction Clé : Disponibilité Technique vs Taux d'Exploitation
+                </h3>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                  <strong className="text-emerald-700 dark:text-emerald-400">Disponibilité ({availabilityRate}%)</strong> = Véhicules opérationnels aptes à rouler ({operationalCount}/{totalVehiclesCount}) • <strong className="text-indigo-700 dark:text-indigo-400">Taux d'Exploitation ({exploitationRate}%)</strong> = Véhicules réellement mobilisés en mission ({deployedVehiclesCount}/{operationalCount} en service, soit {globalExploitationRate}% du parc total).
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-start md:self-auto shrink-0 font-mono text-[11px]">
+              <span className="px-2.5 py-1 rounded-xl bg-emerald-100/90 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                {operationalCount} Opérationnels
+              </span>
+              <span className="px-2.5 py-1 rounded-xl bg-indigo-100/90 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300 font-bold border border-indigo-300 dark:border-indigo-800 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                {deployedVehiclesCount} Roulants (Mission)
+              </span>
+              <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-[#1a233a] text-slate-700 dark:text-slate-300 font-bold border border-slate-300 dark:border-slate-700">
+                {idleOperationalCount} en Réserve
+              </span>
+            </div>
+          </div>
+
           {/* 1. Grille : Ordres de Mission & Ravitaillements PWA */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-6 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
@@ -1303,15 +1414,27 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                           <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-mono">{v.driverPhone}</span>
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
-                            v.status === 'active'
-                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
-                              : v.status === 'maintenance'
-                              ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
-                              : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
-                          }`}>
-                            {v.status === 'active' ? 'En Service' : v.status === 'maintenance' ? 'En Révision' : 'En Sinistre'}
-                          </span>
+                          {deployedVehiclePlates.has(v.plate) ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                              En Mission (Roulant)
+                            </span>
+                          ) : v.status === 'active' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              En Réserve (Dépôt)
+                            </span>
+                          ) : v.status === 'maintenance' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                              En Révision (Atelier)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                              En Sinistre (Immobilisé)
+                            </span>
+                          )}
                         </td>
                         <td className="py-3.5 px-4 font-mono font-semibold text-slate-800 dark:text-slate-200">
                           {v.mileage.toLocaleString('fr-DZ')} km
