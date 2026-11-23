@@ -53,6 +53,7 @@ export interface Vehicle {
 
 export type DriverStatus = 'available' | 'on_mission' | 'on_leave' | 'in_training';
 export type LicenseCategory = 'B' | 'C' | 'D' | 'E' | 'transport_commun';
+export type EducationLevel = 'Primaire' | 'Moyen' | 'Secondaire' | 'Universitaire';
 
 export interface Driver {
   id: string;
@@ -60,9 +61,14 @@ export interface Driver {
   phone: string;
   email?: string;
   wilaya: string;
+  address?: string; // 4. Adresse de résidence
+  birthDate?: string; // 1. Date de naissance (YYYY-MM-DD)
+  educationLevel?: EducationLevel; // 2. Niveau d'instruction (Primaire, Moyen, Secondaire, Universitaire)
+  photo?: string; // 3. Photo du conducteur (base64 Data URL)
   licenseNumber: string;
   licenseCategories: LicenseCategory[];
   licenseExpiry: string; // YYYY-MM-DD
+  licenseDocument?: string; // 5. Numérisation/Photo du permis de conduire (base64)
   medicalCheckupExpiry: string; // YYYY-MM-DD (visites médicales professionnelles)
   medicalCheckupStatus: 'valid' | 'expiring_soon' | 'expired';
   assignedVehiclePlate: string;
@@ -71,6 +77,7 @@ export interface Driver {
   hiringDate: string; // YYYY-MM-DD
   avatar?: string;
   bloodGroup?: string;
+  managerNotes?: string; // 6. Commentaire archivé à la disposition du gestionnaire du parc
   emergencyContact?: {
     name: string;
     phone: string;

@@ -23,9 +23,17 @@ import {
   QrCode,
   Copy,
   Smartphone,
-  ShieldCheck
+  ShieldCheck,
+  GraduationCap,
+  Cake,
+  Camera,
+  FileCheck,
+  FileUp,
+  MessageSquare,
+  Eye,
+  Upload
 } from 'lucide-react';
-import { Driver, Vehicle, DriverStatus, LicenseCategory, UserSession } from '../types.js';
+import { Driver, Vehicle, DriverStatus, LicenseCategory, EducationLevel, UserSession } from '../types.js';
 
 interface DriversManagerProps {
   drivers: Driver[];
@@ -47,16 +55,24 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
   const [qrDriver, setQrDriver] = useState<Driver | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [educationFilter, setEducationFilter] = useState<string>('all');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ title: string; url: string } | null>(null);
 
-  // Form Fields
+  // Form Fields (inclus les 6 nouveaux champs demandés)
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('+213');
   const [email, setEmail] = useState('');
   const [wilaya, setWilaya] = useState('16 - Alger');
+  const [address, setAddress] = useState(''); // 4. Adresse
+  const [birthDate, setBirthDate] = useState('1990-01-01'); // 1. Date de naissance
+  const [educationLevel, setEducationLevel] = useState<EducationLevel>('Secondaire'); // 2. Niveau d'instruction
+  const [photo, setPhoto] = useState<string | undefined>(undefined); // 3. Photo du conducteur
+  const [licenseDocument, setLicenseDocument] = useState<string | undefined>(undefined); // 5. Permis (upload)
+  const [managerNotes, setManagerNotes] = useState(''); // 6. Commentaire archivé du gestionnaire
   const [department, setDepartment] = useState('Direction des Moyens Généraux');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [licenseCategories, setLicenseCategories] = useState<LicenseCategory[]>(['B']);
@@ -71,12 +87,62 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
   const [emergencyPhone, setEmergencyPhone] = useState('+213');
   const [emergencyRelation, setEmergencyRelation] = useState('Conjoint(e)');
 
+  // Calcul dynamique de l'âge à partir de la date de naissance
+  const calculateAge = (birthDateString?: string): number | null => {
+    if (!birthDateString) return null;
+    const birth = new Date(birthDateString);
+    if (isNaN(birth.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age >= 0 ? age : null;
+  };
+
+  // Gestion du téléversement de la photo
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("La photo est trop volumineuse (maximum 5 Mo).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhoto(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Gestion du téléversement du permis numérisé
+  const handleLicenseDocUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert("Le document du permis est trop volumineux (maximum 8 Mo).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLicenseDocument(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleOpenCreate = () => {
     setEditingDriver(null);
     setName('');
     setPhone('+213550123456');
     setEmail('');
     setWilaya('16 - Alger');
+    setAddress('');
+    setBirthDate('1990-01-01');
+    setEducationLevel('Secondaire');
+    setPhoto(undefined);
+    setLicenseDocument(undefined);
+    setManagerNotes('');
     setDepartment('Direction des Moyens Généraux');
     setLicenseNumber(`ALG-${Math.floor(100000 + Math.random() * 900000)}-B`);
     setLicenseCategories(['B']);
@@ -99,6 +165,12 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
     setPhone(driver.phone);
     setEmail(driver.email || '');
     setWilaya(driver.wilaya);
+    setAddress(driver.address || '');
+    setBirthDate(driver.birthDate || '');
+    setEducationLevel(driver.educationLevel || 'Secondaire');
+    setPhoto(driver.photo || driver.avatar || undefined);
+    setLicenseDocument(driver.licenseDocument || undefined);
+    setManagerNotes(driver.managerNotes || '');
     setDepartment(driver.department);
     setLicenseNumber(driver.licenseNumber);
     setLicenseCategories(driver.licenseCategories);
@@ -132,6 +204,12 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
       phone: phone.trim(),
       email: email.trim() || undefined,
       wilaya: wilaya.trim(),
+      address: address.trim() || undefined,
+      birthDate: birthDate.trim() || undefined,
+      educationLevel,
+      photo: photo || undefined,
+      licenseDocument: licenseDocument || undefined,
+      managerNotes: managerNotes.trim() || undefined,
       department: department.trim(),
       licenseNumber: licenseNumber.trim(),
       licenseCategories,
@@ -187,13 +265,17 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
       d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.wilaya.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.address && d.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (d.educationLevel && d.educationLevel.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (d.managerNotes && d.managerNotes.toLowerCase().includes(searchTerm.toLowerCase())) ||
       d.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.licenseNumber.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || d.status === statusFilter;
     const matchesCategory = categoryFilter === 'all' || d.licenseCategories.includes(categoryFilter as LicenseCategory);
+    const matchesEducation = educationFilter === 'all' || d.educationLevel === educationFilter;
 
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesSearch && matchesStatus && matchesCategory && matchesEducation;
   });
 
   return (
@@ -305,6 +387,19 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
             <option value="E">Permis E (Remorques & Semi)</option>
             <option value="transport_commun">Transport en Commun</option>
           </select>
+
+          {/* Education level filter */}
+          <select
+            value={educationFilter}
+            onChange={(e) => setEducationFilter(e.target.value)}
+            className="bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          >
+            <option value="all">Tous Niveaux d'Instruction</option>
+            <option value="Primaire">Primaire</option>
+            <option value="Moyen">Moyen</option>
+            <option value="Secondaire">Secondaire</option>
+            <option value="Universitaire">Universitaire</option>
+          </select>
         </div>
       </div>
 
@@ -313,32 +408,64 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
         {filteredDrivers.map((driver) => {
           const isMedicalExpired = driver.medicalCheckupStatus === 'expired';
           const isMedicalWarning = driver.medicalCheckupStatus === 'expiring_soon';
+          const driverAge = calculateAge(driver.birthDate);
 
           return (
             <div
               key={driver.id}
               className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] hover:border-emerald-500/40 dark:hover:border-emerald-500/50 transition-all flex flex-col justify-between"
             >
-              <div className="space-y-4">
-                {/* Header Profile */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-lg flex items-center justify-center shadow-md">
-                      {driver.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-                        {driver.name}
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-300 flex items-center gap-1 mt-0.5">
-                        <Building2 className="w-3 h-3 text-slate-400 dark:text-slate-400" />
+              <div className="space-y-3.5">
+                {/* Header Profile avec Photo & Âge */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Photo de profil ou Initiales */}
+                    {driver.photo || driver.avatar ? (
+                      <div 
+                        className="relative group cursor-pointer shrink-0" 
+                        onClick={() => setPreviewDoc({ title: `Photo d'identité : ${driver.name}`, url: (driver.photo || driver.avatar)! })}
+                        title="Cliquer pour agrandir la photo"
+                      >
+                        <img 
+                          src={driver.photo || driver.avatar} 
+                          alt={driver.name} 
+                          className="w-13 h-13 rounded-2xl object-cover border-2 border-emerald-500/40 shadow-md group-hover:scale-105 transition-all"
+                        />
+                        <div className="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                          <Eye className="w-4 h-4" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-lg flex items-center justify-center shadow-md shrink-0">
+                        {driver.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </div>
+                    )}
+                    
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                          {driver.name}
+                        </h3>
+                        {/* 1. Date de naissance & Âge calculé */}
+                        {driverAge !== null && (
+                          <span 
+                            className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60 flex items-center gap-1"
+                            title={`Né(e) le ${driver.birthDate}`}
+                          >
+                            <Cake className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                            {driverAge} ans
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-300 flex items-center gap-1 mt-0.5 truncate">
+                        <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
                         {driver.department}
                       </p>
                     </div>
                   </div>
 
                   {/* Status Badge */}
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border shrink-0 ${
                     driver.status === 'available'
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
                       : driver.status === 'on_mission'
@@ -353,27 +480,42 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                   </span>
                 </div>
 
-                {/* Contact & Wilaya */}
-                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-[#0c121e] p-3 rounded-xl border border-slate-200/80 dark:border-[#1e2a3f]">
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-                    <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span className="font-mono font-medium truncate">{driver.phone}</span>
+                {/* Contact, Wilaya, Niveau d'instruction & Adresse */}
+                <div className="space-y-2 text-xs bg-slate-50 dark:bg-[#0c121e] p-3 rounded-xl border border-slate-200/80 dark:border-[#1e2a3f]">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span className="font-mono font-medium truncate">{driver.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+                      <MapPin className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                      <span className="truncate">{driver.wilaya}</span>
+                    </div>
+                    {/* 2. Niveau d'instruction */}
+                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+                      <GraduationCap className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                      <span className="truncate font-medium">
+                        Niveau : <strong className="text-indigo-700 dark:text-indigo-300">{driver.educationLevel || 'Secondaire'}</strong>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
+                      <HeartPulse className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                      <span>Groupe : <strong>{driver.bloodGroup || 'O+'}</strong></span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-                    <MapPin className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
-                    <span className="truncate">{driver.wilaya}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
-                    <span>Embauche : {driver.hiringDate}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200">
-                    <HeartPulse className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
-                    <span>Groupe : <strong>{driver.bloodGroup || 'O+'}</strong></span>
-                  </div>
+
+                  {/* 4. Adresse complète de résidence */}
+                  {driver.address && (
+                    <div className="pt-2 border-t border-slate-200/70 dark:border-[#1e2a3f] flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                      <MapPin className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
+                      <span className="line-clamp-1" title={driver.address}>
+                        <strong className="text-slate-700 dark:text-slate-300">Adresse :</strong> {driver.address}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Permis de conduire & Catégories */}
+                {/* Permis de conduire, Catégories & Permis Numérisé (5) */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-600 dark:text-slate-300 font-semibold flex items-center gap-1.5">
@@ -382,12 +524,30 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                     </span>
                     <span className="text-slate-500 dark:text-slate-400 text-[11px]">Exp: {driver.licenseExpiry}</span>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {driver.licenseCategories.map(cat => (
-                      <span key={cat} className="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 dark:bg-[#1f1a14] dark:border-amber-500/30 text-xs font-bold dark:text-amber-300">
-                        Catégorie {cat.toUpperCase().replace('_', ' ')}
-                      </span>
-                    ))}
+
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex flex-wrap gap-1">
+                      {driver.licenseCategories.map(cat => (
+                        <span key={cat} className="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 dark:bg-[#1f1a14] dark:border-amber-500/30 text-xs font-bold dark:text-amber-300">
+                          Catégorie {cat.toUpperCase().replace('_', ' ')}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* 5. Bouton Aperçu Permis Numérisé */}
+                    {driver.licenseDocument ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDoc({ title: `Permis Numérisé — ${driver.name}`, url: driver.licenseDocument! })}
+                        className="px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/50 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-800 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Consulter le document ou la photo du permis"
+                      >
+                        <FileCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                        <span>Permis Numérisé</span>
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 italic">Permis non scanné</span>
+                    )}
                   </div>
                 </div>
 
@@ -426,6 +586,30 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                   <span className="font-mono font-bold text-sky-700 bg-sky-50 dark:text-sky-300 dark:bg-sky-950/40 px-2.5 py-0.5 rounded border border-sky-200 dark:border-sky-800/60">
                     {driver.assignedVehiclePlate || 'Aucun'}
                   </span>
+                </div>
+
+                {/* 6. Commentaire archivé à la disposition du Gestionnaire du Parc */}
+                <div className="pt-2 border-t border-slate-100 dark:border-[#1e2a3f]">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                    <span className="flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3 text-amber-500" />
+                      Note Gestionnaire de Parc :
+                    </span>
+                    {driver.managerNotes && (
+                      <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                        Archivée
+                      </span>
+                    )}
+                  </div>
+                  {driver.managerNotes ? (
+                    <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border-l-2 border-amber-500 text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                      "{driver.managerNotes}"
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic">
+                      Aucun commentaire archivé. Modifiez le profil pour ajouter des remarques sur le conducteur.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -526,11 +710,68 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
             </div>
 
             <form onSubmit={handleSaveDriver} className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-800 dark:text-slate-200">
-              {/* Section 1: Civil info */}
+              {/* Section 1: État Civil, Photo, Âge & Adresse */}
               <div className="space-y-4">
-                <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                  1. État Civil & Rattachement Entreprise
+                <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-4 h-4" />
+                  1. État Civil, Photo, Âge & Adresse de Résidence
                 </h4>
+
+                {/* 3. Photo du Chauffeur (Upload) */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative group shrink-0">
+                    {photo ? (
+                      <img 
+                        src={photo} 
+                        alt="Aperçu Photo" 
+                        className="w-20 h-20 rounded-2xl object-cover border-2 border-emerald-500 shadow-md"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-2xl bg-slate-200 dark:bg-[#1c273e] border border-dashed border-slate-400 dark:border-slate-600 flex flex-col items-center justify-center text-slate-400">
+                        <Camera className="w-6 h-6 mb-1 text-slate-500" />
+                        <span className="text-[10px] font-semibold">Sans photo</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-1.5 text-center sm:text-left">
+                    <div className="flex items-center gap-2 justify-center sm:justify-start">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">Photo d'Identité du Conducteur</span>
+                      <span className="text-[10px] text-slate-400">(Format PNG, JPG — max 5 Mo)</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Cette photo sera affichée sur la fiche administrative du conducteur et sur son application PWA compagnon.
+                    </p>
+
+                    <div className="flex items-center gap-2 justify-center sm:justify-start pt-1">
+                      <input 
+                        id="driver-photo-file-input"
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handlePhotoUpload} 
+                        className="hidden" 
+                      />
+                      <label 
+                        htmlFor="driver-photo-file-input"
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{photo ? 'Changer la photo' : 'Téléverser une photo'}</span>
+                      </label>
+
+                      {photo && (
+                        <button
+                          type="button"
+                          onClick={() => setPhoto(undefined)}
+                          className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 text-xs font-semibold transition-colors cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -546,6 +787,46 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                     />
                   </div>
 
+                  {/* 1. Date de Naissance & Âge dynamique */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Date de Naissance
+                      </label>
+                      {birthDate && calculateAge(birthDate) !== null && (
+                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                          <Cake className="w-3 h-3" />
+                          {calculateAge(birthDate)} ans
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  {/* 2. Niveau d'Instruction */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Niveau d'Instruction
+                    </label>
+                    <select
+                      value={educationLevel}
+                      onChange={(e: any) => setEducationLevel(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    >
+                      <option value="Primaire">Primaire</option>
+                      <option value="Moyen">Moyen</option>
+                      <option value="Secondaire">Secondaire</option>
+                      <option value="Universitaire">Universitaire</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Numéro Téléphone (+213) <span className="text-rose-500">*</span>
@@ -557,6 +838,19 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Email Professionnel (Optionnel)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="chauffeur@dzfleet.dz"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                   </div>
 
@@ -574,6 +868,27 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                   </div>
                 </div>
 
+                {/* 4. Adresse de Résidence */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Adresse Complète de Résidence
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: 14 Rue Mohamed Belouizdad, Cité 500 Logts, Bâtiment 4, Alger"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Section 2: Rattachement Entreprise */}
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4" />
+                  2. Rattachement Entreprise & Paramètres RH
+                </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -622,10 +937,11 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 </div>
               </div>
 
-              {/* Section 2: Permis & Catégories */}
+              {/* Section 3: Permis de Conduire, Catégories & Upload Permis (5) */}
               <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                  2. Permis de Conduire & Catégories
+                <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-4 h-4" />
+                  3. Permis de Conduire, Catégories & Numérisation (Upload)
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -680,12 +996,65 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                     })}
                   </div>
                 </div>
+
+                {/* 5. Upload Numérisation / Photo du Permis */}
+                <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                      <FileUp className="w-4 h-4 text-amber-600" />
+                      Numérisation / Document du Permis de Conduire (Upload)
+                    </span>
+                    <span className="text-[10px] text-slate-400">(Photo recto/verso ou scan — max 8 Mo)</span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                    Permet d'archiver la copie numérique du permis biométrique officiel pour consultation immédiate lors des contrôles et des déclarations de sinistres.
+                  </p>
+
+                  <div className="flex items-center gap-3 pt-1 flex-wrap">
+                    <input 
+                      id="driver-license-file-input"
+                      type="file" 
+                      accept="image/*,.pdf" 
+                      onChange={handleLicenseDocUpload} 
+                      className="hidden" 
+                    />
+                    <label 
+                      htmlFor="driver-license-file-input"
+                      className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{licenseDocument ? 'Remplacer le document' : 'Téléverser le permis numérisé'}</span>
+                    </label>
+
+                    {licenseDocument && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc({ title: `Permis numérisé — ${name || 'Nouveau conducteur'}`, url: licenseDocument })}
+                          className="px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border border-sky-300 dark:border-sky-800 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Aperçu Document</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLicenseDocument(undefined)}
+                          className="px-2.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 text-xs font-semibold transition-colors cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Section 3: Contrôle Médical Professionnel */}
+              {/* Section 4: Contrôle Médical Professionnel */}
               <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
-                  3. Visite Médicale Périodique (Médecine du Travail)
+                <h4 className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <HeartPulse className="w-4 h-4" />
+                  4. Visite Médicale Périodique (Médecine du Travail)
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -717,10 +1086,11 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 </div>
               </div>
 
-              {/* Section 4: Affectation & Statut */}
+              {/* Section 5: Affectation Véhicule & Statut Dynamique */}
               <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <h4 className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
-                  4. Affectation Véhicule & Statut Dynamique
+                <h4 className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Car className="w-4 h-4" />
+                  5. Affectation Véhicule & Statut Dynamique
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -759,10 +1129,10 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 </div>
               </div>
 
-              {/* Section 5: Contact Urgence */}
+              {/* Section 6: Contact Urgence Famille */}
               <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  5. Contact d'Urgence Famille (Accident / Sinistre)
+                  6. Contact d'Urgence Famille (Accident / Sinistre)
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
@@ -806,6 +1176,29 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 </div>
               </div>
 
+              {/* 6. Section 7: Commentaires & Notes Archivées du Gestionnaire de Parc */}
+              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <MessageSquare className="w-4 h-4" />
+                    7. Commentaires & Notes Archivées du Gestionnaire
+                  </h4>
+                  <span className="text-[10px] text-slate-400">Archivé dans le profil</span>
+                </div>
+
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Ce champ est réservé à l'équipe de gestion de la flotte pour consigner les observations comportementales, ponctualité, historique d'astreinte, incidents légers ou consignes spécifiques.
+                </p>
+
+                <textarea
+                  rows={3}
+                  value={managerNotes}
+                  onChange={(e) => setManagerNotes(e.target.value)}
+                  placeholder="Ex: Conducteur exemplaire et ponctuel. Habilité missions longue distance Sahara et convoi exceptionnel..."
+                  className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-slate-400"
+                />
+              </div>
+
               {/* Form Footer */}
               <div className="p-4 bg-slate-50 dark:bg-[#0c121e] rounded-2xl flex items-center justify-between border border-slate-200 dark:border-[#1e2a3f]">
                 <button
@@ -824,6 +1217,48 @@ export const DriversManager: React.FC<DriversManagerProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL : APERÇU DOCUMENT OU PHOTO ================= */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[#121929] border border-[#222f47] rounded-3xl w-full max-w-2xl p-6 text-center shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-[#1e2a3f]">
+              <h3 className="font-bold text-white text-base text-left truncate">{previewDoc.title}</h3>
+              <button 
+                onClick={() => setPreviewDoc(null)} 
+                className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="max-h-[70vh] overflow-auto flex items-center justify-center bg-slate-950/70 rounded-2xl p-3 border border-slate-800">
+              <img 
+                src={previewDoc.url} 
+                alt={previewDoc.title} 
+                className="max-h-[65vh] max-w-full rounded-xl object-contain shadow-lg"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <a
+                href={previewDoc.url}
+                download="document-conducteur.png"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm shadow-emerald-600/20"
+              >
+                Télécharger le document
+              </a>
+              <button
+                type="button"
+                onClick={() => setPreviewDoc(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}

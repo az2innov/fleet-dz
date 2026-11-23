@@ -546,8 +546,12 @@ export const DriverPwaApp: React.FC<DriverPwaAppProps> = ({
         <div className="bg-[#121929] rounded-2xl p-3.5 border border-[#222f47] shadow-sm space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-xs shrink-0">
-                <User className="w-4 h-4" />
+              <div className="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
+                {activeDriver?.photo || activeDriver?.avatar ? (
+                  <img src={activeDriver.photo || activeDriver.avatar} alt={activeDriver.name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-4 h-4" />
+                )}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
