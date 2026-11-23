@@ -233,6 +233,28 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           </div>
         </div>
 
+        {/* TCO Consolidé du Véhicule */}
+        <div className="mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-slate-100 dark:from-[#0c1815] dark:via-[#0c161a] dark:to-[#0c121e] border border-emerald-300/80 dark:border-emerald-900/60 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white font-mono font-black text-xs">
+              TCO
+            </span>
+            <div>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                Coût Global d'Exploitation du Véhicule (TCO Consolidé)
+              </span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                Acquisition : <strong>{(vehicle.acquisitionCostDZD || 2500000).toLocaleString('fr-DZ')} DA</strong> + Entretien Cumulé : <strong className="text-amber-700 dark:text-amber-400">{(vehicle.totalMaintenanceCostDZD || 0).toLocaleString('fr-DZ')} DA</strong>
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-lg font-black font-mono text-emerald-800 dark:text-emerald-300">
+              {((vehicle.acquisitionCostDZD || 2500000) + (vehicle.totalMaintenanceCostDZD || 0)).toLocaleString('fr-DZ')} DA
+            </span>
+          </div>
+        </div>
+
         {/* 7. Usure des Pneumatiques selon le Kilométrage */}
         <div className="mb-5 p-4 rounded-2xl bg-sky-50/30 dark:bg-[#0c121e] border border-sky-200/60 dark:border-[#1e2a3f]">
           <div className="flex items-center justify-between flex-wrap gap-2 mb-2">

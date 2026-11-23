@@ -88,6 +88,9 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
   // 6. Coût d'acquisition du véhicule (DZD)
   const [acquisitionCostDZD, setAcquisitionCostDZD] = useState<number>(vehicle?.acquisitionCostDZD || 2500000);
 
+  // Coût d'entretien cumulé du véhicule (DZD) - Interventions Atelier
+  const [totalMaintenanceCostDZD, setTotalMaintenanceCostDZD] = useState<number>(vehicle?.totalMaintenanceCostDZD || 0);
+
   // 7. Usure des pneus selon le kilométrage
   const [mileage, setMileage] = useState<number>(vehicle?.mileage || 50000);
   const [lastTireChangeKm, setLastTireChangeKm] = useState<number>(vehicle?.lastTireChangeKm || 0);
@@ -145,6 +148,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
       setDrivetrain(vehicle.drivetrain || '4x2');
       setRegistrationDocUrl(vehicle.registrationDocUrl || undefined);
       setAcquisitionCostDZD(vehicle.acquisitionCostDZD || 2500000);
+      setTotalMaintenanceCostDZD(vehicle.totalMaintenanceCostDZD || 0);
       setMileage(vehicle.mileage);
       setLastTireChangeKm(vehicle.lastTireChangeKm || 0);
       setTireLifespanKm(vehicle.tireLifespanKm || 50000);
@@ -217,6 +221,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
       drivetrain,
       registrationDocUrl,
       acquisitionCostDZD: Number(acquisitionCostDZD),
+      totalMaintenanceCostDZD: Number(totalMaintenanceCostDZD),
       lastTireChangeKm: Number(lastTireChangeKm),
       tireLifespanKm: Number(tireLifespanKm),
       tireWearPercentage: Number(tireWearPercentage),
@@ -605,17 +610,17 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
               </div>
             </div>
 
-            {/* SECTION 5 & 6: Données Financières & Carte Grise Numérisée */}
+            {/* SECTION 5 & 6: Données Financières, Coût d'Entretien & Carte Grise Numérisée */}
             <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
               <h3 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4" /> 5 & 6. Coût d'Acquisition & Téléversement Carte Grise
+                <DollarSign className="w-4 h-4" /> 5 & 6. Volet Financier, Coûts d'Exploitation & Carte Grise
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* 6. Coût d'acquisition */}
                 <div className="bg-slate-50 dark:bg-[#0c121e] p-4 rounded-2xl border border-slate-200 dark:border-[#1e2a3f]">
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    6. Coût d'Acquisition du Véhicule (en Dinars Algériens DZD)
+                    6. Coût d'Acquisition (DZD)
                   </label>
                   <div className="relative">
                     <input
@@ -623,7 +628,7 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
                       step="10000"
                       value={acquisitionCostDZD}
                       onChange={(e) => setAcquisitionCostDZD(Number(e.target.value))}
-                      className="w-full bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-3 pr-12 py-2 text-sm text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-3 pr-10 py-2 text-sm text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">DA</span>
                   </div>
@@ -632,10 +637,36 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
                   </p>
                 </div>
 
+                {/* Coût d'Entretien Cumulé */}
+                <div className="bg-amber-50/50 dark:bg-[#19150d] p-4 rounded-2xl border border-amber-200/80 dark:border-amber-900/50">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                      <Wrench className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      Coût d'Entretien Cumulé (DZD)
+                    </label>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700">
+                      Auto / FR
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="1000"
+                      value={totalMaintenanceCostDZD}
+                      onChange={(e) => setTotalMaintenanceCostDZD(Number(e.target.value))}
+                      className="w-full bg-white dark:bg-[#121929] border border-amber-300 dark:border-amber-800 rounded-xl pl-3 pr-10 py-2 text-sm text-amber-900 dark:text-amber-200 font-mono font-bold focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-amber-600">DA</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
+                    Cumul : <strong className="text-amber-700 dark:text-amber-400">{totalMaintenanceCostDZD.toLocaleString('fr-DZ')} DA</strong> (Mis à jour via FR)
+                  </p>
+                </div>
+
                 {/* 5. Carte Grise Upload */}
                 <div className="bg-slate-50 dark:bg-[#0c121e] p-4 rounded-2xl border border-slate-200 dark:border-[#1e2a3f]">
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    5. Carte Grise Numérisée (Upload / Déclaration officielle)
+                    5. Carte Grise Numérisée
                   </label>
 
                   <div className="flex items-center gap-2 mt-2">
@@ -677,6 +708,28 @@ export const VehicleFormModal: React.FC<VehicleFormModalProps> = ({
                   </div>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 block">
                     Formats acceptés : PDF, PNG, JPG, SVG. Stockage souverain Loi 18-07.
+                  </span>
+                </div>
+              </div>
+
+              {/* Récapitulatif TCO Consolidé du Véhicule */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-slate-100 dark:from-[#0c1815] dark:via-[#0c161a] dark:to-[#0c121e] border border-emerald-300/80 dark:border-emerald-900/60 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="px-2.5 py-1 rounded-xl bg-emerald-600 text-white font-mono font-black text-xs">
+                    TCO
+                  </span>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                      Coût Global d'Exploitation du Véhicule (TCO Consolidé)
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Acquisition : <strong>{Number(acquisitionCostDZD || 0).toLocaleString('fr-DZ')} DA</strong> + Entretien Cumulé : <strong className="text-amber-700 dark:text-amber-400">{Number(totalMaintenanceCostDZD || 0).toLocaleString('fr-DZ')} DA</strong>
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-black font-mono text-emerald-800 dark:text-emerald-300">
+                    {(Number(acquisitionCostDZD || 0) + Number(totalMaintenanceCostDZD || 0)).toLocaleString('fr-DZ')} DA
                   </span>
                 </div>
               </div>
