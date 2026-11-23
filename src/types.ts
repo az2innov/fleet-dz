@@ -26,6 +26,26 @@ export interface TireCondition {
 
 export type InsuranceCompany = 'CAAT' | 'SAA' | 'CASH' | 'CIAR' | '2A' | 'GAM' | 'Autre';
 
+// Types spécifiques Véhicules & Réglementation Transport (Décret 04-381 / Code de la route algérien)
+export type VehicleCategory = 'VP' | 'VU' | 'PL' | 'SM' | 'Bus';
+// VP: Véhicule Particulier (Tourisme)
+// VU: Véhicule Utilitaire (< 3.5 T)
+// PL: Poids Lourd (> 3.5 T)
+// SM: Semi-Remorque (Tracteur + Remorque articulée)
+// Bus: Transport en commun / Voyageurs
+
+export type OperationalMissionStatus = 
+  | 'reserve_depot'    // 1. En Réserve au Dépôt (Disponible pour affectation)
+  | 'en_mission'        // 2. En Mission Active (Sorti / Roulant sur trajet réglementé)
+  | 'retour_mission'    // 3. Retour de Mission (Rentré au parc / Débriefing)
+  | 'maintenance'       // 4. En Révision Atelier (Immobilisé entretien préventif)
+  | 'sinistre'          // 5. En Sinistre (Immobilisé suite à accident / constat)
+  | 'reforme';          // 6. Réforme Administrative (Déclassé / Hors service)
+
+export type DrivetrainConfig = '4x2' | '4x4' | '6x2' | '6x4' | '8x4' | '8x8';
+
+export type TransmissionType = 'Manuelle' | 'Automatique' | 'Robotisée';
+
 export interface Vehicle {
   id: string;
   plate: string; // e.g. "04512-118-16" (Wilaya 16 - Alger)
@@ -49,6 +69,38 @@ export interface Vehicle {
   tires?: TireCondition;
   chassisNumber?: string;
   wilayaCode?: string;
+
+  // 1. État du véhicule affecté / sortie des missions
+  operationalMissionStatus?: OperationalMissionStatus;
+
+  // 2. Caractéristiques du moteur (Cylindrée, nombre de cylindres)
+  engineDisplacement?: string; // ex: "1.6L 16V", "2.8L D-4D", "12.0L Turbo Diesel"
+  engineCylinders?: number;     // ex: 4, 6, 8
+
+  // 3. Boîte de vitesses (Type auto/manuel, nombre de vitesses)
+  transmissionType?: TransmissionType;
+  transmissionGears?: number; // ex: 5, 6, 8, 12, 16 rapports
+
+  // 4. Traction / Essieux (4x2, 4x4, 6x2, 6x4, 8x4, 8x8)
+  drivetrain?: DrivetrainConfig;
+
+  // 5. Carte grise numérisée (Upload / Prévisualisation document officiel)
+  registrationDocUrl?: string;
+
+  // 6. Coût d'acquisition du véhicule (en Dinars Algériens DZD)
+  acquisitionCostDZD?: number;
+
+  // 7. Usure des pneumatiques selon le kilométrage
+  lastTireChangeKm?: number;   // Kilométrage lors du dernier remplacement
+  tireLifespanKm?: number;     // Durée de vie préconisée (ex: 50 000 km VP/VU, 80 000 km PL)
+  tireWearPercentage?: number; // % d'usure kilométrique calculé
+
+  // 8. Type de véhicule (VP, VU, PL, SM, Bus) et caractéristiques de charge
+  vehicleCategory?: VehicleCategory;
+  enginePowerHP?: number; // Puissance moteur (chevaux DIN / ch)
+  ptacKg?: number;        // Poids Total Autorisé en Charge (kg)
+  ptraKg?: number;        // Poids Total Roulant Autorisé (kg)
+  payloadKg?: number;     // Charge Utile (kg)
 }
 
 export type DriverStatus = 'available' | 'on_mission' | 'on_leave' | 'in_training';

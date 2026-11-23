@@ -16,9 +16,17 @@ import {
   Edit3,
   Trash2,
   Archive,
-  ShieldCheck
+  ShieldCheck,
+  Truck,
+  Layers,
+  Cpu,
+  Settings2,
+  Eye,
+  FileText,
+  DollarSign,
+  X
 } from 'lucide-react';
-import { Vehicle, Driver, UserSession } from '../types.js';
+import { Vehicle, Driver, UserSession, VehicleCategory, OperationalMissionStatus } from '../types.js';
 import { VehicleFormModal } from './VehicleFormModal.js';
 
 interface VehiclesListProps {
@@ -40,8 +48,10 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<Vehicle | null>(null);
+  const [previewCarteGrise, setPreviewCarteGrise] = useState<{ title: string; url: string } | null>(null);
 
   const handleOpenAdd = () => {
     setVehicleToEdit(null);
@@ -95,11 +105,71 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
       v.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
       v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.driverName.toLowerCase().includes(searchTerm.toLowerCase());
+      v.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (v.chassisNumber && v.chassisNumber.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCategory = categoryFilter === 'all' || (v.vehicleCategory || 'VP') === categoryFilter;
+
+    return matchesSearch && matchesStatus && matchesCategory;
   });
+
+  const getOperationalStatusBadge = (status?: OperationalMissionStatus) => {
+    switch (status) {
+      case 'reserve_depot':
+        return {
+          label: 'En Réserve (Dépôt)',
+          className: 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30'
+        };
+      case 'en_mission':
+        return {
+          label: 'En Mission Active',
+          className: 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30'
+        };
+      case 'retour_mission':
+        return {
+          label: 'Retour de Mission',
+          className: 'bg-cyan-50 text-cyan-700 border-cyan-300 dark:bg-cyan-500/15 dark:text-cyan-300 dark:border-cyan-500/30'
+        };
+      case 'maintenance':
+        return {
+          label: 'En Révision Atelier',
+          className: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30'
+        };
+      case 'sinistre':
+        return {
+          label: 'En Sinistre / Constat',
+          className: 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30'
+        };
+      case 'reforme':
+        return {
+          label: 'Réforme Administrative',
+          className: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
+        };
+      default:
+        return {
+          label: 'En Réserve (Dépôt)',
+          className: 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30'
+        };
+    }
+  };
+
+  const getCategoryBadge = (category?: VehicleCategory) => {
+    switch (category) {
+      case 'VP':
+        return { label: 'VP (Particulier)', badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40' };
+      case 'VU':
+        return { label: 'VU (Utilitaire)', badge: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-500/40' };
+      case 'PL':
+        return { label: 'PL (Poids Lourd > 3.5T)', badge: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-500/40' };
+      case 'SM':
+        return { label: 'SM (Semi-Remorque)', badge: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/40' };
+      case 'Bus':
+        return { label: 'Bus (Voyageurs)', badge: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/40' };
+      default:
+        return { label: 'VP (Particulier)', badge: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40' };
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -115,7 +185,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Santé Technique du Parc & Pneumatiques</h2>
             <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">
-              Supervision des {vehicles.length} véhicules : odomètre, pneumatiques (%), cycle de vidange Naftal et révisions atelier
+              Supervision des {vehicles.length} véhicules : odomètre, pneumatiques au km, cycle de vidange Naftal et caractéristiques mécaniques
             </p>
           </div>
         ) : (
@@ -128,7 +198,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Parc Automobile de l'Entreprise</h2>
             <p className="text-xs text-slate-500 dark:text-slate-300 mt-0.5">
-              Suivi des {vehicles.length} véhicules, fiches techniques, pneumatiques et échéances réglementaires (Algérie)
+              Suivi des {vehicles.length} véhicules • Spécifications mécaniques, PTAC/PTRA, Cartes Grises et usure kilométrique
             </p>
           </div>
         )}
@@ -145,7 +215,7 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
           </div>
         ) : userSession?.role === 'controller' ? (
           <div className="px-3.5 py-2 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/30 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto">
-            <Shield className="w-4 h-4 text-sky-500" />
+            <DollarSign className="w-4 h-4 text-sky-500" />
             <span>Audit Actifs & Amortissements</span>
           </div>
         ) : (
@@ -180,70 +250,90 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
         </div>
       )}
 
-      {userSession?.role === 'controller' && (
-        <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-800 dark:text-sky-300 text-xs flex items-center gap-3">
-          <Shield className="w-5 h-5 text-sky-500 shrink-0" />
-          <div>
-            <strong>Contrôle de Gestion (Audit du Parc) : </strong>
-            Ce module est accessible en consultation financière pour le suivi des amortissements et des coûts d'exploitation.
+      {/* Filters: Category & Search & Status */}
+      <div className="space-y-3">
+        {/* Category Filter Pills (8. Type de Véhicule) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+          <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
+            <Truck className="w-3.5 h-3.5" /> Catégorie :
+          </span>
+          {[
+            { id: 'all', label: `Tous les types (${vehicles.length})` },
+            { id: 'VP', label: `VP - Particulier (${vehicles.filter(v => (v.vehicleCategory || 'VP') === 'VP').length})` },
+            { id: 'VU', label: `VU - Utilitaire (${vehicles.filter(v => v.vehicleCategory === 'VU').length})` },
+            { id: 'PL', label: `PL - Poids Lourd (${vehicles.filter(v => v.vehicleCategory === 'PL').length})` },
+            { id: 'SM', label: `SM - Semi-Remorque (${vehicles.filter(v => v.vehicleCategory === 'SM').length})` },
+            { id: 'Bus', label: `Bus - Voyageurs (${vehicles.filter(v => v.vehicleCategory === 'Bus').length})` },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setCategoryFilter(cat.id)}
+              className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer border ${
+                categoryFilter === cat.id
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/30'
+                  : 'bg-white dark:bg-[#121929] border-slate-200 dark:border-[#1e2a3f] text-slate-600 dark:text-slate-300 hover:border-emerald-500/50'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search & Status Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-4 shadow-xs">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Matricule, marque, chauffeur, VIN châssis..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
           </div>
-        </div>
-      )}
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-4 shadow-xs">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Matricule (ex: 04512-118-16), marque, chauffeur..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          />
-        </div>
-
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#1e2a3f] text-xs">
-          <button
-            onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-              statusFilter === 'all' ? 'bg-white dark:bg-[#1c273e] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Tous ({vehicles.length})
-          </button>
-          <button
-            onClick={() => setStatusFilter('active')}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-              statusFilter === 'active' ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-600/30 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            En service
-          </button>
-          <button
-            onClick={() => setStatusFilter('maintenance')}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-              statusFilter === 'maintenance' ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-600/30 dark:text-amber-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            En révision
-          </button>
-          <button
-            onClick={() => setStatusFilter('accident')}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-              statusFilter === 'accident' ? 'bg-rose-500/15 text-rose-700 dark:bg-rose-600/30 dark:text-rose-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Sinistre
-          </button>
-          <button
-            onClick={() => setStatusFilter('retired')}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-              statusFilter === 'retired' ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Réforme
-          </button>
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#1e2a3f] text-xs">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'all' ? 'bg-white dark:bg-[#1c273e] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Tous ({vehicles.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('active')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'active' ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-600/30 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              En service
+            </button>
+            <button
+              onClick={() => setStatusFilter('maintenance')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'maintenance' ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-600/30 dark:text-amber-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              En révision
+            </button>
+            <button
+              onClick={() => setStatusFilter('accident')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'accident' ? 'bg-rose-500/15 text-rose-700 dark:bg-rose-600/30 dark:text-rose-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Sinistre
+            </button>
+            <button
+              onClick={() => setStatusFilter('retired')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'retired' ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Réforme
+            </button>
+          </div>
         </div>
       </div>
 
@@ -252,9 +342,16 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
         {filteredVehicles.map((v) => {
           const servicePercentage = Math.min(100, Math.round(((v.mileage - v.lastServiceKm) / (v.nextServiceKm - v.lastServiceKm)) * 100));
           const isOverdue = v.mileage >= v.nextServiceKm;
-          const avgTires = v.tires 
-            ? Math.round((v.tires.frontLeft + v.tires.frontRight + v.tires.rearLeft + v.tires.rearRight) / 4)
-            : 85;
+          
+          // 7. Usure des pneumatiques selon le kilométrage
+          const kmSinceTireChange = Math.max(0, v.mileage - (v.lastTireChangeKm || 0));
+          const tireLifespan = v.tireLifespanKm || 50000;
+          const tireKmWear = v.tireWearPercentage !== undefined 
+            ? v.tireWearPercentage 
+            : Math.min(100, Math.round((kmSinceTireChange / tireLifespan) * 100));
+
+          const opStatus = getOperationalStatusBadge(v.operationalMissionStatus);
+          const catBadge = getCategoryBadge(v.vehicleCategory);
 
           return (
             <div
@@ -263,40 +360,34 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
               className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.4),0_1px_0_0_rgba(255,255,255,0.06)_inset] hover:border-emerald-500/40 dark:hover:border-emerald-500/50 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group"
             >
               <div>
-                {/* Vehicle Header */}
-                <div className="flex items-start justify-between">
+                {/* Vehicle Header with Category & Operational Status */}
+                <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-mono text-sm font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-[#1c273e] px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 group-hover:border-emerald-500/40 transition-colors">
                         {v.plate}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${
-                        v.status === 'active'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40'
-                          : v.status === 'maintenance'
-                          ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40'
-                          : v.status === 'accident'
-                          ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40'
-                          : v.status === 'retired'
-                          ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
-                          : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                      }`}>
-                        {v.status === 'active' ? 'En Service' : 
-                         v.status === 'maintenance' ? 'En Révision' : 
-                         v.status === 'accident' ? 'En Sinistre' : 
-                         v.status === 'retired' ? 'Réforme Admin.' : 'Disponible'}
+                      {/* 8. Catégorie (VP/VU/PL/SM/Bus) */}
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${catBadge.badge}`}>
+                        {v.vehicleCategory || 'VP'}
                       </span>
                     </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1.5">
+
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white mt-2">
                       {v.make} {v.model}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-300">
-                      Année {v.year} • Motorisation : <span className="font-semibold text-slate-700 dark:text-white uppercase">{v.fuelType === 'diesel' ? 'Gasoil' : v.fuelType === 'essence' ? 'Sans Plomb' : 'GPL/Sirghaz'}</span>
+                      Année {v.year} • <span className="font-semibold text-slate-700 dark:text-white uppercase">{v.fuelType === 'diesel' ? 'Gasoil' : v.fuelType === 'essence' ? 'Sans Plomb' : 'GPL'}</span>
                     </p>
                   </div>
 
-                  {userSession?.role === 'fleet_manager' && (
-                    <div className="flex items-center gap-1">
+                  {/* 1. État du véhicule affecté / sortie des missions */}
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${opStatus.className}`}>
+                      {opStatus.label}
+                    </span>
+
+                    {userSession?.role === 'fleet_manager' && (
                       <button
                         onClick={(e) => handleOpenEdit(v, e)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -304,12 +395,77 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2, 3 & 4. Caractéristiques Moteur, Transmission & Traction (Essieux) */}
+                <div className="mt-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] text-[11px] space-y-1.5">
+                  <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                    <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-medium">
+                      <Cpu className="w-3.5 h-3.5 text-amber-500" /> Motorisation & Boîte :
+                    </span>
+                    <strong className="font-semibold text-slate-900 dark:text-white">
+                      {v.engineDisplacement || '1.6L'} ({v.engineCylinders || 4} cyl.) • {v.transmissionType || 'Manuelle'} {v.transmissionGears ? `${v.transmissionGears}v` : ''}
+                    </strong>
+                  </div>
+
+                  <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                    <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-medium">
+                      <Settings2 className="w-3.5 h-3.5 text-sky-500" /> Traction (Essieux) :
+                    </span>
+                    <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 text-[10px]">
+                      {v.drivetrain || '4x2'}
+                    </span>
+                  </div>
+
+                  {/* 8. Poids réglementaires (PTAC / PTRA) si renseignés */}
+                  {(v.ptacKg || v.ptraKg) && (
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400">
+                      <span>PTAC : <strong className="text-slate-800 dark:text-white">{v.ptacKg?.toLocaleString('fr-DZ')} kg</strong></span>
+                      {v.ptraKg && (
+                        <span>PTRA : <strong className="text-slate-800 dark:text-white">{v.ptraKg.toLocaleString('fr-DZ')} kg</strong></span>
+                      )}
+                      {v.enginePowerHP && (
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{v.enginePowerHP} ch DIN</span>
+                      )}
                     </div>
                   )}
                 </div>
 
+                {/* 5 & 6. Coût d'Acquisition & Carte Grise Numérisée */}
+                <div className="mt-2.5 p-2.5 rounded-xl bg-emerald-50/40 dark:bg-[#0c161a] border border-emerald-200/60 dark:border-emerald-950/60 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">6. Coût d'Acquisition</span>
+                    <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300 text-xs">
+                      {(v.acquisitionCostDZD || 2200000).toLocaleString('fr-DZ')} <span className="text-[10px]">DA</span>
+                    </span>
+                  </div>
+
+                  {/* 5. Carte Grise Button */}
+                  {v.registrationDocUrl ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewCarteGrise({
+                          title: `Carte Grise Officielle — ${v.plate} (${v.make} ${v.model})`,
+                          url: v.registrationDocUrl!
+                        });
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#121929] hover:bg-emerald-50 dark:hover:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-600/40 text-[10px] font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer"
+                      title="Consulter la carte grise officielle numérisée"
+                    >
+                      <FileCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Carte Grise</span>
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 italic">Non numérisée</span>
+                  )}
+                </div>
+
                 {/* Driver & Assignment */}
-                <div className="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] text-xs flex items-center justify-between">
+                <div className="mt-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c121e] border border-slate-200/80 dark:border-[#1e2a3f] text-xs flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <div>
@@ -320,53 +476,53 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
                   <span className="font-mono text-slate-600 dark:text-slate-300 text-[11px] font-semibold">{v.driverPhone}</span>
                 </div>
 
-                {/* Odometer & Tire health */}
-                <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
-                  <div className="bg-slate-50 dark:bg-[#0c121e] p-2.5 rounded-xl border border-slate-200/80 dark:border-[#1e2a3f]">
-                    <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1 text-[11px] font-medium">
-                      <Gauge className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" /> Odomètre
+                {/* 7. Usure des Pneumatiques selon le Kilométrage */}
+                <div className="mt-3 p-2.5 rounded-xl bg-sky-50/40 dark:bg-[#0c121e] border border-sky-200/60 dark:border-[#1e2a3f] text-xs">
+                  <div className="flex items-center justify-between text-[11px] mb-1">
+                    <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1 font-medium">
+                      <Gauge className="w-3.5 h-3.5 text-sky-500" /> 7. Usure Pneus au Km
                     </span>
-                    <span className="text-base font-bold font-mono text-slate-900 dark:text-white mt-0.5 block">
-                      {v.mileage.toLocaleString('fr-DZ')} <span className="text-xs font-normal text-slate-400">km</span>
+                    <span className={`font-mono font-bold text-xs ${tireKmWear > 80 ? 'text-rose-500' : tireKmWear > 60 ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {tireKmWear}% usure
                     </span>
                   </div>
-
-                  <div className="bg-slate-50 dark:bg-[#0c121e] p-2.5 rounded-xl border border-slate-200/80 dark:border-[#1e2a3f]">
-                    <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1 text-[11px] font-medium">
-                      <Wrench className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Pneumatiques
-                    </span>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className={`text-base font-bold font-mono ${avgTires < 50 ? 'text-rose-500 dark:text-rose-400' : avgTires < 70 ? 'text-amber-500 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                        {avgTires}%
-                      </span>
-                      <span className="text-[10px] text-slate-400">santé moy.</span>
-                    </div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-300 ${
+                        tireKmWear > 80 ? 'bg-rose-500' : tireKmWear > 60 ? 'bg-amber-500' : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, tireKmWear)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                    <span>{kmSinceTireChange.toLocaleString('fr-DZ')} km roulés</span>
+                    <span>Durée théorique : {tireLifespan.toLocaleString('fr-DZ')} km</span>
                   </div>
                 </div>
 
-                {/* Maintenance Progress Bar */}
-                <div className="mt-4 space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500 dark:text-slate-300 flex items-center gap-1 font-medium">
-                      <Wrench className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                      Prochaine Vidange Naftal
+                {/* Odometer & Next Service */}
+                <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+                  <div className="bg-slate-50 dark:bg-[#0c121e] p-2 rounded-xl border border-slate-200/80 dark:border-[#1e2a3f]">
+                    <span className="text-slate-500 dark:text-slate-400 text-[10px] font-medium block">
+                      Odomètre Actuel
                     </span>
-                    <span className={`font-mono font-bold ${isOverdue ? 'text-rose-500 dark:text-rose-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                      {v.nextServiceKm.toLocaleString('fr-DZ')} km
+                    <span className="text-sm font-bold font-mono text-slate-900 dark:text-white mt-0.5 block">
+                      {v.mileage.toLocaleString('fr-DZ')} <span className="text-[10px] font-normal text-slate-400">km</span>
                     </span>
                   </div>
-                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        isOverdue ? 'bg-rose-500' : servicePercentage > 80 ? 'bg-amber-500' : 'bg-emerald-500'
-                      }`}
-                      style={{ width: `${servicePercentage}%` }}
-                    ></div>
+
+                  <div className="bg-slate-50 dark:bg-[#0c121e] p-2 rounded-xl border border-slate-200/80 dark:border-[#1e2a3f]">
+                    <span className="text-slate-500 dark:text-slate-400 text-[10px] font-medium block">
+                      Prochaine Vidange
+                    </span>
+                    <span className={`text-sm font-bold font-mono mt-0.5 block ${isOverdue ? 'text-rose-500 font-bold' : 'text-slate-900 dark:text-white'}`}>
+                      {v.nextServiceKm.toLocaleString('fr-DZ')} <span className="text-[10px] font-normal text-slate-400">km</span>
+                    </span>
                   </div>
                 </div>
 
                 {/* Insurance & Regulatory Deadlines */}
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-[#1e2a3f] flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-[#1e2a3f] flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                   <span className="flex items-center gap-1">
                     <Shield className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                     Assurance : <strong className="text-slate-700 dark:text-slate-200">{v.insuranceCompany || 'CAAT'}</strong> ({v.insuranceExpiry})
@@ -433,6 +589,64 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
         onClose={() => setIsFormModalOpen(false)}
         onSave={handleSaveVehicle}
       />
+
+      {/* Modal Prévisualisation Carte Grise Numérisée */}
+      {previewCarteGrise && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 border-b border-slate-100 dark:border-[#1e2a3f] flex items-center justify-between bg-slate-50 dark:bg-[#0c121e]">
+              <div className="flex items-center gap-2">
+                <FileCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">{previewCarteGrise.title}</h3>
+              </div>
+              <button
+                onClick={() => setPreviewCarteGrise(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1c273e] transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 p-6 overflow-auto flex items-center justify-center bg-slate-100 dark:bg-[#070b12]">
+              {previewCarteGrise.url.startsWith('data:image/') || previewCarteGrise.url.startsWith('http') ? (
+                <img
+                  src={previewCarteGrise.url}
+                  alt={previewCarteGrise.title}
+                  className="max-h-[70vh] max-w-full rounded-xl object-contain shadow-md border border-slate-200 dark:border-slate-700"
+                />
+              ) : previewCarteGrise.url.startsWith('data:application/pdf') ? (
+                <iframe
+                  src={previewCarteGrise.url}
+                  title={previewCarteGrise.title}
+                  className="w-full h-[70vh] rounded-xl border border-slate-200 dark:border-slate-700"
+                />
+              ) : (
+                <div className="text-center p-8">
+                  <FileText className="w-16 h-16 text-slate-400 mx-auto mb-3" />
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Document officiel numérisé</p>
+                  <a
+                    href={previewCarteGrise.url}
+                    download="Carte_Grise_Vehicule.pdf"
+                    className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold"
+                  >
+                    Télécharger la carte grise
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 bg-slate-50 dark:bg-[#0c121e] border-t border-slate-100 dark:border-[#1e2a3f] flex items-center justify-between text-xs text-slate-500">
+              <span>Certificat d'Immatriculation Automobile (Décret 04-381 / Loi 18-07)</span>
+              <button
+                onClick={() => setPreviewCarteGrise(null)}
+                className="px-4 py-1.5 rounded-lg bg-slate-200 dark:bg-[#1c273e] hover:bg-slate-300 text-slate-700 dark:text-slate-300 font-semibold cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

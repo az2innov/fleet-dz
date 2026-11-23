@@ -1403,8 +1403,15 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                     return (
                       <tr key={v.id} className="hover:bg-slate-50/80 dark:hover:bg-[#152033] transition-colors">
                         <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                          {v.make} {v.model}
-                          <span className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">Année {v.year} • {v.fuelType}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span>{v.make} {v.model}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
+                              {v.vehicleCategory || 'VP'}
+                            </span>
+                          </div>
+                          <span className="block text-[10px] font-normal text-slate-500 dark:text-slate-400">
+                            {v.engineDisplacement || '1.6L'} • {v.drivetrain || '4x2'} • Année {v.year}
+                          </span>
                         </td>
                         <td className="py-3.5 px-4 font-mono font-bold text-emerald-700 dark:text-emerald-400">
                           {v.plate}
@@ -1414,25 +1421,35 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                           <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-mono">{v.driverPhone}</span>
                         </td>
                         <td className="py-3.5 px-4">
-                          {deployedVehiclePlates.has(v.plate) ? (
+                          {deployedVehiclePlates.has(v.plate) || v.operationalMissionStatus === 'en_mission' ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
                               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
                               En Mission (Roulant)
                             </span>
-                          ) : v.status === 'active' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              En Réserve (Dépôt)
+                          ) : v.operationalMissionStatus === 'retour_mission' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30">
+                              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+                              Retour de Mission
                             </span>
-                          ) : v.status === 'maintenance' ? (
+                          ) : v.status === 'maintenance' || v.operationalMissionStatus === 'maintenance' ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                               En Révision (Atelier)
                             </span>
-                          ) : (
+                          ) : v.status === 'accident' || v.operationalMissionStatus === 'sinistre' ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20">
                               <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                               En Sinistre (Immobilisé)
+                            </span>
+                          ) : v.status === 'retired' || v.operationalMissionStatus === 'reforme' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                              Réforme Administrative
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              En Réserve (Dépôt)
                             </span>
                           )}
                         </td>

@@ -9,6 +9,62 @@ import {
   MissionOrder 
 } from '../src/types.js';
 
+// Générateur de Carte Grise Numérisée conforme aux normes du Ministère de l'Intérieur algérien
+export const generateSampleCarteGrise = (
+  plate: string, 
+  make: string, 
+  model: string, 
+  chassis: string, 
+  category: string, 
+  ptacKg: number,
+  ptraKg?: number,
+  powerHP?: number
+): string => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" width="100%" height="100%">
+    <rect width="100%" height="100%" fill="#fbfcf8" stroke="#1b4d3e" stroke-width="6" rx="16"/>
+    <rect x="20" y="20" width="760" height="480" fill="none" stroke="#2e7d32" stroke-width="1.5" stroke-dasharray="6,4" rx="12"/>
+    <text x="400" y="55" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#006233" text-anchor="middle">الجمهورية الجزائرية الديمقراطية الشعبية</text>
+    <text x="400" y="78" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#333" text-anchor="middle">RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE</text>
+    <text x="400" y="98" font-family="system-ui, sans-serif" font-size="11" fill="#666" text-anchor="middle">Ministère de l'Intérieur et des Collectivités Locales — Direction des Titres Sécurisés</text>
+    <line x1="60" y1="112" x2="740" y2="112" stroke="#006233" stroke-width="2"/>
+    
+    <rect x="60" y="125" width="680" height="45" fill="#e8f5e9" rx="8" stroke="#81c784"/>
+    <text x="80" y="153" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#1b5e20">CARTE GRISE / CERTIFICAT D'IMMATRICULATION AUTOMOBILE</text>
+    <text x="720" y="153" font-family="monospace" font-size="14" font-weight="bold" fill="#006233" text-anchor="end">DZ-${plate}</text>
+
+    <!-- Details Grid -->
+    <text x="80" y="198" font-family="system-ui, sans-serif" font-size="11" fill="#777">Numéro d'Immatriculation (Matricule) :</text>
+    <text x="80" y="218" font-family="monospace" font-size="16" font-weight="bold" fill="#111">${plate}</text>
+
+    <text x="420" y="198" font-family="system-ui, sans-serif" font-size="11" fill="#777">Catégorie / Genre du Véhicule :</text>
+    <text x="420" y="218" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#111">${category} (Norme Décret N° 04-381)</text>
+
+    <text x="80" y="255" font-family="system-ui, sans-serif" font-size="11" fill="#777">Marque &amp; Modèle Commercial :</text>
+    <text x="80" y="275" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#111">${make} ${model}</text>
+
+    <text x="420" y="255" font-family="system-ui, sans-serif" font-size="11" fill="#777">Numéro de Châssis (VIN) :</text>
+    <text x="420" y="275" font-family="monospace" font-size="13" font-weight="bold" fill="#111">${chassis}</text>
+
+    <text x="80" y="312" font-family="system-ui, sans-serif" font-size="11" fill="#777">Poids Total Autorisé en Charge (PTAC) :</text>
+    <text x="80" y="332" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#111">${ptacKg} kg</text>
+
+    <text x="420" y="312" font-family="system-ui, sans-serif" font-size="11" fill="#777">${ptraKg ? 'Poids Total Roulant Autorisé (PTRA) :' : 'Puissance Moteur :'}</text>
+    <text x="420" y="332" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#111">${ptraKg ? `${ptraKg} kg` : powerHP ? `${powerHP} ch DIN` : 'Standard'}</text>
+
+    <text x="80" y="368" font-family="system-ui, sans-serif" font-size="11" fill="#777">Wilaya de Délivrance :</text>
+    <text x="80" y="388" font-family="system-ui, sans-serif" font-size="13" font-weight="bold" fill="#111">Wilaya ${plate.split('-').pop() || '16'}</text>
+
+    <rect x="60" y="415" width="680" height="75" fill="#f4fbf7" rx="8" stroke="#c8e6c9"/>
+    <text x="80" y="438" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" fill="#2e7d32">Sceau &amp; Authentification Souveraine de l'Administration :</text>
+    <text x="80" y="455" font-family="system-ui, sans-serif" font-size="10" fill="#555">Document officiel numérisé certifié conforme pour la gestion de flotte automobile Dz-Fleet.</text>
+    <text x="80" y="472" font-family="monospace" font-size="9" fill="#888">SHA-256: 7a9e8f1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789ab</text>
+    <circle cx="680" cy="452" r="24" fill="#e8f5e9" stroke="#006233" stroke-width="2"/>
+    <text x="680" y="452" font-family="system-ui, sans-serif" font-size="8" font-weight="bold" fill="#006233" text-anchor="middle">OFFICIEL</text>
+    <text x="680" y="462" font-family="system-ui, sans-serif" font-size="7" fill="#006233" text-anchor="middle">WILAYA</text>
+  </svg>`;
+  return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+};
+
 export class FleetDatabase {
   private vehicles: Vehicle[] = [
     {
@@ -33,6 +89,23 @@ export class FleetDatabase {
       vignetteYear: 2026,
       wilayaCode: '16',
       chassisNumber: 'VF1LB0E0556781290',
+      // 8 nouveaux champs réglementaires & techniques
+      vehicleCategory: 'VP', // Véhicule Particulier
+      operationalMissionStatus: 'reserve_depot', // 1. En Réserve au Dépôt
+      engineDisplacement: '1.6L 16V', // 2. Cylindrée
+      engineCylinders: 4, // 2. Nombre de cylindres
+      transmissionType: 'Manuelle', // 3. Boîte de vitesses
+      transmissionGears: 5, // 3. Nombre de rapports
+      drivetrain: '4x2', // 4. Traction / Essieux
+      acquisitionCostDZD: 2200000, // 6. Coût d'acquisition : 2.2 M DA
+      lastTireChangeKm: 60000, // 7. Dernier changement pneus à 60 000 km
+      tireLifespanKm: 50000, // 7. Durée de vie théorique 50 000 km
+      tireWearPercentage: 55, // 7. Usure estimée : 55%
+      enginePowerHP: 102, // 8. Puissance (ch)
+      ptacKg: 1550, // 8. PTAC (kg)
+      ptraKg: 2450, // 8. PTRA (kg)
+      payloadKg: 520, // 8. Charge utile (kg)
+      registrationDocUrl: generateSampleCarteGrise('04512-118-16', 'Renault', 'Symbol 1.6 Expression', 'VF1LB0E0556781290', 'VP (Véhicule Particulier)', 1550, 2450, 102),
       tires: {
         frontLeft: 82,
         frontRight: 80,
@@ -64,6 +137,22 @@ export class FleetDatabase {
       vignetteYear: 2026,
       wilayaCode: '16',
       chassisNumber: 'VF3CC9HP0EW098124',
+      vehicleCategory: 'VP',
+      operationalMissionStatus: 'reserve_depot',
+      engineDisplacement: '1.6L HDi',
+      engineCylinders: 4,
+      transmissionType: 'Manuelle',
+      transmissionGears: 5,
+      drivetrain: '4x2',
+      acquisitionCostDZD: 2650000,
+      lastTireChangeKm: 45000,
+      tireLifespanKm: 50000,
+      tireWearPercentage: 38,
+      enginePowerHP: 92,
+      ptacKg: 1620,
+      ptraKg: 2500,
+      payloadKg: 490,
+      registrationDocUrl: generateSampleCarteGrise('12890-120-16', 'Peugeot', '208 1.6 HDi Active', 'VF3CC9HP0EW098124', 'VP (Véhicule Particulier)', 1620, 2500, 92),
       tires: {
         frontLeft: 70,
         frontRight: 68,
@@ -95,6 +184,22 @@ export class FleetDatabase {
       vignetteYear: 2026,
       wilayaCode: '31',
       chassisNumber: 'MR0FR22G900145672',
+      vehicleCategory: 'VU', // Véhicule Utilitaire
+      operationalMissionStatus: 'en_mission', // En mission Alger -> Hassi Messaoud
+      engineDisplacement: '2.8L D-4D Turbo',
+      engineCylinders: 4,
+      transmissionType: 'Manuelle',
+      transmissionGears: 6,
+      drivetrain: '4x4',
+      acquisitionCostDZD: 6800000,
+      lastTireChangeKm: 100000,
+      tireLifespanKm: 60000,
+      tireWearPercentage: 70,
+      enginePowerHP: 150,
+      ptacKg: 3000,
+      ptraKg: 5850,
+      payloadKg: 1050,
+      registrationDocUrl: generateSampleCarteGrise('00341-319-31', 'Toyota', 'Hilux Double Cabine 4x4', 'MR0FR22G900145672', 'VU (Véhicule Utilitaire)', 3000, 5850, 150),
       tires: {
         frontLeft: 55,
         frontRight: 52,
@@ -126,6 +231,22 @@ export class FleetDatabase {
       vignetteYear: 2026,
       wilayaCode: '09',
       chassisNumber: 'KMHFA17BPCA123490',
+      vehicleCategory: 'VU',
+      operationalMissionStatus: 'sinistre', // En sinistre / Constat
+      engineDisplacement: '2.5L CRDi',
+      engineCylinders: 4,
+      transmissionType: 'Manuelle',
+      transmissionGears: 6,
+      drivetrain: '4x2',
+      acquisitionCostDZD: 3850000,
+      lastTireChangeKm: 80000,
+      tireLifespanKm: 55000,
+      tireWearPercentage: 59,
+      enginePowerHP: 130,
+      ptacKg: 3200,
+      ptraKg: 4700,
+      payloadKg: 1450,
+      registrationDocUrl: generateSampleCarteGrise('08761-121-09', 'Hyundai', 'H100 Fourgon Tôlé', 'KMHFA17BPCA123490', 'VU (Véhicule Utilitaire)', 3200, 4700, 130),
       tires: {
         frontLeft: 45,
         frontRight: 40,
@@ -157,6 +278,22 @@ export class FleetDatabase {
       vignetteYear: 2026,
       wilayaCode: '16',
       chassisNumber: 'UU1HSD73678239012',
+      vehicleCategory: 'VP',
+      operationalMissionStatus: 'reserve_depot',
+      engineDisplacement: '1.5L dCi',
+      engineCylinders: 4,
+      transmissionType: 'Manuelle',
+      transmissionGears: 6,
+      drivetrain: '4x2',
+      acquisitionCostDZD: 3400000,
+      lastTireChangeKm: 0,
+      tireLifespanKm: 50000,
+      tireWearPercentage: 78,
+      enginePowerHP: 110,
+      ptacKg: 1800,
+      ptraKg: 2950,
+      payloadKg: 550,
+      registrationDocUrl: generateSampleCarteGrise('01923-122-16', 'Dacia', 'Duster 1.5 dCi 4x2', 'UU1HSD73678239012', 'VP (Véhicule Particulier)', 1800, 2950, 110),
       tires: {
         frontLeft: 90,
         frontRight: 90,
@@ -188,6 +325,22 @@ export class FleetDatabase {
       vignetteYear: 2026,
       wilayaCode: '30',
       chassisNumber: 'JTEBX9FJ80K129034',
+      vehicleCategory: 'VU',
+      operationalMissionStatus: 'reserve_depot',
+      engineDisplacement: '2.8L D-4D 16V',
+      engineCylinders: 4,
+      transmissionType: 'Automatique',
+      transmissionGears: 6,
+      drivetrain: '4x4',
+      acquisitionCostDZD: 11500000,
+      lastTireChangeKm: 20000,
+      tireLifespanKm: 60000,
+      tireWearPercentage: 48,
+      enginePowerHP: 204,
+      ptacKg: 2990,
+      ptraKg: 5990,
+      payloadKg: 750,
+      registrationDocUrl: generateSampleCarteGrise('02345-123-30', 'Toyota', 'Land Cruiser Prado TX-L', 'JTEBX9FJ80K129034', 'VU (Véhicule Tout-Terrain)', 2990, 5990, 204),
       tires: {
         frontLeft: 88,
         frontRight: 87,
@@ -195,6 +348,100 @@ export class FleetDatabase {
         rearRight: 89,
         lastInspectionDate: '2026-07-10',
         notes: 'Pneumatiques renforcés pour pistes sahariennes.',
+      }
+    },
+    {
+      id: 'v-7',
+      plate: '01450-418-16',
+      make: 'Renault Trucks',
+      model: 'K440 P 6x4 Benne Lourde',
+      year: 2021,
+      driverId: 'd-3',
+      driverName: 'Ahmed Benali',
+      driverPhone: '+213770456789',
+      fuelType: 'diesel',
+      status: 'active',
+      mileage: 215400,
+      tankCapacityLiters: 380,
+      averageConsumption: 34.5,
+      lastServiceKm: 200000,
+      nextServiceKm: 220000,
+      insuranceCompany: 'CAAT',
+      insuranceExpiry: '2026-11-30',
+      technicalControlExpiry: '2026-10-15',
+      vignetteYear: 2026,
+      wilayaCode: '16',
+      chassisNumber: 'VF634APA000019284',
+      vehicleCategory: 'PL', // Poids Lourd > 3.5 T
+      operationalMissionStatus: 'reserve_depot',
+      engineDisplacement: '13.0L DXi13 Turbo',
+      engineCylinders: 6,
+      enginePowerHP: 440,
+      transmissionType: 'Robotisée',
+      transmissionGears: 12,
+      drivetrain: '6x4',
+      acquisitionCostDZD: 16500000,
+      lastTireChangeKm: 160000,
+      tireLifespanKm: 80000,
+      tireWearPercentage: 69,
+      ptacKg: 26000,
+      ptraKg: 40000,
+      payloadKg: 14500,
+      registrationDocUrl: generateSampleCarteGrise('01450-418-16', 'Renault Trucks', 'K440 P 6x4 Benne', 'VF634APA000019284', 'PL (Poids Lourd > 3.5 T)', 26000, 40000, 440),
+      tires: {
+        frontLeft: 75,
+        frontRight: 74,
+        rearLeft: 70,
+        rearRight: 72,
+        lastInspectionDate: '2026-08-05',
+        notes: 'Pneus de chantier 315/80 R22.5 renforcés.',
+      }
+    },
+    {
+      id: 'v-8',
+      plate: '05230-519-30',
+      make: 'Mercedes-Benz',
+      model: 'Actros 3344 Semi-Remorque Citerne',
+      year: 2020,
+      driverId: 'd-6',
+      driverName: 'Mounir Dahmani',
+      driverPhone: '+213670998877',
+      fuelType: 'diesel',
+      status: 'active',
+      mileage: 284100,
+      tankCapacityLiters: 500,
+      averageConsumption: 38.0,
+      lastServiceKm: 270000,
+      nextServiceKm: 290000,
+      insuranceCompany: 'CASH',
+      insuranceExpiry: '2027-01-31',
+      technicalControlExpiry: '2026-12-20',
+      vignetteYear: 2026,
+      wilayaCode: '30',
+      chassisNumber: 'WDB9340321K829104',
+      vehicleCategory: 'SM', // Semi-Remorque (Tracteur + Citerne)
+      operationalMissionStatus: 'en_mission', // En mission ravitaillement saharien
+      engineDisplacement: '12.0L V6 Turbo Intercooler',
+      engineCylinders: 6,
+      enginePowerHP: 435,
+      transmissionType: 'Automatique',
+      transmissionGears: 16,
+      drivetrain: '6x4',
+      acquisitionCostDZD: 24500000,
+      lastTireChangeKm: 220000,
+      tireLifespanKm: 90000,
+      tireWearPercentage: 71,
+      ptacKg: 26000,
+      ptraKg: 44000,
+      payloadKg: 28000,
+      registrationDocUrl: generateSampleCarteGrise('05230-519-30', 'Mercedes-Benz', 'Actros 3344 Semi-Remorque', 'WDB9340321K829104', 'SM (Semi-Remorque Articulé)', 26000, 44000, 435),
+      tires: {
+        frontLeft: 68,
+        frontRight: 66,
+        rearLeft: 65,
+        rearRight: 65,
+        lastInspectionDate: '2026-07-28',
+        notes: 'Pneumatiques grands trajets 385/65 R22.5 certifiés ADR / Matières dangereuses.',
       }
     }
   ];
@@ -857,9 +1104,31 @@ export class FleetDatabase {
   }
 
   addVehicle(vehicle: Omit<Vehicle, 'id'>): Vehicle {
+    const ptac = vehicle.ptacKg || (vehicle.vehicleCategory === 'PL' ? 19000 : vehicle.vehicleCategory === 'SM' ? 26000 : 2000);
     const newVehicle: Vehicle = {
       ...vehicle,
       id: `v-${Date.now()}`,
+      vehicleCategory: vehicle.vehicleCategory || 'VP',
+      operationalMissionStatus: vehicle.operationalMissionStatus || 'reserve_depot',
+      engineDisplacement: vehicle.engineDisplacement || '1.6L',
+      engineCylinders: vehicle.engineCylinders || 4,
+      transmissionType: vehicle.transmissionType || 'Manuelle',
+      transmissionGears: vehicle.transmissionGears || 5,
+      drivetrain: vehicle.drivetrain || '4x2',
+      acquisitionCostDZD: vehicle.acquisitionCostDZD || 2500000,
+      lastTireChangeKm: vehicle.lastTireChangeKm || 0,
+      tireLifespanKm: vehicle.tireLifespanKm || 50000,
+      tireWearPercentage: vehicle.tireWearPercentage !== undefined ? vehicle.tireWearPercentage : 20,
+      registrationDocUrl: vehicle.registrationDocUrl || generateSampleCarteGrise(
+        vehicle.plate,
+        vehicle.make,
+        vehicle.model,
+        vehicle.chassisNumber || 'VF1DZFLEET2026',
+        vehicle.vehicleCategory || 'VP',
+        ptac,
+        vehicle.ptraKg,
+        vehicle.enginePowerHP
+      ),
       tires: vehicle.tires || {
         frontLeft: 95,
         frontRight: 95,
