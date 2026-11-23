@@ -183,34 +183,46 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           </div>
         </div>
 
-        {/* 5 & 6. Données Financières & Carte Grise Numérisée */}
-        <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* 5 & 6. Données Financières, Coût d'Entretien & Carte Grise Numérisée */}
+        <div className="mb-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-2xl bg-emerald-50/30 dark:bg-[#0c121e] border border-emerald-200/60 dark:border-[#1e2a3f]">
             <h4 className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <DollarSign className="w-4 h-4" /> 6. Coût d'Acquisition & Amortissement
+              <DollarSign className="w-4 h-4" /> Coût d'Acquisition
             </h4>
-            <div className="text-2xl font-bold font-mono text-emerald-800 dark:text-emerald-300">
+            <div className="text-xl font-bold font-mono text-emerald-800 dark:text-emerald-300">
               {(vehicle.acquisitionCostDZD || 2500000).toLocaleString('fr-DZ')} DA
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Immobilisation corporelle inscrite au bilan Dz-Fleet
+              Immobilisation inscrite au bilan
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-sky-50/30 dark:bg-[#0c121e] border border-sky-200/60 dark:border-[#1e2a3f] flex items-center justify-between">
+          <div className="p-4 rounded-2xl bg-amber-50/30 dark:bg-[#0c121e] border border-amber-200/60 dark:border-[#1e2a3f]">
+            <h4 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Wrench className="w-4 h-4" /> Coût Cumulé d'Entretien
+            </h4>
+            <div className="text-xl font-bold font-mono text-amber-700 dark:text-amber-400">
+              {(vehicle.totalMaintenanceCostDZD || 0).toLocaleString('fr-DZ')} DA
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              Cumul des interventions atelier
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-sky-50/30 dark:bg-[#0c121e] border border-sky-200/60 dark:border-[#1e2a3f] flex flex-col justify-between">
             <div>
               <h4 className="text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <FileCheck className="w-4 h-4" /> 5. Carte Grise Numérisée
+                <FileCheck className="w-4 h-4" /> Carte Grise
               </h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Certificat officiel d'immatriculation certifié
+                Certificat d'immatriculation
               </p>
             </div>
             {vehicle.registrationDocUrl ? (
               <button
                 type="button"
                 onClick={() => setPreviewCarteGrise(true)}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+                className="mt-2 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/20 cursor-pointer self-start"
               >
                 <Eye className="w-4 h-4" />
                 <span>Aperçu Officiel</span>

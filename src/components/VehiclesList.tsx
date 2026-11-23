@@ -433,13 +433,21 @@ export const VehiclesList: React.FC<VehiclesListProps> = ({
                   )}
                 </div>
 
-                {/* 5 & 6. Coût d'Acquisition & Carte Grise Numérisée */}
-                <div className="mt-2.5 p-2.5 rounded-xl bg-emerald-50/40 dark:bg-[#0c161a] border border-emerald-200/60 dark:border-emerald-950/60 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">6. Coût d'Acquisition</span>
-                    <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300 text-xs">
-                      {(v.acquisitionCostDZD || 2200000).toLocaleString('fr-DZ')} <span className="text-[10px]">DA</span>
-                    </span>
+                {/* 5 & 6. Coût d'Acquisition, Entretien Cumulé & Carte Grise Numérisée */}
+                <div className="mt-2.5 p-2.5 rounded-xl bg-emerald-50/40 dark:bg-[#0c161a] border border-emerald-200/60 dark:border-emerald-950/60 flex items-center justify-between text-xs gap-2">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Acquisition</span>
+                      <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300 text-xs">
+                        {(v.acquisitionCostDZD || 2200000).toLocaleString('fr-DZ')} <span className="text-[10px]">DA</span>
+                      </span>
+                    </div>
+                    <div className="border-l border-emerald-200 dark:border-emerald-900/60 pl-3">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Entretien Cumulé</span>
+                      <span className="font-mono font-bold text-amber-700 dark:text-amber-400 text-xs">
+                        {(v.totalMaintenanceCostDZD || 0).toLocaleString('fr-DZ')} <span className="text-[10px]">DA</span>
+                      </span>
+                    </div>
                   </div>
 
                   {/* 5. Carte Grise Button */}

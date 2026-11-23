@@ -23,7 +23,8 @@ import {
   Receipt,
   BarChart3,
   AlertCircle,
-  Disc
+  Disc,
+  DollarSign
 } from 'lucide-react';
 import { 
   Vehicle, 
@@ -32,12 +33,14 @@ import {
   AccidentClaim, 
   SovereignActivityLog, 
   MissionOrder,
+  VehicleIntervention,
   UserSession 
 } from '../types.js';
 import { ROLES_CONFIG } from './Auth2FAModal.js';
 
 interface FleetDashboardProps {
   vehicles: Vehicle[];
+  interventions?: VehicleIntervention[];
   alerts: FleetAlert[];
   fuelLogs: FuelLog[];
   accidentClaims: AccidentClaim[];
@@ -53,6 +56,7 @@ interface FleetDashboardProps {
 
 export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   vehicles = [],
+  interventions = [],
   alerts = [],
   fuelLogs = [],
   accidentClaims = [],
@@ -68,11 +72,19 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   const [logFilter, setLogFilter] = useState<'all' | 'security' | 'fuel' | 'odometer' | 'mission'>('all');
 
   const safeVehicles = Array.isArray(vehicles) ? vehicles : [];
+  const safeInterventions = Array.isArray(interventions) ? interventions : [];
   const safeFuelLogs = Array.isArray(fuelLogs) ? fuelLogs : [];
   const safeAlerts = Array.isArray(alerts) ? alerts : [];
   const safeClaims = Array.isArray(accidentClaims) ? accidentClaims : [];
   const safeActivityLogs = Array.isArray(activityLogs) ? activityLogs : [];
   const safeMissions = Array.isArray(missions) ? missions : [];
+
+  // Coûts consolidés du Parc Automobile (Acquisition + Entretien/Interventions)
+  const totalAcquisitionCostDZD = safeVehicles.reduce((acc, v) => acc + (Number(v?.acquisitionCostDZD) || 0), 0);
+  const totalInterventionsFromLogs = safeInterventions.reduce((acc, i) => acc + (Number(i?.coutInterventionDZD) || 0), 0);
+  const totalMaintenanceFromVehicles = safeVehicles.reduce((acc, v) => acc + (Number(v?.totalMaintenanceCostDZD) || 0), 0);
+  const totalMaintenanceCostDZD = Math.max(totalInterventionsFromLogs, totalMaintenanceFromVehicles);
+  const totalGlobalParkCostDZD = totalAcquisitionCostDZD + totalMaintenanceCostDZD;
 
   const totalFuelDZD = safeFuelLogs.reduce((acc, log) => acc + (Number(log?.amountDZD) || 0), 0);
   const totalLiters = safeFuelLogs.reduce((acc, log) => acc + (Number(log?.liters) || 0), 0);
@@ -352,7 +364,24 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
   const renderKpiCards = () => {
     if (currentRole === 'super_admin') {
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div className="bg-white dark:bg-[#121929] border border-emerald-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Coût Global Parc (TCO)</span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <DollarSign className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                {totalGlobalParkCostDZD.toLocaleString('fr-DZ')} <span className="text-xs text-emerald-600">DA</span>
+              </span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Acquis: {(totalAcquisitionCostDZD / 1000000).toFixed(1)}M DA • Entretien: {totalMaintenanceCostDZD.toLocaleString('fr-DZ')} DA
+              </p>
+            </div>
+          </div>
+
           <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Conformité Loi 18-07</span>
@@ -470,7 +499,25 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
 
     if (currentRole === 'controller') {
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {/* CARTE 1 : Coût Global du Parc Automobile (TCO) */}
+          <div className="bg-white dark:bg-[#121929] border border-emerald-300/80 dark:border-emerald-500/30 rounded-2xl p-5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Coût Global Parc (TCO)</span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <DollarSign className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                {totalGlobalParkCostDZD.toLocaleString('fr-DZ')} <span className="text-xs text-emerald-600">DA</span>
+              </span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Acquis: {(totalAcquisitionCostDZD / 1000000).toFixed(1)}M DA • Entretien: {totalMaintenanceCostDZD.toLocaleString('fr-DZ')} DA
+              </p>
+            </div>
+          </div>
+
           <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Dépenses Carburant</span>
@@ -482,7 +529,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
               <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
                 {totalFuelDZD.toLocaleString('fr-DZ')} <span className="text-xs text-emerald-600 dark:text-emerald-400">DA</span>
               </span>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Volume consolidé : {totalLiters} L Naftal</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Volume consolidé : {totalLiters} L Naftal</p>
             </div>
           </div>
 
@@ -495,7 +542,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
             </div>
             <div className="mt-3">
               <span className="text-3xl font-black text-rose-600 dark:text-rose-400 font-mono">+4 200 DA</span>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hilux +36% au-dessus norme constructeur</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Hilux +36% au-dessus norme constructeur</p>
             </div>
           </div>
 
@@ -510,7 +557,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
               <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">
                 {(totalFuelDZD / Math.max(totalFleetKm, 1) * 100).toFixed(2)} <span className="text-xs text-sky-600 dark:text-sky-400">DA/100km</span>
               </span>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Indice de performance de la flotte</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Indice de performance de la flotte</p>
             </div>
           </div>
 
@@ -523,7 +570,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
             </div>
             <div className="mt-3">
               <span className="text-3xl font-black text-slate-900 dark:text-white font-mono">18 500 DA</span>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Péages autoroutiers & per diem déclarés</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Péages autoroutiers & per diem déclarés</p>
             </div>
           </div>
         </div>
@@ -532,7 +579,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
 
     // Vue par défaut : Gestionnaire de Flotte (Operations)
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {/* CARTE 1 : Disponibilité Technique du Parc */}
         <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
           <div>
@@ -595,6 +642,29 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 truncate">
             {idleOperationalCount} dispo en réserve ({globalExploitationRate}% du parc total)
           </p>
+        </div>
+
+        {/* CARTE 3 : Coût Global du Parc Automobile */}
+        <div className="bg-white dark:bg-[#121929] border border-emerald-200/80 dark:border-[#222f47] rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">Coût Global Parc</span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <DollarSign className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <span className="text-2xl font-black text-slate-900 dark:text-white font-mono">
+                {(totalGlobalParkCostDZD / 1000000).toFixed(2)} <span className="text-xs text-emerald-600">M DA</span>
+              </span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Acquis: {(totalAcquisitionCostDZD / 1000000).toFixed(1)}M • Entretien: {(totalMaintenanceCostDZD / 1000).toFixed(0)}k DA
+              </p>
+            </div>
+          </div>
+          <button onClick={() => onNavigateTab('interventions')} className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-bold mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 text-left block cursor-pointer">
+            Voir interventions (DI/FR) →
+          </button>
         </div>
 
         {/* CARTE 3 : Missions en Cours */}
@@ -1393,6 +1463,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                     <th className="py-3 px-4">Chauffeur Assigné</th>
                     <th className="py-3 px-4">Statut</th>
                     <th className="py-3 px-4">Odomètre</th>
+                    <th className="py-3 px-4">Coût Entretien (DA)</th>
                     <th className="py-3 px-4">Prochaine Révision</th>
                     <th className="py-3 px-4 text-right">Action</th>
                   </tr>
@@ -1455,6 +1526,9 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                         </td>
                         <td className="py-3.5 px-4 font-mono font-semibold text-slate-800 dark:text-slate-200">
                           {v.mileage.toLocaleString('fr-DZ')} km
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-amber-700 dark:text-amber-400">
+                          {(v.totalMaintenanceCostDZD || 0).toLocaleString('fr-DZ')} DA
                         </td>
                         <td className="py-3.5 px-4 font-mono">
                           <span className={isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-800 dark:text-slate-200'}>

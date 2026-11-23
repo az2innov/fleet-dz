@@ -248,6 +248,7 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <FleetDashboard
             vehicles={vehicles}
+            interventions={interventions}
             alerts={alerts}
             fuelLogs={fuelLogs}
             accidentClaims={accidentClaims}

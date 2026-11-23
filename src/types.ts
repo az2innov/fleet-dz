@@ -90,6 +90,9 @@ export interface Vehicle {
   // 6. Coût d'acquisition du véhicule (en Dinars Algériens DZD)
   acquisitionCostDZD?: number;
 
+  // Coût cumulé d'entretien & interventions mécaniques (en Dinars Algériens DZD)
+  totalMaintenanceCostDZD?: number;
+
   // 7. Usure des pneumatiques selon le kilométrage
   lastTireChangeKm?: number;   // Kilométrage lors du dernier remplacement
   tireLifespanKm?: number;     // Durée de vie préconisée (ex: 50 000 km VP/VU, 80 000 km PL)
@@ -330,6 +333,8 @@ export type InterventionStatus =
   | 'cloturee_receptionnee' // 3. Travaux terminés, Fiche de Réception (FR) validée et signée
   | 'annulee';            // 4. Annulée
 
+export type InterventionNature = 'preventive' | 'curative';
+
 export interface InterventionQualityChecks {
   brakingTested: boolean;      // Essai système de freinage satisfaisant
   fluidLevelsChecked: boolean; // Niveaux liquides moteur et refroidissement conformes
@@ -344,11 +349,15 @@ export interface VehicleIntervention {
   interventionOrderNumber: string; // Numéro de Demande d'Intervention : e.g. "DI-2026-0082"
   receptionSheetNumber?: string;   // Numéro de Fiche de Réception : e.g. "FR-2026-0082"
   
+  // Typologie d'intervention (Préventive vs Curative)
+  natureIntervention?: InterventionNature;
+  
   // Véhicule concerné
   vehicleId: string;
   vehiclePlate: string; // e.g. "04512-118-16"
   vehicleMakeModel: string; // e.g. "Renault Symbol 1.6 Expression"
   vehicleCategory?: VehicleCategory; // VP, VU, PL, SM, Bus
+  fuelType?: 'diesel' | 'essence' | 'gpl'; // Motorisation
   odometerOutKm: number; // Kilométrage odomètre à la sortie intervention
   odometerInKm?: number; // Kilométrage odomètre au retour intervention
   

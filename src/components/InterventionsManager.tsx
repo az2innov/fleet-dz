@@ -23,7 +23,13 @@ import {
   ClipboardCheck,
   Shield,
   Layers,
-  Sparkles
+  Sparkles,
+  Download,
+  Filter,
+  RotateCcw,
+  BarChart3,
+  FileSpreadsheet,
+  Fuel
 } from 'lucide-react';
 import { 
   VehicleIntervention, 
@@ -31,7 +37,9 @@ import {
   Driver, 
   UserSession, 
   InterventionType, 
-  InterventionUrgency 
+  InterventionUrgency,
+  InterventionNature,
+  VehicleCategory 
 } from '../types.js';
 
 interface InterventionsManagerProps {
@@ -54,6 +62,14 @@ export const InterventionsManager: React.FC<InterventionsManagerProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   
+  // Advanced Filter states (Exigences de Recherche Multi-critères)
+  const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>('all');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
+  const [selectedFuelFilter, setSelectedFuelFilter] = useState<string>('all');
+  const [selectedNatureFilter, setSelectedNatureFilter] = useState<string>('all');
+  const [dateStartFilter, setDateStartFilter] = useState<string>('');
+  const [dateEndFilter, setDateEndFilter] = useState<string>('');
+
   // Document Print Modals
   const [selectedDIForPrint, setSelectedDIForPrint] = useState<VehicleIntervention | null>(null);
   const [selectedFRForPrint, setSelectedFRForPrint] = useState<VehicleIntervention | null>(null);
@@ -61,6 +77,7 @@ export const InterventionsManager: React.FC<InterventionsManagerProps> = ({
   // Modal 1: Create DI (Demande d'Intervention)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState(vehicles[0]?.id || '');
+  const [natureIntervention, setNatureIntervention] = useState<InterventionNature>('preventive');
   const [interventionType, setInterventionType] = useState<InterventionType>('vidange_moteur');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -93,6 +110,7 @@ export const InterventionsManager: React.FC<InterventionsManagerProps> = ({
   const handleOpenCreateDI = () => {
     setTitle('Entretien & Contrôle Mécanique Préventif');
     setDescription('Travaux de révision générale, vidange moteur, vérification du système de freinage et contrôle des trains roulants.');
+    setNatureIntervention('preventive');
     setInterventionType('vidange_moteur');
     setUrgency('normal');
     setGarageType('atelier_interne');
@@ -111,6 +129,8 @@ export const InterventionsManager: React.FC<InterventionsManagerProps> = ({
       vehiclePlate: selectedVehicle.plate,
       vehicleMakeModel: `${selectedVehicle.make} ${selectedVehicle.model}`,
       vehicleCategory: selectedVehicle.vehicleCategory || 'VP',
+      fuelType: selectedVehicle.fuelType || 'diesel',
+      natureIntervention,
       odometerOutKm: selectedVehicle.mileage,
       driverId: selectedVehicle.driverId,
       driverName: selectedVehicle.driverName,
@@ -215,18 +235,134 @@ export const InterventionsManager: React.FC<InterventionsManagerProps> = ({
     }
   };
 
+  // Filtre multi-critères approfondi (Véhicule, Type VP/VU/PL..., Motorisation, Nature Préventif/Curatif, Période)
   const filteredInterventions = interventions.filter(itv => {
-    const matchesSearch = 
-      itv.interventionOrderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (itv.receptionSheetNumber && itv.receptionSheetNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      itv.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      itv.vehicleMakeModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      itv.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      itv.garageName.toLowerCase().includes(searchTerm.toLowerCase());
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch = !q ||
+      itv.interventionOrderNumber.toLowerCase().includes(q) ||
+      (itv.receptionSheetNumber && itv.receptionSheetNumber.toLowerCase().includes(q)) ||
+      itv.vehiclePlate.toLowerCase().includes(q) ||
+      itv.vehicleMakeModel.toLowerCase().includes(q) ||
+      itv.title.toLowerCase().includes(q) ||
+      itv.garageName.toLowerCase().includes(q);
 
     const matchesStatus = statusFilter === 'all' || itv.status === statusFilter;
-    return matchesSearch && matchesStatus;
+
+    // Filtre véhicule spécifique
+    const matchesVehicle = selectedVehicleFilter === 'all' || 
+      itv.vehicleId === selectedVehicleFilter || 
+      itv.vehiclePlate === selectedVehicleFilter;
+
+    // Filtre catégorie véhicule (VP, VU, PL, SM, Bus)
+    const itvVehicle = vehicles.find(v => v.id === itv.vehicleId || v.plate === itv.vehiclePlate);
+    const itvCategory = itv.vehicleCategory || itvVehicle?.vehicleCategory || 'VP';
+    const matchesCategory = selectedCategoryFilter === 'all' || itvCategory === selectedCategoryFilter;
+
+    // Filtre motorisation (diesel, essence, gpl)
+    const itvFuel = itv.fuelType || itvVehicle?.fuelType || 'diesel';
+    const matchesFuel = selectedFuelFilter === 'all' || itvFuel === selectedFuelFilter;
+
+    // Filtre nature intervention (Préventive vs Curative)
+    const itvNature = itv.natureIntervention || 
+      (['vidange_moteur', 'revision_generale', 'pneumatiques', 'controle_technique_repa'].includes(itv.type) ? 'preventive' : 'curative');
+    const matchesNature = selectedNatureFilter === 'all' || itvNature === selectedNatureFilter;
+
+    // Filtre période historique (dates début et fin)
+    const itvDate = (itv.dateSortieIntervention || itv.requestDate || '').slice(0, 10);
+    let matchesPeriod = true;
+    if (dateStartFilter && itvDate && itvDate < dateStartFilter) matchesPeriod = false;
+    if (dateEndFilter && itvDate && itvDate > dateEndFilter) matchesPeriod = false;
+
+    return matchesSearch && matchesStatus && matchesVehicle && matchesCategory && matchesFuel && matchesNature && matchesPeriod;
   });
+
+  // Indicateurs financiers dynamiques calculés sur les interventions filtrées (pour Contrôleur de Gestion & Flotte)
+  const totalFilteredCostDZD = filteredInterventions.reduce((sum, i) => sum + (Number(i.coutInterventionDZD) || 0), 0);
+  const totalPreventiveCostDZD = filteredInterventions
+    .filter(i => (i.natureIntervention || (['vidange_moteur', 'revision_generale', 'pneumatiques', 'controle_technique_repa'].includes(i.type) ? 'preventive' : 'curative')) === 'preventive')
+    .reduce((sum, i) => sum + (Number(i.coutInterventionDZD) || 0), 0);
+  const totalCurativeCostDZD = filteredInterventions
+    .filter(i => (i.natureIntervention || (['vidange_moteur', 'revision_generale', 'pneumatiques', 'controle_technique_repa'].includes(i.type) ? 'preventive' : 'curative')) === 'curative')
+    .reduce((sum, i) => sum + (Number(i.coutInterventionDZD) || 0), 0);
+  const billedCount = filteredInterventions.filter(i => (Number(i.coutInterventionDZD) || 0) > 0).length;
+  const avgFilteredCostDZD = billedCount > 0 ? Math.round(totalFilteredCostDZD / billedCount) : 0;
+  const prevPercentage = totalFilteredCostDZD > 0 ? Math.round((totalPreventiveCostDZD / totalFilteredCostDZD) * 100) : 0;
+  const curPercentage = totalFilteredCostDZD > 0 ? Math.round((totalCurativeCostDZD / totalFilteredCostDZD) * 100) : 0;
+
+  // Réinitialisation de l'ensemble des filtres
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setSelectedVehicleFilter('all');
+    setSelectedCategoryFilter('all');
+    setSelectedFuelFilter('all');
+    setSelectedNatureFilter('all');
+    setDateStartFilter('');
+    setDateEndFilter('');
+  };
+
+  // Exportation des coûts d'intervention en CSV pour le Contrôleur de Gestion
+  const handleExportInterventionsFinancialCSV = () => {
+    const headers = [
+      'N° Demande (DI)',
+      'N° Reception (FR)',
+      'Statut',
+      'Nature Intervention',
+      'Type Intervention',
+      'Intitule',
+      'Matricule Vehicule',
+      'Marque & Modele',
+      'Categorie Vehicule',
+      'Motorisation',
+      'Chauffeur',
+      'Atelier / Prestataire',
+      'Date Sortie Atelier',
+      'Date Retour Parc',
+      'Odometre Sortie (km)',
+      'Odometre Retour (km)',
+      'Cout Intervention (DZD)',
+      'Emetteur DI',
+      'Signataire FR'
+    ];
+
+    const rows = filteredInterventions.map(i => {
+      const itvVehicle = vehicles.find(v => v.id === i.vehicleId || v.plate === i.vehiclePlate);
+      const cat = i.vehicleCategory || itvVehicle?.vehicleCategory || 'VP';
+      const fuel = i.fuelType || itvVehicle?.fuelType || 'diesel';
+      const nature = (i.natureIntervention || (['vidange_moteur', 'revision_generale', 'pneumatiques', 'controle_technique_repa'].includes(i.type) ? 'preventive' : 'curative')) === 'preventive' ? 'Préventive' : 'Curative';
+      return [
+        `"${i.interventionOrderNumber}"`,
+        `"${i.receptionSheetNumber || 'En attente'}"`,
+        `"${i.status}"`,
+        `"${nature}"`,
+        `"${i.type}"`,
+        `"${(i.title || '').replace(/"/g, '""')}"`,
+        `"${i.vehiclePlate}"`,
+        `"${i.vehicleMakeModel}"`,
+        `"${cat}"`,
+        `"${fuel.toUpperCase()}"`,
+        `"${i.driverName || 'N/A'}"`,
+        `"${(i.garageName || '').replace(/"/g, '""')}"`,
+        `"${i.dateSortieIntervention}"`,
+        `"${i.dateRetourIntervention || 'En cours'}"`,
+        `${i.odometerOutKm || 0}`,
+        `${i.odometerInKm || i.odometerOutKm || 0}`,
+        `${i.coutInterventionDZD || 0}`,
+        `"${i.requestedBy || ''}"`,
+        `"${i.receivedBy || 'En attente'}"`
+      ].join(';');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `etat_financier_interventions_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const getStatusBadge = (status: VehicleIntervention['status']) => {
     switch (status) {
@@ -312,52 +448,246 @@ export const InterventionsManager: React.FC<InterventionsManagerProps> = ({
         </div>
       </div>
 
-      {/* Search and Status Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-4 shadow-xs">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="N° DI (ex: DI-2026-0085), N° FR, matricule, atelier..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          />
+      {/* ========================================================================= */}
+      {/* 1. BARRE DE RECHERCHE & FILTRES MULTI-CRITÈRES AVANCÉS                   */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-5 shadow-xs space-y-4">
+        {/* Ligne 1 : Recherche textuelle + Filtres de Statut */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="relative flex-1 min-w-[260px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Rechercher par N° DI, N° FR, matricule, atelier, intitulé..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#1e2a3f] text-xs flex-wrap">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'all' ? 'bg-white dark:bg-[#1c273e] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Toutes ({interventions.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('demande_emise')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'demande_emise' ? 'bg-indigo-500/15 text-indigo-700 dark:bg-indigo-600/30 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Demandes Émises ({interventions.filter(i => i.status === 'demande_emise').length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('en_cours_atelier')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'en_cours_atelier' ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-600/30 dark:text-amber-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              En Atelier ({interventions.filter(i => i.status === 'en_cours_atelier').length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('cloturee_receptionnee')}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                statusFilter === 'cloturee_receptionnee' ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-600/30 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Réceptionnées ({interventions.filter(i => i.status === 'cloturee_receptionnee').length})
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#1e2a3f] text-xs">
+        {/* Ligne 2 : Filtres Combinatoires Spécifiques (Véhicule, Type VP/VU/PL..., Motorisation, Nature, Période) */}
+        <div className="pt-3 border-t border-slate-100 dark:border-[#1e2a3f] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+          {/* 1. Véhicule */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Véhicule du Parc
+            </label>
+            <select
+              value={selectedVehicleFilter}
+              onChange={(e) => setSelectedVehicleFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono"
+            >
+              <option value="all">Tous les véhicules ({vehicles.length})</option>
+              {vehicles.map(v => (
+                <option key={v.id} value={v.plate}>
+                  {v.plate} ({v.make} {v.model})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2. Type / Catégorie de véhicule (VP, VU, PL, SM, Bus) */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Catégorie Véhicule
+            </label>
+            <select
+              value={selectedCategoryFilter}
+              onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+            >
+              <option value="all">Toutes Catégories</option>
+              <option value="VP">VP (Véhicule Particulier)</option>
+              <option value="VU">VU (Utilitaire / Fourgon)</option>
+              <option value="PL">PL (Poids Lourd)</option>
+              <option value="SM">SM (Semi-Remorque)</option>
+              <option value="Bus">Bus / Transport</option>
+            </select>
+          </div>
+
+          {/* 3. Motorisation */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Motorisation
+            </label>
+            <select
+              value={selectedFuelFilter}
+              onChange={(e) => setSelectedFuelFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+            >
+              <option value="all">Toutes Motorisations</option>
+              <option value="diesel">Gasoil / Diesel</option>
+              <option value="essence">Essence / Sans Plomb</option>
+              <option value="gpl">GPL / Gaz Propre</option>
+            </select>
+          </div>
+
+          {/* 4. Nature Intervention (Préventive vs Curative) */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Nature Intervention
+            </label>
+            <select
+              value={selectedNatureFilter}
+              onChange={(e) => setSelectedNatureFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+            >
+              <option value="all">Toutes Natures</option>
+              <option value="preventive">🛡️ Préventive (Entretien)</option>
+              <option value="curative">⚠️ Curative (Pannes)</option>
+            </select>
+          </div>
+
+          {/* 5. Période Début & Fin */}
+          <div className="lg:col-span-2 flex items-end gap-2">
+            <div className="flex-1">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                Période Du
+              </label>
+              <input
+                type="date"
+                value={dateStartFilter}
+                onChange={(e) => setDateStartFilter(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                Au
+              </label>
+              <input
+                type="date"
+                value={dateEndFilter}
+                onChange={(e) => setDateEndFilter(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono"
+              />
+            </div>
+            <button
+              onClick={handleResetFilters}
+              title="Réinitialiser tous les filtres"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1c273e] dark:hover:bg-[#253452] text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. BANDEAU DE SYNTHÈSE FINANCIÈRE DES COÛTS (CONTRÔLEUR DE GESTION & DIRECTION) */}
+      {/* ========================================================================= */}
+      <div className="bg-gradient-to-r from-emerald-900/10 via-slate-900/5 to-indigo-900/10 dark:from-[#0d1e19] dark:via-[#121929] dark:to-[#141b2d] border border-emerald-500/30 rounded-2xl p-5 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-emerald-500/20">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <BarChart3 className="w-3.5 h-3.5" />
+                Contrôle de Gestion & Analyse des Coûts
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Calcul dynamique selon les filtres actifs ({filteredInterventions.length} dossier{filteredInterventions.length > 1 ? 's' : ''})
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1">
+              Bilan Financier des Interventions & Entretien du Parc
+            </h3>
+          </div>
+
+          {/* Bouton d'exportation pour le Contrôleur de Gestion */}
           <button
-            onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-              statusFilter === 'all' ? 'bg-white dark:bg-[#1c273e] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            onClick={handleExportInterventionsFinancialCSV}
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 cursor-pointer transition-all self-start md:self-auto"
           >
-            Toutes ({interventions.length})
+            <Download className="w-4 h-4" />
+            <span>Exporter l'État Financier (CSV)</span>
           </button>
-          <button
-            onClick={() => setStatusFilter('demande_emise')}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-              statusFilter === 'demande_emise' ? 'bg-indigo-500/15 text-indigo-700 dark:bg-indigo-600/30 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Demandes Émises ({interventions.filter(i => i.status === 'demande_emise').length})
-          </button>
-          <button
-            onClick={() => setStatusFilter('en_cours_atelier')}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-              statusFilter === 'en_cours_atelier' ? 'bg-amber-500/15 text-amber-700 dark:bg-amber-600/30 dark:text-amber-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            En Atelier ({interventions.filter(i => i.status === 'en_cours_atelier').length})
-          </button>
-          <button
-            onClick={() => setStatusFilter('cloturee_receptionnee')}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
-              statusFilter === 'cloturee_receptionnee' ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-600/30 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Réceptionnées ({interventions.filter(i => i.status === 'cloturee_receptionnee').length})
-          </button>
+        </div>
+
+        {/* Grille des 4 indicateurs financiers */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <div className="bg-white/80 dark:bg-[#0c121e]/80 border border-emerald-500/20 rounded-xl p-3.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+              Coût Total Filtré
+            </span>
+            <div className="text-xl font-black font-mono text-emerald-700 dark:text-emerald-300 mt-1">
+              {totalFilteredCostDZD.toLocaleString('fr-DZ')} <span className="text-xs">DA</span>
+            </div>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">
+              {billedCount} intervention{billedCount > 1 ? 's' : ''} clôturée{billedCount > 1 ? 's' : ''} avec facturation
+            </span>
+          </div>
+
+          <div className="bg-white/80 dark:bg-[#0c121e]/80 border border-emerald-500/20 rounded-xl p-3.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+              Part Préventive (Entretien)
+            </span>
+            <div className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+              {totalPreventiveCostDZD.toLocaleString('fr-DZ')} <span className="text-xs">DA</span>
+            </div>
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5 block">
+              {prevPercentage}% du coût total d'intervention
+            </span>
+          </div>
+
+          <div className="bg-white/80 dark:bg-[#0c121e]/80 border border-amber-500/20 rounded-xl p-3.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+              Part Curative (Pannes & Avaries)
+            </span>
+            <div className="text-xl font-black font-mono text-amber-700 dark:text-amber-400 mt-1">
+              {totalCurativeCostDZD.toLocaleString('fr-DZ')} <span className="text-xs">DA</span>
+            </div>
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-0.5 block">
+              {curPercentage}% du coût total d'intervention
+            </span>
+          </div>
+
+          <div className="bg-white/80 dark:bg-[#0c121e]/80 border border-slate-200 dark:border-[#1e2a3f] rounded-xl p-3.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+              Coût Moyen / Dossier
+            </span>
+            <div className="text-xl font-black font-mono text-slate-900 dark:text-white mt-1">
+              {avgFilteredCostDZD.toLocaleString('fr-DZ')} <span className="text-xs">DA</span>
+            </div>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">
+              Moyenne pondérée par fiche réceptionnée
+            </span>
+          </div>
         </div>
       </div>
 
@@ -388,6 +718,17 @@ export const InterventionsManager: React.FC<InterventionsManagerProps> = ({
                       </span>
                     )}
 
+                    {/* Nature Badge */}
+                    <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold border flex items-center gap-1 ${
+                      (itv.natureIntervention || (['vidange_moteur', 'revision_generale', 'pneumatiques', 'controle_technique_repa'].includes(itv.type) ? 'preventive' : 'curative')) === 'preventive'
+                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30'
+                        : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/30'
+                    }`}>
+                      {(itv.natureIntervention || (['vidange_moteur', 'revision_generale', 'pneumatiques', 'controle_technique_repa'].includes(itv.type) ? 'preventive' : 'curative')) === 'preventive'
+                        ? '🛡️ Préventive'
+                        : '⚠️ Curative'}
+                    </span>
+
                     {/* Vehicle Plate & Category */}
                     <span className="font-mono text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-[#0c121e] px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
                       {itv.vehiclePlate}
@@ -395,6 +736,14 @@ export const InterventionsManager: React.FC<InterventionsManagerProps> = ({
                     <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-sky-50 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300 border border-sky-200 dark:border-sky-500/30">
                       {itv.vehicleCategory || 'VP'}
                     </span>
+
+                    {/* Motorisation Badge */}
+                    {itv.fuelType && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-1">
+                        <Fuel className="w-3 h-3 text-amber-500" />
+                        {itv.fuelType === 'diesel' ? 'Gasoil' : itv.fuelType === 'essence' ? 'Essence' : 'GPL'}
+                      </span>
+                    )}
 
                     <span className={`px-2 py-0.5 rounded text-[10px] uppercase border ${urgBadge}`}>
                       {itv.urgency === 'critique' ? 'Critique (Immobilisé)' : itv.urgency === 'urgent' ? 'Urgent' : 'Normal'}
@@ -608,11 +957,53 @@ export const InterventionsManager: React.FC<InterventionsManagerProps> = ({
                 </select>
               </div>
 
+              {/* Typologie Préventive vs Curative */}
+              <div>
+                <label className="block font-semibold mb-1.5 text-slate-700 dark:text-slate-300">
+                  Typologie & Nature de l'Intervention <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setNatureIntervention('preventive')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      natureIntervention === 'preventive'
+                        ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-500/15 text-emerald-900 dark:text-emerald-200 ring-2 ring-emerald-500/20'
+                        : 'border-slate-200 dark:border-[#1e2a3f] bg-slate-50 dark:bg-[#0c121e] text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                    }`}
+                  >
+                    <span className="font-bold flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400">
+                      🛡️ Intervention Préventive
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
+                      Entretien programmé, vidanges périodiques Naftal, révisions d'échéance, remplacement pneumatiques.
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNatureIntervention('curative')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      natureIntervention === 'curative'
+                        ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-500/15 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/20'
+                        : 'border-slate-200 dark:border-[#1e2a3f] bg-slate-50 dark:bg-[#0c121e] text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                    }`}
+                  >
+                    <span className="font-bold flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                      ⚠️ Intervention Curative
+                    </span>
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
+                      Panne mécanique inopinée, avarie sur la route, casse de pièce, réparation carrosserie suite sinistre.
+                    </span>
+                  </button>
+                </div>
+              </div>
+
               {/* Type d'intervention & Urgence */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-semibold mb-1 text-slate-700 dark:text-slate-300">
-                    Nature de l'Intervention
+                    Type Technique de Travaux
                   </label>
                   <select
                     value={interventionType}

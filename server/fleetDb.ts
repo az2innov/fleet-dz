@@ -99,6 +99,7 @@ export class FleetDatabase {
       transmissionGears: 5, // 3. Nombre de rapports
       drivetrain: '4x2', // 4. Traction / Essieux
       acquisitionCostDZD: 2200000, // 6. Coût d'acquisition : 2.2 M DA
+      totalMaintenanceCostDZD: 18500, // Coût cumulé d'entretien & réparations (DA)
       lastTireChangeKm: 60000, // 7. Dernier changement pneus à 60 000 km
       tireLifespanKm: 50000, // 7. Durée de vie théorique 50 000 km
       tireWearPercentage: 55, // 7. Usure estimée : 55%
@@ -146,6 +147,7 @@ export class FleetDatabase {
       transmissionGears: 5,
       drivetrain: '4x2',
       acquisitionCostDZD: 2650000,
+      totalMaintenanceCostDZD: 32000,
       lastTireChangeKm: 45000,
       tireLifespanKm: 50000,
       tireWearPercentage: 38,
@@ -193,6 +195,7 @@ export class FleetDatabase {
       transmissionGears: 6,
       drivetrain: '4x4',
       acquisitionCostDZD: 6800000,
+      totalMaintenanceCostDZD: 45000,
       lastTireChangeKm: 100000,
       tireLifespanKm: 60000,
       tireWearPercentage: 70,
@@ -240,6 +243,7 @@ export class FleetDatabase {
       transmissionGears: 6,
       drivetrain: '4x2',
       acquisitionCostDZD: 3850000,
+      totalMaintenanceCostDZD: 28000,
       lastTireChangeKm: 80000,
       tireLifespanKm: 55000,
       tireWearPercentage: 59,
@@ -287,6 +291,7 @@ export class FleetDatabase {
       transmissionGears: 6,
       drivetrain: '4x2',
       acquisitionCostDZD: 3400000,
+      totalMaintenanceCostDZD: 14500,
       lastTireChangeKm: 0,
       tireLifespanKm: 50000,
       tireWearPercentage: 78,
@@ -334,6 +339,7 @@ export class FleetDatabase {
       transmissionGears: 6,
       drivetrain: '4x4',
       acquisitionCostDZD: 11500000,
+      totalMaintenanceCostDZD: 52000,
       lastTireChangeKm: 20000,
       tireLifespanKm: 60000,
       tireWearPercentage: 48,
@@ -804,6 +810,8 @@ export class FleetDatabase {
       id: 'itv-1',
       interventionOrderNumber: 'DI-2026-0045',
       receptionSheetNumber: 'FR-2026-0045',
+      natureIntervention: 'preventive',
+      fuelType: 'essence',
       vehicleId: 'v-1',
       vehiclePlate: '04512-118-16',
       vehicleMakeModel: 'Renault Symbol 1.6 Expression',
@@ -854,6 +862,8 @@ export class FleetDatabase {
       id: 'itv-2',
       interventionOrderNumber: 'DI-2026-0062',
       receptionSheetNumber: 'FR-2026-0062',
+      natureIntervention: 'curative',
+      fuelType: 'diesel',
       vehicleId: 'v-2',
       vehiclePlate: '12890-120-16',
       vehicleMakeModel: 'Peugeot 208 1.6 HDi Active',
@@ -902,6 +912,8 @@ export class FleetDatabase {
     {
       id: 'itv-3',
       interventionOrderNumber: 'DI-2026-0078',
+      natureIntervention: 'curative',
+      fuelType: 'diesel',
       vehicleId: 'v-4',
       vehiclePlate: '08761-121-09',
       vehicleMakeModel: 'Hyundai H100 Fourgon Tôlé',
@@ -928,6 +940,8 @@ export class FleetDatabase {
     {
       id: 'itv-4',
       interventionOrderNumber: 'DI-2026-0085',
+      natureIntervention: 'preventive',
+      fuelType: 'diesel',
       vehicleId: 'v-3',
       vehiclePlate: '00341-319-31',
       vehicleMakeModel: 'Toyota Hilux Double Cabine 4x4',
@@ -1512,17 +1526,22 @@ export class FleetDatabase {
     const year = new Date().getFullYear();
     const orderNumber = `DI-${year}-${String(count + 1).padStart(4, '0')}`;
 
+    const veh = this.vehicles.find(v => v.id === data.vehicleId || v.plate === data.vehiclePlate);
+    const natureIntervention = data.natureIntervention || (['vidange_moteur', 'revision_generale', 'pneumatiques', 'controle_technique_repa'].includes(data.type) ? 'preventive' : 'curative');
+    const fuelType = data.fuelType || (veh ? veh.fuelType : 'diesel');
+
     const newItv: VehicleIntervention = {
       ...data,
       id: `itv-${Date.now()}`,
       interventionOrderNumber: orderNumber,
+      natureIntervention,
+      fuelType,
       status: 'demande_emise',
       officialSealDI: true,
       createdAt: new Date().toISOString(),
     };
 
     // Si urgence critique / immobilisante, basculer le véhicule en atelier
-    const veh = this.vehicles.find(v => v.id === newItv.vehicleId || v.plate === newItv.vehiclePlate);
     if (veh && newItv.urgency === 'critique') {
       veh.operationalMissionStatus = 'maintenance';
       veh.status = 'maintenance';
@@ -1619,6 +1638,9 @@ export class FleetDatabase {
     // Réintégration du véhicule au parc si conforme
     const veh = this.vehicles.find(v => v.id === itv.vehicleId || v.plate === itv.vehiclePlate);
     if (veh) {
+      // 2. Coût d'entretien cumulé mis à jour après chaque intervention
+      veh.totalMaintenanceCostDZD = (veh.totalMaintenanceCostDZD || 0) + itv.coutInterventionDZD;
+
       if (itv.receptionDecision === 'conforme_bon_service') {
         veh.operationalMissionStatus = 'reserve_depot';
         veh.status = 'active';
