@@ -28,7 +28,11 @@ import {
   Building2,
   DollarSign,
   User,
-  CheckCircle
+  CheckCircle,
+  BarChart3,
+  RotateCcw,
+  Filter,
+  Layers
 } from 'lucide-react';
 import { FuelLog, Vehicle, Driver, UserSession, FuelVoucher, PrepaidFuelCard, RefuelType } from '../types.js';
 
@@ -52,10 +56,15 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
   // Navigation interne par onglets
   const [activeSubTab, setActiveSubTab] = useState<'logs' | 'vouchers' | 'consumption_cards'>('logs');
 
-  // Filtres
+  // Filtres avancés multi-critères (Flotte & Contrôle de Gestion)
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedVehiclePlate, setSelectedVehiclePlate] = useState<string>('all');
+  const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>('all');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
+  const [selectedFuelFilter, setSelectedFuelFilter] = useState<string>('all');
+  const [selectedRefuelTypeFilter, setSelectedRefuelTypeFilter] = useState<string>('all');
   const [selectedStationFilter, setSelectedStationFilter] = useState<string>('all');
+  const [dateStartFilter, setDateStartFilter] = useState<string>('');
+  const [dateEndFilter, setDateEndFilter] = useState<string>('');
   const [validatedLogIds, setValidatedLogIds] = useState<Set<string>>(new Set());
   const [validatingId, setValidatingId] = useState<string | null>(null);
 
@@ -238,30 +247,166 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
     }
   };
 
-  // Filtrage du journal des ravitaillements
+  // =========================================================================
+  // FILTRAGE MULTI-CRITÈRES APPROFONDI (VÉHICULE, CATÉGORIE, CARBURANT, TYPE, STATION, PÉRIODE)
+  // =========================================================================
   const filteredLogs = fuelLogs.filter((log) => {
     const q = searchTerm.toLowerCase().trim();
     const matchesSearch = !q ||
       log.driverName.toLowerCase().includes(q) ||
       log.vehiclePlate.toLowerCase().includes(q) ||
       log.stationName.toLowerCase().includes(q) ||
-      log.city.toLowerCase().includes(q) ||
+      (log.city && log.city.toLowerCase().includes(q)) ||
       (log.voucherNumber && log.voucherNumber.toLowerCase().includes(q)) ||
-      (log.stationReceiptNumber && log.stationReceiptNumber.toLowerCase().includes(q));
+      (log.stationReceiptNumber && log.stationReceiptNumber.toLowerCase().includes(q)) ||
+      (log.prepaidCardNumber && log.prepaidCardNumber.toLowerCase().includes(q));
 
-    const matchesVehicle = selectedVehiclePlate === 'all' || log.vehiclePlate === selectedVehiclePlate;
-    const matchesStation = selectedStationFilter === 'all' || log.stationName.includes(selectedStationFilter);
+    // Filtre véhicule spécifique
+    const matchesVehicle = selectedVehicleFilter === 'all' || 
+      log.vehiclePlate === selectedVehicleFilter || 
+      log.vehicleId === selectedVehicleFilter;
 
-    return matchesSearch && matchesVehicle && matchesStation;
+    // Filtre catégorie véhicule (VP, VU, PL, SM, Bus)
+    const logVehicle = vehicles.find(v => v.plate === log.vehiclePlate || v.id === log.vehicleId);
+    const logCategory = logVehicle?.vehicleCategory || 'VP';
+    const matchesCategory = selectedCategoryFilter === 'all' || logCategory === selectedCategoryFilter;
+
+    // Filtre motorisation / carburant
+    const logFuel = (log.fuelType || logVehicle?.fuelType || '').toLowerCase();
+    let matchesFuel = true;
+    if (selectedFuelFilter !== 'all') {
+      if (selectedFuelFilter === 'diesel') {
+        matchesFuel = logFuel.includes('diesel') || logFuel.includes('gasoil');
+      } else if (selectedFuelFilter === 'essence') {
+        matchesFuel = logFuel.includes('essence') || logFuel.includes('sans plomb');
+      } else if (selectedFuelFilter === 'gpl') {
+        matchesFuel = logFuel.includes('gpl');
+      }
+    }
+
+    // Filtre type de ravitaillement (partiel_appoint, plein_complet, dotation_mission)
+    const logRefuelType = log.refuelType || 'plein_complet';
+    const matchesRefuelType = selectedRefuelTypeFilter === 'all' || logRefuelType === selectedRefuelTypeFilter;
+
+    // Filtre station partenaire / carte
+    const matchesStation = selectedStationFilter === 'all' || 
+      log.stationName.toLowerCase().includes(selectedStationFilter.toLowerCase()) ||
+      (log.prepaidCardNumber && log.prepaidCardNumber.toLowerCase().includes(selectedStationFilter.toLowerCase()));
+
+    // Filtre période (Date Du ... Au ...)
+    const logDate = (log.date || '').slice(0, 10);
+    let matchesPeriod = true;
+    if (dateStartFilter && logDate && logDate < dateStartFilter) matchesPeriod = false;
+    if (dateEndFilter && logDate && logDate > dateEndFilter) matchesPeriod = false;
+
+    return matchesSearch && matchesVehicle && matchesCategory && matchesFuel && matchesRefuelType && matchesStation && matchesPeriod;
   });
 
-  // Calculs financiers & volumiques
-  const totalDZD = filteredLogs.reduce((acc, l) => acc + l.amountDZD, 0);
-  const totalLiters = filteredLogs.reduce((acc, l) => acc + l.liters, 0);
-  const averagePricePerLiter = totalLiters > 0 ? (totalDZD / totalLiters).toFixed(2) : '35.00';
+  // Filtrage des Bons de Ravitaillement
+  const filteredVouchers = fuelVouchers.filter((v) => {
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch = !q ||
+      v.voucherNumber.toLowerCase().includes(q) ||
+      v.vehiclePlate.toLowerCase().includes(q) ||
+      v.vehicleModel.toLowerCase().includes(q) ||
+      v.driverName.toLowerCase().includes(q) ||
+      v.stationName.toLowerCase().includes(q) ||
+      (v.prepaidCardNumber && v.prepaidCardNumber.toLowerCase().includes(q)) ||
+      (v.stationReceiptNumber && v.stationReceiptNumber.toLowerCase().includes(q));
+
+    const matchesVehicle = selectedVehicleFilter === 'all' || 
+      v.vehiclePlate === selectedVehicleFilter || 
+      v.vehicleId === selectedVehicleFilter;
+
+    const vVehicle = vehicles.find(veh => veh.plate === v.vehiclePlate || veh.id === v.vehicleId);
+    const vCategory = vVehicle?.vehicleCategory || 'VP';
+    const matchesCategory = selectedCategoryFilter === 'all' || vCategory === selectedCategoryFilter;
+
+    const vFuel = (v.fuelType || vVehicle?.fuelType || '').toLowerCase();
+    let matchesFuel = true;
+    if (selectedFuelFilter !== 'all') {
+      if (selectedFuelFilter === 'diesel') {
+        matchesFuel = vFuel.includes('diesel') || vFuel.includes('gasoil');
+      } else if (selectedFuelFilter === 'essence') {
+        matchesFuel = vFuel.includes('essence') || vFuel.includes('sans plomb');
+      } else if (selectedFuelFilter === 'gpl') {
+        matchesFuel = vFuel.includes('gpl');
+      }
+    }
+
+    const matchesRefuelType = selectedRefuelTypeFilter === 'all' || v.refuelType === selectedRefuelTypeFilter;
+
+    const matchesStation = selectedStationFilter === 'all' || 
+      v.stationName.toLowerCase().includes(selectedStationFilter.toLowerCase()) ||
+      (v.prepaidCardNumber && v.prepaidCardNumber.toLowerCase().includes(selectedStationFilter.toLowerCase()));
+
+    const vDate = (v.date || '').slice(0, 10);
+    let matchesPeriod = true;
+    if (dateStartFilter && vDate && vDate < dateStartFilter) matchesPeriod = false;
+    if (dateEndFilter && vDate && vDate > dateEndFilter) matchesPeriod = false;
+
+    return matchesSearch && matchesVehicle && matchesCategory && matchesFuel && matchesRefuelType && matchesStation && matchesPeriod;
+  });
+
+  // Indicateur si des filtres sont actifs
+  const hasActiveFilters = searchTerm !== '' || 
+    selectedVehicleFilter !== 'all' || 
+    selectedCategoryFilter !== 'all' || 
+    selectedFuelFilter !== 'all' || 
+    selectedRefuelTypeFilter !== 'all' || 
+    selectedStationFilter !== 'all' || 
+    dateStartFilter !== '' || 
+    dateEndFilter !== '';
+
+  // Réinitialisation de l'ensemble des filtres
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setSelectedVehicleFilter('all');
+    setSelectedCategoryFilter('all');
+    setSelectedFuelFilter('all');
+    setSelectedRefuelTypeFilter('all');
+    setSelectedStationFilter('all');
+    setDateStartFilter('');
+    setDateEndFilter('');
+  };
+
+  // Totaux globaux (pour les KPI généraux du haut)
+  const totalDZD = fuelLogs.reduce((acc, l) => acc + (Number(l.amountDZD) || 0), 0);
+  const totalLiters = fuelLogs.reduce((acc, l) => acc + (Number(l.liters) || 0), 0);
+
+  // Indicateurs financiers dynamiques calculés sur les ravitaillements filtrés
+  const totalFilteredCostDZD = filteredLogs.reduce((acc, l) => acc + (Number(l.amountDZD) || 0), 0);
+  const totalFilteredLiters = filteredLogs.reduce((acc, l) => acc + (Number(l.liters) || 0), 0);
+  const totalFilteredDistanceKm = filteredLogs.reduce((acc, l) => acc + (Number(l.distanceDrivenKm) || 0), 0);
+
+  // Coût moyen au kilomètre (DA / km)
+  const averageCostPerKmDZD = totalFilteredDistanceKm > 0 
+    ? (totalFilteredCostDZD / totalFilteredDistanceKm).toFixed(2)
+    : '0.00';
+
+  // Consommation réelle pondérée (L / 100km)
+  const weightedAverageConsumption = totalFilteredDistanceKm > 0 && totalFilteredLiters > 0
+    ? ((totalFilteredLiters / totalFilteredDistanceKm) * 100).toFixed(1)
+    : '0.0';
+
+  // Ventilation par carburant
+  const gasoilLogs = filteredLogs.filter(l => (l.fuelType || '').toLowerCase().includes('diesel') || (l.fuelType || '').toLowerCase().includes('gasoil'));
+  const gasoilCostDZD = gasoilLogs.reduce((acc, l) => acc + l.amountDZD, 0);
+  const gasoilLiters = gasoilLogs.reduce((acc, l) => acc + l.liters, 0);
+
+  const essenceLogs = filteredLogs.filter(l => (l.fuelType || '').toLowerCase().includes('essence') || (l.fuelType || '').toLowerCase().includes('sans plomb'));
+  const essenceCostDZD = essenceLogs.reduce((acc, l) => acc + l.amountDZD, 0);
+  const essenceLiters = essenceLogs.reduce((acc, l) => acc + l.liters, 0);
 
   // Total soldes cartes prépayées
   const totalPrepaidBalanceDZD = prepaidCards.reduce((acc, c) => acc + c.currentBalanceDZD, 0);
+
+  // Cartes prépayées filtrées
+  const filteredPrepaidCards = prepaidCards.filter(c => 
+    selectedStationFilter === 'all' || 
+    c.stationName.toLowerCase().includes(selectedStationFilter.toLowerCase()) || 
+    c.cardNumber.toLowerCase().includes(selectedStationFilter.toLowerCase())
+  );
 
   // Calcul du suivi de consommation par véhicule lié au kilométrage parcouru
   const vehicleConsumptionStats = vehicles.map(v => {
@@ -277,7 +422,6 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
     if (totalVDistance > 0 && totalVVolume > 0) {
       realAverageConsumption = parseFloat(((totalVVolume / totalVDistance) * 100).toFixed(1));
     } else if (vLogs.length > 0) {
-      // Moyenne des consommations calculées par ravitaillement
       const validConsoLogs = vLogs.filter(l => (l.calculatedConsumption || 0) > 0);
       if (validConsoLogs.length > 0) {
         realAverageConsumption = parseFloat((validConsoLogs.reduce((acc, l) => acc + (l.calculatedConsumption || 0), 0) / validConsoLogs.length).toFixed(1));
@@ -310,32 +454,106 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
     };
   });
 
-  const handleExportCSV = () => {
-    const headers = ['Date', 'N_Bon', 'N_Recu_Station', 'Matricule', 'Chauffeur', 'Station', 'Type_Ravitaillement', 'Odomètre_KM', 'Distance_KM', 'Litres', 'Montant_DZD', 'Conso_L_100km'];
-    const rows = filteredLogs.map(l => [
-      l.date.split('T')[0],
-      l.voucherNumber || 'Direct',
-      l.stationReceiptNumber || 'PWA',
-      l.vehiclePlate,
-      `"${l.driverName}"`,
-      `"${l.stationName}"`,
-      l.refuelType || 'plein',
-      l.odometerKm || '',
-      l.distanceDrivenKm || '',
-      l.liters,
-      l.amountDZD,
-      l.calculatedConsumption || '',
-    ]);
+  // Filtrage de la matrice de consommation véhicule selon les filtres
+  const filteredVehicleStats = vehicleConsumptionStats.filter(item => {
+    const v = item.vehicle;
+    const matchesVehicle = selectedVehicleFilter === 'all' || v.plate === selectedVehicleFilter || v.id === selectedVehicleFilter;
+    const matchesCategory = selectedCategoryFilter === 'all' || v.vehicleCategory === selectedCategoryFilter;
+    let matchesFuel = true;
+    if (selectedFuelFilter !== 'all') {
+      const f = (v.fuelType || '').toLowerCase();
+      if (selectedFuelFilter === 'diesel') matchesFuel = f.includes('diesel') || f.includes('gasoil');
+      else if (selectedFuelFilter === 'essence') matchesFuel = f.includes('essence') || f.includes('sans plomb');
+      else if (selectedFuelFilter === 'gpl') matchesFuel = f.includes('gpl');
+    }
+    return matchesVehicle && matchesCategory && matchesFuel;
+  });
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+  // =========================================================================
+  // EXPORT DU RAPPORT FINANCIER COMPLET CARBURANT (CSV CONTRÔLE DE GESTION)
+  // =========================================================================
+  const handleExportFuelFinancialReportCSV = () => {
+    const headers = [
+      'Date & Heure',
+      'N° Bon de Ravitaillement',
+      'N° Reçu Station (Naftal)',
+      'Statut Rapprochement',
+      'Type de Ravitaillement',
+      'Matricule Véhicule',
+      'Marque & Modèle',
+      'Catégorie Véhicule (VP/VU/PL...)',
+      'Type Carburant',
+      'Chauffeur Assigné',
+      'Station Dépositaire',
+      'Ville / Wilaya',
+      'N° Carte Prépayée',
+      'Volume Délivré (Litres)',
+      'Prix Unitaire (DA/L)',
+      'Montant Débité (DA)',
+      'Odomètre Précédent (km)',
+      'Odomètre Relevé (km)',
+      'Distance Parcourue (ΔKM)',
+      'Consommation Calculée (L/100km)',
+      'Norme Constructeur (L/100km)',
+      'Écart Conso (%)',
+      'Coût au Km (DA/km)',
+      'Validé Par'
+    ];
+
+    const rows = filteredLogs.map(l => {
+      const v = vehicles.find(veh => veh.plate === l.vehiclePlate);
+      const cat = v?.vehicleCategory || 'VP';
+      const dist = l.distanceDrivenKm || 0;
+      const costPerKm = dist > 0 ? (l.amountDZD / dist).toFixed(2) : '0.00';
+      const theoConso = v?.averageConsumption || 8.0;
+      const realConso = l.calculatedConsumption || 0;
+      const diffPct = realConso > 0 ? Math.round(((realConso - theoConso) / theoConso) * 100) : 0;
+      const typeLabel = l.refuelType === 'partiel_appoint' 
+        ? 'Dotation Partielle / Appoint' 
+        : l.refuelType === 'dotation_mission' 
+          ? 'Dotation Spécifique Mission' 
+          : 'Plein Complet';
+
+      return [
+        `"${l.date}"`,
+        `"${l.voucherNumber || 'Sans bon préalable'}"`,
+        `"${l.stationReceiptNumber || 'REC-' + l.id}"`,
+        `"${l.receiptPhotoUrl ? 'Rapproché avec Reçu' : 'En attente'}"`,
+        `"${typeLabel}"`,
+        `"${l.vehiclePlate}"`,
+        `"${(v ? v.make + ' ' + v.model : '').replace(/"/g, '""')}"`,
+        `"${cat}"`,
+        `"${l.fuelType}"`,
+        `"${l.driverName}"`,
+        `"${(l.stationName || '').replace(/"/g, '""')}"`,
+        `"${l.city || ''}"`,
+        `"${l.prepaidCardNumber || 'N/A'}"`,
+        `${l.liters}`,
+        `${l.pricePerLiter}`,
+        `${l.amountDZD}`,
+        `${l.previousOdometerKm || 0}`,
+        `${l.odometerKm || 0}`,
+        `${dist}`,
+        `${realConso}`,
+        `${theoConso}`,
+        `${diffPct}%`,
+        `${costPerKm}`,
+        `"${l.validatedBy || 'Gestionnaire Flotte'}"`
+      ].join(';');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `dz_fleet_carburant_${new Date().toISOString().split('T')[0]}.csv`);
+    link.href = url;
+    link.setAttribute('download', `rapport_financier_carburant_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
+
+  const handleExportCSV = handleExportFuelFinancialReportCSV;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -485,7 +703,7 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
           }`}
         >
           <FileText className="w-4 h-4 text-emerald-600" />
-          <span>Bons de Ravitaillement Délivrés ({fuelVouchers.length})</span>
+          <span>Bons de Ravitaillement Délivrés ({filteredVouchers.length})</span>
           {fuelVouchers.filter(v => v.status === 'emis').length > 0 && (
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
           )}
@@ -505,6 +723,277 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
       </div>
 
       {/* ========================================================================= */}
+      {/* 1. PANNEAU DE FILTRES MULTI-CRITÈRES (POUR GESTIONNAIRE & CONTRÔLEUR DE GESTION) */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] rounded-2xl p-4 shadow-xs space-y-3">
+        {/* Ligne 1 : Titre + Recherche Rapide + Type Ravitaillement (Plein / Appoint / Mission) */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <Filter className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                  Filtres de Recherche &amp; Analyse Financière
+                </h4>
+                {hasActiveFilters && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                    Filtres actifs
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Outil d'audit pour le Gestionnaire de Flotte et le Contrôleur de Gestion
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Recherche textuelle libre */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Recherche (immat, bon BR, reçu, chauffeur, station)..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none w-64"
+              />
+            </div>
+
+            {/* Sélecteur Rapide par Type de Ravitaillement */}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#0c121e] p-1 rounded-xl border border-slate-200 dark:border-[#1e2a3f] text-xs">
+              <button
+                onClick={() => setSelectedRefuelTypeFilter('all')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  selectedRefuelTypeFilter === 'all' ? 'bg-white dark:bg-[#1c273e] text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                Tous Types
+              </button>
+              <button
+                onClick={() => setSelectedRefuelTypeFilter('partiel_appoint')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  selectedRefuelTypeFilter === 'partiel_appoint' ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                Appoint / Partiel
+              </button>
+              <button
+                onClick={() => setSelectedRefuelTypeFilter('plein_complet')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  selectedRefuelTypeFilter === 'plein_complet' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                Plein Complet
+              </button>
+              <button
+                onClick={() => setSelectedRefuelTypeFilter('dotation_mission')}
+                className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer ${
+                  selectedRefuelTypeFilter === 'dotation_mission' ? 'bg-sky-500/20 text-sky-700 dark:text-sky-300' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                Mission
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Ligne 2 : Filtres Combinatoires Spécifiques */}
+        <div className="pt-3 border-t border-slate-100 dark:border-[#1e2a3f] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+          {/* 1. Véhicule du Parc */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Véhicule du Parc
+            </label>
+            <select
+              value={selectedVehicleFilter}
+              onChange={(e) => setSelectedVehicleFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono"
+            >
+              <option value="all">Tous les véhicules ({vehicles.length})</option>
+              {vehicles.map(v => (
+                <option key={v.id} value={v.plate}>
+                  {v.plate} ({v.make} {v.model})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2. Catégorie Véhicule (VP, VU, PL, SM, Bus) */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Catégorie Véhicule
+            </label>
+            <select
+              value={selectedCategoryFilter}
+              onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+            >
+              <option value="all">Toutes Catégories</option>
+              <option value="VP">VP (Véhicule Particulier)</option>
+              <option value="VU">VU (Utilitaire / Fourgon)</option>
+              <option value="PL">PL (Poids Lourd)</option>
+              <option value="SM">SM (Semi-Remorque)</option>
+              <option value="Bus">Bus / Transport</option>
+            </select>
+          </div>
+
+          {/* 3. Motorisation / Type Carburant */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Carburant / Motorisation
+            </label>
+            <select
+              value={selectedFuelFilter}
+              onChange={(e) => setSelectedFuelFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+            >
+              <option value="all">Tous Carburants</option>
+              <option value="diesel">Gasoil / Diesel (29.01 DA/L)</option>
+              <option value="essence">Essence Sans Plomb (45.62 DA/L)</option>
+              <option value="gpl">GPL / Gaz Propre</option>
+            </select>
+          </div>
+
+          {/* 4. Station Dépositaire & Convention */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+              Station Naftal Dépositaire
+            </label>
+            <select
+              value={selectedStationFilter}
+              onChange={(e) => setSelectedStationFilter(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-bold"
+            >
+              <option value="all">Toutes Stations Conventionnées</option>
+              {prepaidCards.map(c => (
+                <option key={c.id} value={c.stationName}>
+                  {c.stationName} ({c.stationCity})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 5. Période Du & Au */}
+          <div className="lg:col-span-2 flex items-end gap-2">
+            <div className="flex-1">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                Période Du
+              </label>
+              <input
+                type="date"
+                value={dateStartFilter}
+                onChange={(e) => setDateStartFilter(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">
+                Au
+              </label>
+              <input
+                type="date"
+                value={dateEndFilter}
+                onChange={(e) => setDateEndFilter(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-mono"
+              />
+            </div>
+            <button
+              onClick={handleResetFilters}
+              title="Réinitialiser tous les filtres"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#1c273e] dark:hover:bg-[#253452] text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. BANDEAU DE SYNTHÈSE FINANCIÈRE DES COÛTS CARBURANT (POUR CONTRÔLE DE GESTION) */}
+      {/* ========================================================================= */}
+      <div className="bg-gradient-to-r from-emerald-900/10 via-slate-900/5 to-indigo-900/10 dark:from-[#0d1e19] dark:via-[#121929] dark:to-[#141b2d] border border-emerald-500/30 rounded-2xl p-5 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-emerald-500/20">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <BarChart3 className="w-3.5 h-3.5" />
+                Contrôle de Gestion &amp; Analyse Financière Carburant
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Calcul dynamique selon les filtres actifs ({filteredLogs.length} ravitaillement{filteredLogs.length > 1 ? 's' : ''})
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1">
+              Bilan Financier &amp; Rapprochement Budgétaire Carburant
+            </h3>
+          </div>
+
+          {/* Bouton d'exportation pour le Contrôleur de Gestion */}
+          <button
+            onClick={handleExportFuelFinancialReportCSV}
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 cursor-pointer transition-all self-start md:self-auto"
+          >
+            <Download className="w-4 h-4" />
+            <span>Exporter le Rapport Financier (CSV)</span>
+          </button>
+        </div>
+
+        {/* Grille des 4 indicateurs financiers */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <div className="bg-white/80 dark:bg-[#0c121e]/80 border border-emerald-500/20 rounded-xl p-3.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+              Dépense Carburant Filtrée
+            </span>
+            <div className="text-xl font-black font-mono text-emerald-700 dark:text-emerald-300 mt-1">
+              {totalFilteredCostDZD.toLocaleString('fr-DZ')} <span className="text-xs">DA</span>
+            </div>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">
+              {filteredLogs.length} ravitaillement{filteredLogs.length > 1 ? 's' : ''} constaté{filteredLogs.length > 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className="bg-white/80 dark:bg-[#0c121e]/80 border border-emerald-500/20 rounded-xl p-3.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+              Volume Total Délivré
+            </span>
+            <div className="text-xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+              {totalFilteredLiters.toLocaleString('fr-DZ')} <span className="text-xs">Litres</span>
+            </div>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">
+              Gasoil: {gasoilLiters} L • Sans Plomb: {essenceLiters} L
+            </span>
+          </div>
+
+          <div className="bg-white/80 dark:bg-[#0c121e]/80 border border-emerald-500/20 rounded-xl p-3.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+              Distance Parcourue &amp; Coût au Km
+            </span>
+            <div className="text-xl font-black font-mono text-sky-600 dark:text-sky-400 mt-1">
+              {averageCostPerKmDZD} <span className="text-xs">DA / km</span>
+            </div>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">
+              Sur {totalFilteredDistanceKm.toLocaleString('fr-DZ')} km roulés (ΔKM)
+            </span>
+          </div>
+
+          <div className="bg-white/80 dark:bg-[#0c121e]/80 border border-emerald-500/20 rounded-xl p-3.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+              Consommation Moyenne Réelle
+            </span>
+            <div className="text-xl font-black font-mono text-amber-600 dark:text-amber-400 mt-1">
+              {weightedAverageConsumption} <span className="text-xs">L / 100km</span>
+            </div>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">
+              Ratio global (Volume total ÷ ΔKM)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
       {/* SOUS-ONGLET 1 : JOURNAL DES RAVITAILLEMENTS & REÇUS STATION              */}
       {/* ========================================================================= */}
       {activeSubTab === 'logs' && (
@@ -520,38 +1009,14 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Filtre Véhicule */}
-              <select
-                value={selectedVehiclePlate}
-                onChange={(e) => setSelectedVehiclePlate(e.target.value)}
-                className="bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none"
-              >
-                <option value="all">Tous les véhicules ({vehicles.length})</option>
-                {vehicles.map(v => (
-                  <option key={v.id} value={v.plate}>
-                    {v.plate} — {v.make} {v.model}
-                  </option>
-                ))}
-              </select>
-
-              {/* Recherche textuelle */}
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Recherche (reçu, bon, station, chauffeur)..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-slate-50 dark:bg-[#0c121e] border border-slate-200 dark:border-[#1e2a3f] rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none w-56"
-                />
-              </div>
-
-              {/* Bouton Export CSV */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {filteredLogs.length} ravitaillement{filteredLogs.length > 1 ? 's' : ''} affiché{filteredLogs.length > 1 ? 's' : ''}
+              </span>
               {userSession?.role !== 'maintenance_lead' && (
                 <button
-                  onClick={handleExportCSV}
-                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-white border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  onClick={handleExportFuelFinancialReportCSV}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-[#1c273e] dark:hover:bg-[#253452] dark:text-white border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" /> Exporter CSV
                 </button>
@@ -578,7 +1043,14 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#1e2a3f]">
-                {filteredLogs.map((log) => (
+                {filteredLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} className="py-8 text-center text-slate-400">
+                      Aucun ravitaillement ne correspond aux critères de recherche actuels.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-[#152033] transition-colors">
                     {/* Date */}
                     <td className="py-3 px-3 whitespace-nowrap">
@@ -713,7 +1185,7 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
                       )}
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -771,7 +1243,14 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#1e2a3f]">
-                {fuelVouchers.map((voucher) => (
+                {filteredVouchers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-slate-400">
+                      Aucun bon de ravitaillement ne correspond aux critères de recherche actuels.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredVouchers.map((voucher) => (
                   <tr key={voucher.id} className="hover:bg-slate-50/80 dark:hover:bg-[#152033] transition-colors">
                     {/* N° Bon & Date */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
@@ -888,7 +1367,7 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
                       </div>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>
@@ -920,63 +1399,69 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-              {prepaidCards.map((card) => {
-                const percentageRemaining = Math.round((card.currentBalanceDZD / card.initialBalanceDZD) * 100);
-                return (
-                  <div
-                    key={card.id}
-                    className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/60 dark:from-[#0c121e] dark:to-[#121929] border border-slate-200 dark:border-[#1e2a3f] space-y-3 relative overflow-hidden"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
-                        {card.cardNumber}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        card.currentBalanceDZD < 30000 
-                          ? 'bg-rose-50 text-rose-700 border border-rose-300 dark:bg-rose-950/40 dark:text-rose-300' 
-                          : 'bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
-                      }`}>
-                        {card.currentBalanceDZD < 30000 ? 'Solde Bas' : 'Actif'}
-                      </span>
-                    </div>
+              {filteredPrepaidCards.length === 0 ? (
+                <div className="col-span-full py-8 text-center text-slate-400 text-xs">
+                  Aucune carte prépayée ne correspond aux filtres sélectionnés.
+                </div>
+              ) : (
+                filteredPrepaidCards.map((card) => {
+                  const percentageRemaining = Math.round((card.currentBalanceDZD / card.initialBalanceDZD) * 100);
+                  return (
+                    <div
+                      key={card.id}
+                      className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/60 dark:from-[#0c121e] dark:to-[#121929] border border-slate-200 dark:border-[#1e2a3f] space-y-3 relative overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-bold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
+                          {card.cardNumber}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          card.currentBalanceDZD < 30000 
+                            ? 'bg-rose-50 text-rose-700 border border-rose-300 dark:bg-rose-950/40 dark:text-rose-300' 
+                            : 'bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300'
+                        }`}>
+                          {card.currentBalanceDZD < 30000 ? 'Solde Bas' : 'Actif'}
+                        </span>
+                      </div>
 
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
-                        {card.stationName}
-                      </h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        Ville : {card.stationCity}
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
+                          {card.stationName}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          Ville : {card.stationCity}
+                        </p>
+                      </div>
+
+                      {/* Solde en gros */}
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-medium">Solde Disponible sur Carte</span>
+                        <div className="text-xl font-black font-mono text-slate-900 dark:text-white">
+                          {card.currentBalanceDZD.toLocaleString('fr-DZ')} <span className="text-xs text-sky-500 font-bold">DA</span>
+                        </div>
+                      </div>
+
+                      {/* Jauge */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[10px] text-slate-500">
+                          <span>Approvisionné : {card.initialBalanceDZD.toLocaleString('fr-DZ')} DA</span>
+                          <span className="font-bold">{percentageRemaining}% restant</span>
+                        </div>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${percentageRemaining < 25 ? 'bg-rose-500' : 'bg-sky-500'}`}
+                            style={{ width: `${percentageRemaining}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 italic pt-1 border-t border-slate-200/50 dark:border-slate-800">
+                        Déposée le {card.depositDate}
                       </p>
                     </div>
-
-                    {/* Solde en gros */}
-                    <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">Solde Disponible sur Carte</span>
-                      <div className="text-xl font-black font-mono text-slate-900 dark:text-white">
-                        {card.currentBalanceDZD.toLocaleString('fr-DZ')} <span className="text-xs text-sky-500 font-bold">DA</span>
-                      </div>
-                    </div>
-
-                    {/* Jauge */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] text-slate-500">
-                        <span>Approvisionné : {card.initialBalanceDZD.toLocaleString('fr-DZ')} DA</span>
-                        <span className="font-bold">{percentageRemaining}% restant</span>
-                      </div>
-                      <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${percentageRemaining < 25 ? 'bg-rose-500' : 'bg-sky-500'}`}
-                          style={{ width: `${percentageRemaining}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 italic pt-1 border-t border-slate-200/50 dark:border-slate-800">
-                      Déposée le {card.depositDate}
-                    </p>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -1020,7 +1505,14 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#1e2a3f]">
-                  {vehicleConsumptionStats.map((stat) => (
+                  {filteredVehicleStats.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="py-8 text-center text-slate-400">
+                        Aucun véhicule ne correspond aux critères de recherche actuels.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredVehicleStats.map((stat) => (
                     <tr key={stat.vehicle.id} className="hover:bg-slate-50/80 dark:hover:bg-[#152033] transition-colors">
                       {/* Véhicule */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
@@ -1112,7 +1604,7 @@ export const FuelTracking: React.FC<FuelTrackingProps> = ({
                         )}
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>
