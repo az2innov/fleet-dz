@@ -76,6 +76,15 @@ export default function App() {
   // Multi-Tenant Isolation State
   const [currentTenantId, setCurrentTenantId] = useState<string>(() => {
     if (typeof window !== 'undefined') {
+      try {
+        const savedSession = localStorage.getItem('dz_fleet_session');
+        if (savedSession) {
+          const parsed = JSON.parse(savedSession);
+          if (parsed.tenantId && parsed.tenantId !== 'platform-root') {
+            return parsed.tenantId;
+          }
+        }
+      } catch {}
       const saved = localStorage.getItem('dz_fleet_current_tenant');
       if (saved) return saved;
     }
@@ -178,10 +187,10 @@ export default function App() {
     }
   };
 
-  // Basculer de Compte Entreprise (Réservé au superviseur Root)
-  const handleSwitchTenant = async (newTenantId: string) => {
+  // Basculer de Compte Entreprise (Réservé au superviseur Root ou lors d'une authentification)
+  const handleSwitchTenant = async (newTenantId: string, isAuthSwitch = false) => {
     const isRoot = userSession?.isRoot || userSession?.role === 'root';
-    if (!isRoot) {
+    if (!isRoot && !isAuthSwitch) {
       console.warn("Accès refusé : Seul le compte Root superviseur est habilité à inspecter ou basculer d'organisation.");
       return;
     }
@@ -197,33 +206,35 @@ export default function App() {
     }
 
     // Basculer l'utilisateur sur le profil équivalent du nouveau tenant
-    try {
-      const rolesRes = await fetch('/api/auth/roles', {
-        headers: { 'x-tenant-id': newTenantId }
-      });
-      if (rolesRes.ok) {
-        const roles = await rolesRes.json();
-        const targetRoleObj = roles.find((r: any) => r.role === userSession.role) || roles[0];
-        if (targetRoleObj) {
-          const newSession: UserSession = {
-            id: `usr-${Date.now()}`,
-            name: targetRoleObj.name,
-            email: targetRoleObj.email,
-            role: targetRoleObj.role,
-            tenantId: newTenantId,
-            tenantName: foundTenant?.name,
-            twoFactorEnabled: true,
-            twoFactorVerified: true,
-            department: targetRoleObj.department,
-          };
-          setUserSession(newSession);
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('dz_fleet_session', JSON.stringify(newSession));
+    if (isRoot) {
+      try {
+        const rolesRes = await fetch('/api/auth/roles', {
+          headers: { 'x-tenant-id': newTenantId }
+        });
+        if (rolesRes.ok) {
+          const roles = await rolesRes.json();
+          const targetRoleObj = roles.find((r: any) => r.role === userSession.role) || roles[0];
+          if (targetRoleObj) {
+            const newSession: UserSession = {
+              id: `usr-${Date.now()}`,
+              name: targetRoleObj.name,
+              email: targetRoleObj.email,
+              role: targetRoleObj.role,
+              tenantId: newTenantId,
+              tenantName: foundTenant?.name,
+              twoFactorEnabled: true,
+              twoFactorVerified: true,
+              department: targetRoleObj.department,
+            };
+            setUserSession(newSession);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('dz_fleet_session', JSON.stringify(newSession));
+            }
           }
         }
+      } catch (e) {
+        console.error('Erreur lors du basculement des rôles:', e);
       }
-    } catch (e) {
-      console.error('Erreur lors du basculement des rôles:', e);
     }
 
     // Recharger toutes les données cloisonnées du nouveau tenant
@@ -255,6 +266,41 @@ export default function App() {
     try {
       localStorage.setItem('dz_fleet_session', JSON.stringify(newSession));
     } catch {}
+
+    // Lier immédiatement le tenant actif au tenant authentifié de l'utilisateur
+    const targetTenantId = (newSession.tenantId && newSession.tenantId !== 'platform-root')
+      ? newSession.tenantId
+      : (localStorage.getItem('dz_fleet_current_tenant') || 'tenant-sonatrach');
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dz_fleet_current_tenant', targetTenantId);
+    }
+    setCurrentTenantId(targetTenantId);
+
+    // Mettre à jour currentTenant et tenantsList pour le tenant connecté
+    const isRoot = newSession.isRoot || newSession.role === 'root';
+    const reqHeaders: Record<string, string> = {
+      'x-tenant-id': targetTenantId,
+    };
+    if (isRoot) {
+      reqHeaders['x-user-role'] = 'root';
+    }
+
+    fetch('/api/fleet/tenants', { headers: reqHeaders })
+      .then(r => r.json())
+      .then((data: Tenant[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTenantsList(data);
+          const match = data.find(t => t.id === targetTenantId) || data[0];
+          setCurrentTenant(match);
+        }
+      })
+      .catch(console.error);
+
+    // Recharger immédiatement la flotte et les données isolées du nouveau tenant
+    setLoading(true);
+    fetchFleetData(targetTenantId);
+
     setIs2FAModalOpen(false);
     if (newSession.role === 'root') {
       setActiveTab('root_backoffice');
@@ -279,9 +325,10 @@ export default function App() {
     setUserSession(unverifiedSession);
     try {
       localStorage.setItem('dz_fleet_session', JSON.stringify(unverifiedSession));
+      localStorage.removeItem('dz_fleet_current_tenant');
       sessionStorage.clear();
     } catch {}
-    setIs2FAModalOpen(false);
+    setIs2FAModalOpen(true);
     console.log('[Dz-Fleet Auth] Session clôturée avec succès. Plateforme verrouillée.');
   };
 

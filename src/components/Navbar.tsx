@@ -193,12 +193,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
                 <div className="flex flex-col text-left">
                   <span className="font-extrabold max-w-[130px] sm:max-w-[190px] xl:max-w-[240px] truncate leading-tight text-slate-900 dark:text-white">
-                    {currentTenant?.name || userSession?.tenantName || 'Entreprise'}
+                    {(currentTenant?.id === userSession?.tenantId ? currentTenant?.name : userSession?.tenantName) || currentTenant?.name || 'Entreprise'}
                   </span>
                   <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold leading-tight flex items-center gap-1">
-                    <span className="font-mono font-bold tracking-wider">{currentTenant?.tenantCode || 'ORGANISATION'}</span>
+                    <span className="font-mono font-bold tracking-wider">
+                      {(currentTenant?.id === userSession?.tenantId ? currentTenant?.tenantCode : null) || 
+                       (userSession?.tenantId === 'tenant-cevital' ? 'CEVITAL-001' : 
+                        userSession?.tenantId === 'tenant-cosider' ? 'COSIDER-001' : 
+                        currentTenant?.tenantCode || 'ORGANISATION')}
+                    </span>
                     <span className="text-slate-300 dark:text-slate-600">•</span>
-                    <span className="text-slate-500 dark:text-slate-400 font-normal">{currentTenant?.wilaya?.split(' ')[0] || ''}</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-normal">
+                      {(currentTenant?.id === userSession?.tenantId ? currentTenant?.wilaya?.split(' ')[0] : null) || 
+                       (userSession?.tenantId === 'tenant-cevital' ? '06' : 
+                        userSession?.tenantId === 'tenant-cosider' ? '16' : 
+                        currentTenant?.wilaya?.split(' ')[0] || '')}
+                    </span>
                   </span>
                 </div>
               </div>
