@@ -99,15 +99,18 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
   // Step in the authentication flow: 'credentials' -> '2fa' OR 'setup_password'
   const [step, setStep] = useState<'credentials' | '2fa' | 'setup_password'>('credentials');
   
-  // Credentials Form
-  const [selectedTenantSlug, setSelectedTenantSlug] = useState<string>(() => {
-    return currentTenant?.slug || 'sonatrach';
+  // Credentials Form (Code Organisation confidentiel au lieu d'une liste publique - Zero Discovery)
+  const [tenantCodeInput, setTenantCodeInput] = useState<string>(() => {
+    return currentTenant?.tenantCode || (currentTenant?.slug ? `${currentTenant.slug.toUpperCase()}-001` : 'SONATRACH-001');
   });
   const [emailInput, setEmailInput] = useState<string>('SuperAdmin@sonatrach.com');
   const [passwordInput, setPasswordInput] = useState<string>('Algeria2026!');
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  // Setup / Reset Password Form
+  // Setup / Reset Password Form (Politique de mots de passe forts)
+  const [setupTenantCode, setSetupTenantCode] = useState<string>(() => {
+    return currentTenant?.tenantCode || 'SONATRACH-001';
+  });
   const [setupToken, setSetupToken] = useState<string>('');
   const [newPasswordInput, setNewPasswordInput] = useState<string>('');
   const [confirmPasswordInput, setConfirmPasswordInput] = useState<string>('');
@@ -126,62 +129,105 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
 
   // Keep tenant updated
   useEffect(() => {
-    if (currentTenant?.slug) {
-      setSelectedTenantSlug(currentTenant.slug);
+    if (currentTenant?.tenantCode) {
+      setTenantCodeInput(currentTenant.tenantCode);
+      setSetupTenantCode(currentTenant.tenantCode);
     }
   }, [currentTenant]);
 
   if (!isOpen) return null;
 
-  // Handle Tenant selection change
-  const handleTenantChange = (slug: string) => {
-    setSelectedTenantSlug(slug);
-    setErrorMsg(null);
-    if (slug === 'root') {
-      setEmailInput('root@dzfleet.dz');
-    } else {
-      setEmailInput(`SuperAdmin@${slug}.com`);
+  // Calculateur de force du mot de passe (Politique Mots de Passe Forts)
+  const getPasswordStrength = (pwd: string) => {
+    const hasMinLength = pwd.length >= 8;
+    const hasUpper = /[A-Z]/.test(pwd);
+    const hasLower = /[a-z]/.test(pwd);
+    const hasDigit = /[0-9]/.test(pwd);
+    const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(pwd);
+    const commonWeak = ['12345678', 'password', 'motdepasse', 'admin123', 'azerty123', 'qwerty123', 'algerie2026', 'fleet2026'];
+    const isNotCommon = pwd.length > 0 && !commonWeak.includes(pwd.toLowerCase());
+
+    const criteria = [hasMinLength, hasUpper, hasLower, hasDigit, hasSpecial, isNotCommon];
+    const passedCount = criteria.filter(Boolean).length;
+    const isValid = hasMinLength && hasUpper && hasLower && hasDigit && hasSpecial && isNotCommon;
+
+    let scoreLabel = 'Trop court';
+    let barColor = 'bg-slate-300 dark:bg-slate-700';
+    let textColor = 'text-slate-400';
+    let percent = Math.min(100, Math.round((passedCount / 6) * 100));
+
+    if (pwd.length === 0) {
+      percent = 0;
+      scoreLabel = 'Saisissez un mot de passe';
+    } else if (passedCount <= 2) {
+      barColor = 'bg-rose-500';
+      textColor = 'text-rose-600 dark:text-rose-400';
+      scoreLabel = 'Très faible (Rejeté)';
+    } else if (passedCount <= 4) {
+      barColor = 'bg-amber-500';
+      textColor = 'text-amber-600 dark:text-amber-400';
+      scoreLabel = 'Moyen (Critères manquants)';
+    } else if (passedCount === 5) {
+      barColor = 'bg-lime-500';
+      textColor = 'text-lime-600 dark:text-lime-400';
+      scoreLabel = 'Bon (Presque conforme)';
+    } else if (isValid) {
+      barColor = 'bg-emerald-500';
+      textColor = 'text-emerald-600 dark:text-emerald-400';
+      scoreLabel = 'Fort & Conforme Souverain ANPDP';
     }
+
+    return {
+      hasMinLength,
+      hasUpper,
+      hasLower,
+      hasDigit,
+      hasSpecial,
+      isNotCommon,
+      passedCount,
+      isValid,
+      percent,
+      scoreLabel,
+      barColor,
+      textColor,
+    };
   };
+
+  const passwordStrength = getPasswordStrength(newPasswordInput);
 
   // Quick Demo Shortcut selector
   const handleQuickDemoSelect = (role: UserRole) => {
     setErrorMsg(null);
     if (role === 'root') {
-      setSelectedTenantSlug('root');
+      setTenantCodeInput('ROOT');
       setEmailInput('root@dzfleet.dz');
       setPasswordInput('Algeria2026!');
       return;
     }
 
-    const effectiveSlug = selectedTenantSlug === 'root' ? 'sonatrach' : selectedTenantSlug;
-    if (selectedTenantSlug === 'root') setSelectedTenantSlug('sonatrach');
+    setTenantCodeInput('SONATRACH-001');
 
     switch (role) {
       case 'super_admin':
-        setEmailInput(`SuperAdmin@${effectiveSlug}.com`);
+        setEmailInput('SuperAdmin@sonatrach.com');
         break;
       case 'maintenance_lead':
-        setEmailInput(`RespMaintenance@${effectiveSlug}.com`);
+        setEmailInput('RespMaintenance@sonatrach.com');
         break;
       case 'fleet_manager':
-        setEmailInput(`RespParc@${effectiveSlug}.com`);
+        setEmailInput('RespParc@sonatrach.com');
         break;
       case 'controller':
-        setEmailInput(`ControleurGestion@${effectiveSlug}.com`);
+        setEmailInput('ControleurGestion@sonatrach.com');
         break;
       case 'driver':
-        setEmailInput(
-          effectiveSlug === 'sonatrach' ? 'chauffeur.belkacem@sonatrach.com' :
-          effectiveSlug === 'cevital' ? 'chauffeur.belhadj@cevital.com' :
-          'chauffeur.sellami@cosider.com'
-        );
+        setEmailInput('chauffeur.belkacem@sonatrach.com');
         break;
     }
     setPasswordInput('Algeria2026!');
   };
 
-  // Step 1: Submit Credentials (Tenant + Email + Password)
+  // Step 1: Submit Credentials (Tenant Code + Email + Password)
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -192,8 +238,9 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tenant: selectedTenantSlug,
-          email: emailInput,
+          tenantCode: tenantCodeInput.trim().toUpperCase(),
+          tenant: tenantCodeInput.trim().toUpperCase(),
+          email: emailInput.trim(),
           password: passwordInput,
         }),
       });
@@ -201,13 +248,14 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Erreur lors de l authentification');
+        throw new Error(data.error || "Erreur lors de l'authentification");
       }
 
       // Check if user must first set their private password
       if (data.requirePasswordSetup) {
         setPendingEmail(data.email);
         setPendingTenantName(data.tenantName);
+        setSetupTenantCode(tenantCodeInput.trim().toUpperCase());
         setSetupToken(data.token || '');
         setStep('setup_password');
         setIsSendingEmail(false);
@@ -228,13 +276,13 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
     }
   };
 
-  // Step 2 (Optional): Set Private Password
+  // Step 2 (Optional): Set Private Strong Password
   const handleSetupPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (newPasswordInput.length < 6) {
-      setErrorMsg('Le mot de passe doit comporter au moins 6 caractères.');
+    if (!passwordStrength.isValid) {
+      setErrorMsg('Le mot de passe doit respecter tous les critères de sécurité de la politique de mots de passe forts.');
       return;
     }
 
@@ -249,8 +297,9 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: pendingEmail || emailInput,
-          tenantId: selectedTenantSlug,
-          token: setupToken,
+          tenantCode: setupTenantCode.trim().toUpperCase(),
+          tenantId: setupTenantCode.trim().toUpperCase(),
+          token: setupToken.trim(),
           newPassword: newPasswordInput,
         }),
       });
@@ -258,8 +307,9 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur lors de la configuration du mot de passe');
 
-      setSetupSuccessMsg('Votre mot de passe privé a été enregistré avec succès ! Veuillez maintenant vous connecter.');
+      setSetupSuccessMsg('Votre mot de passe fort a été configuré avec succès ! Redirection vers la connexion...');
       setPasswordInput(newPasswordInput);
+      setTenantCodeInput(setupTenantCode.trim().toUpperCase());
       setTimeout(() => {
         setStep('credentials');
         setSetupSuccessMsg(null);
@@ -281,8 +331,6 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
     setErrorMsg(null);
 
     try {
-      const isMasterKey = totpCode.trim() === '999999';
-
       const res = await fetch('/api/auth/verify-2fa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -290,7 +338,8 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
           email: pendingEmail || emailInput,
           role: pendingRole,
           code: totpCode.trim(),
-          tenantId: selectedTenantSlug === 'root' ? 'platform-root' : selectedTenantSlug,
+          tenantCode: tenantCodeInput.trim().toUpperCase(),
+          tenantId: tenantCodeInput.trim().toUpperCase() === 'ROOT' ? 'platform-root' : tenantCodeInput.trim().toUpperCase(),
         }),
       });
 
@@ -387,14 +436,14 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
           </div>
         )}
 
-        {/* ===================== STEP 1: CREDENTIALS (TENANT + EMAIL + PASSWORD) ===================== */}
+        {/* ===================== STEP 1: CREDENTIALS (TENANT CODE + EMAIL + PASSWORD) ===================== */}
         {step === 'credentials' && (
           <form onSubmit={handleCredentialsSubmit} className="p-6 space-y-4">
             
             {/* Quick Demo Role Selector Pills */}
             <div className="space-y-1.5 pb-2 border-b border-slate-100 dark:border-slate-800">
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                ⚡ Raccourcis Rapides Profils Démo :
+                ⚡ Raccourcis Rapides Démo (Code + Profils) :
               </label>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <button
@@ -442,22 +491,27 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
               </div>
             </div>
 
-            {/* Tenant Selector */}
+            {/* Tenant Code Input (Zero Discovery - Aucune liste des entreprises exposée) */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-emerald-500" />
-                Compte Organisation (Tenant) *
-              </label>
-              <select
-                value={selectedTenantSlug}
-                onChange={e => handleTenantChange(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <option value="sonatrach">🏢 Sonatrach - DP Hassi Messaoud (Pétrole & Gaz)</option>
-                <option value="cevital">🏢 Cevital Agro-Industrie (Chaîne du Froid)</option>
-                <option value="cosider">🏢 Cosider Groupe Travaux Publics (BTPH)</option>
-                <option value="root">👑 Plateforme Souveraine (Compte Root)</option>
-              </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-emerald-500" />
+                  Code Organisation (Tenant Code) *
+                </label>
+                <span className="text-[10px] text-slate-400 font-medium">Fourni par Root</span>
+              </div>
+              <input
+                type="text"
+                required
+                placeholder="Ex: SONATRACH-001 (ou ROOT pour Plateforme)"
+                value={tenantCodeInput}
+                onChange={e => setTenantCodeInput(e.target.value.toUpperCase())}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono font-bold tracking-wider uppercase text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                <Lock className="w-3 h-3 text-emerald-500 shrink-0" />
+                Isolation stricte (Zero Discovery) : aucune liste publique d'entreprises n'est divulguée.
+              </p>
             </div>
 
             {/* Email / Identifiant */}
@@ -469,7 +523,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
               <input
                 type="email"
                 required
-                placeholder="ex: SuperAdmin@sonatrach.com"
+                placeholder="ex: SuperAdmin@sonatrach.com ou user@gmail.com"
                 value={emailInput}
                 onChange={e => setEmailInput(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -487,6 +541,7 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
                   type="button"
                   onClick={() => {
                     setPendingEmail(emailInput);
+                    setSetupTenantCode(tenantCodeInput.trim().toUpperCase());
                     setStep('setup_password');
                   }}
                   className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
@@ -533,9 +588,9 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
           </form>
         )}
 
-        {/* ===================== STEP 2: SETUP / RESET PASSWORD ===================== */}
+        {/* ===================== STEP 2: SETUP / RESET STRONG PASSWORD ===================== */}
         {step === 'setup_password' && (
-          <form onSubmit={handleSetupPasswordSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleSetupPasswordSubmit} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
             {setupSuccessMsg ? (
               <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs text-center font-semibold space-y-2">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
@@ -543,13 +598,35 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
               </div>
             ) : (
               <>
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
-                  Saisissez le <strong>Jeton d'activation</strong> fourni par l'administrateur Root, puis définissez votre mot de passe personnel.
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    Définition de Votre Mot de Passe Privé Fort
+                  </div>
+                  <p>
+                    Ce mot de passe n'est connu que de vous seul. Veuillez renseigner le <strong>Code Organisation</strong> et le <strong>Jeton d'activation</strong> communiqués par l'administrateur Root.
+                  </p>
                 </div>
 
+                {/* Tenant Code */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Adresse Email :
+                    Code Organisation (Tenant Code) * :
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: SONATRACH-001"
+                    value={setupTenantCode}
+                    onChange={e => setSetupTenantCode(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono font-bold tracking-wider uppercase text-emerald-600 dark:text-emerald-400"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Identifiant / Adresse Email * :
                   </label>
                   <input
                     type="email"
@@ -560,9 +637,10 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
                   />
                 </div>
 
+                {/* Activation Token */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Jeton d'Activation / Réinitialisation (fourni par Root) *
+                    Jeton d'Activation / Réinitialisation (fourni par Root) * :
                   </label>
                   <input
                     type="text"
@@ -570,36 +648,98 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
                     placeholder="Ex: ACT-7X9K2A ou RST-..."
                     value={setupToken}
                     onChange={e => setSetupToken(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono font-bold text-slate-900 dark:text-white"
                   />
                 </div>
 
+                {/* New Password */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Nouveau Mot de Passe Privé *
+                    Nouveau Mot de Passe Privé Fort * :
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="Ex: Algerie2026!#"
+                      value={newPasswordInput}
+                      onChange={e => setNewPasswordInput(e.target.value)}
+                      className="w-full px-3 py-2 pr-10 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Password Strength Meter & Checklist */}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-600 dark:text-slate-300">Niveau de Sécurité :</span>
+                    <span className={`font-bold ${passwordStrength.textColor}`}>
+                      {passwordStrength.scoreLabel}
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-300 ${passwordStrength.barColor}`}
+                      style={{ width: `${passwordStrength.percent}%` }}
+                    />
+                  </div>
+
+                  {/* Criteria Checklist */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1 text-[11px]">
+                    <div className={`flex items-center gap-1.5 ${passwordStrength.hasMinLength ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                      {passwordStrength.hasMinLength ? <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <span className="w-3.5 h-3.5 rounded-full border border-slate-300 inline-block shrink-0" />}
+                      8 caractères minimum
+                    </div>
+
+                    <div className={`flex items-center gap-1.5 ${passwordStrength.hasUpper && passwordStrength.hasLower ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                      {passwordStrength.hasUpper && passwordStrength.hasLower ? <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <span className="w-3.5 h-3.5 rounded-full border border-slate-300 inline-block shrink-0" />}
+                      Majuscule & minuscule
+                    </div>
+
+                    <div className={`flex items-center gap-1.5 ${passwordStrength.hasDigit ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                      {passwordStrength.hasDigit ? <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <span className="w-3.5 h-3.5 rounded-full border border-slate-300 inline-block shrink-0" />}
+                      Au moins 1 chiffre (0-9)
+                    </div>
+
+                    <div className={`flex items-center gap-1.5 ${passwordStrength.hasSpecial ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
+                      {passwordStrength.hasSpecial ? <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <span className="w-3.5 h-3.5 rounded-full border border-slate-300 inline-block shrink-0" />}
+                      Caractère spécial (!@#$...)
+                    </div>
+
+                    <div className={`flex items-center gap-1.5 col-span-full ${passwordStrength.isNotCommon ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-rose-500 font-semibold'}`}>
+                      {passwordStrength.isNotCommon ? <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> : <span className="w-3.5 h-3.5 rounded-full border border-rose-300 inline-block shrink-0" />}
+                      Pas de mot de passe simple (azerty, 12345678...)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Confirmez le Mot de Passe * :
                   </label>
                   <input
                     type="password"
                     required
-                    placeholder="Au moins 6 caractères"
-                    value={newPasswordInput}
-                    onChange={e => setNewPasswordInput(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Confirmez le Mot de Passe *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="Retapez le mot de passe"
+                    placeholder="Retapez le mot de passe fort"
                     value={confirmPasswordInput}
                     onChange={e => setConfirmPasswordInput(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white"
                   />
+                  {confirmPasswordInput && confirmPasswordInput !== newPasswordInput && (
+                    <p className="text-[10px] text-rose-500 mt-1 font-semibold">
+                      Les deux mots de passe ne correspondent pas.
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
@@ -613,9 +753,10 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
 
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md"
+                    disabled={!passwordStrength.isValid || newPasswordInput !== confirmPasswordInput}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs shadow-md"
                   >
-                    Enregistrer mon Mot de Passe Privé
+                    Valider mon Mot de Passe Fort
                   </button>
                 </div>
               </>

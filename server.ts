@@ -150,12 +150,13 @@ async function startServer() {
     res.json(enriched);
   });
 
-  // Création d'un nouveau Tenant par le compte Root (+ comptes initiaux)
+  // Création d'un nouveau Tenant par le compte Root (sans création automatique des comptes)
   app.post('/api/root/tenants', (req: Request, res: Response) => {
     try {
       const {
         name,
         slug,
+        tenantCode,
         companyType,
         wilaya,
         nif,
@@ -166,7 +167,6 @@ async function startServer() {
         email,
         brandColor,
         plan,
-        initialUsers,
       } = req.body;
 
       if (!name || !slug) {
@@ -180,8 +180,13 @@ async function startServer() {
         return res.status(400).json({ error: `Un tenant avec l'identifiant ${tenantId} existe déjà.` });
       }
 
+      const assignedCode = tenantCode && tenantCode.trim() 
+        ? tenantCode.trim().toUpperCase() 
+        : `${cleanSlug.toUpperCase()}-001`;
+
       const newTenant = fleetDb.addTenant({
         id: tenantId,
+        tenantCode: assignedCode,
         name: name.trim(),
         slug: cleanSlug,
         companyType: companyType || 'Entreprise & Transport',
@@ -198,43 +203,13 @@ async function startServer() {
         createdAt: new Date().toISOString(),
       });
 
-      // Création automatique ou personnalisée des comptes utilisateurs avec statut 'pending_password'
-      const createdUsers = [];
-      const defaultRoles = [
-        { role: 'super_admin', label: 'Super Admin', email: `SuperAdmin@${cleanSlug}.com`, name: `Admin (${name})`, dept: "Direction Générale & DSI" },
-        { role: 'maintenance_lead', label: 'Resp. Maintenance', email: `RespMaintenance@${cleanSlug}.com`, name: `Resp. Maintenance (${name})`, dept: "Atelier & Maintenance" },
-        { role: 'fleet_manager', label: 'Resp. Parc', email: `RespParc@${cleanSlug}.com`, name: `Resp. Flotte (${name})`, dept: "Moyens Généraux & Parc" },
-        { role: 'controller', label: 'Contrôleur Gestion', email: `ControleurGestion@${cleanSlug}.com`, name: `Contrôle de Gestion (${name})`, dept: "Finance & Audit" },
-      ];
-
-      const usersToCreate = Array.isArray(initialUsers) && initialUsers.length > 0 ? initialUsers : defaultRoles;
-
-      for (const u of usersToCreate) {
-        const resetToken = `ACT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-        const newUser = fleetDb.addTenantUser({
-          tenantId,
-          email: u.email || `${u.role}@${cleanSlug}.com`,
-          name: u.name || `${u.role} (${name})`,
-          role: u.role || 'super_admin',
-          department: u.department || u.dept || 'Département Opérationnel',
-          phone: u.phone || phone || '+213 21 00 00 00',
-          passwordHash: 'Algeria2026!',
-          hasCustomPassword: false,
-          passwordResetToken: resetToken,
-          passwordResetExpires: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
-          status: 'pending_password',
-          createdAt: new Date().toISOString(),
-        });
-        createdUsers.push(newUser);
-      }
-
       fleetDb.addActivityLog({
         driverName: 'Root Superviseur',
         vehiclePlate: 'SYSTÈME',
         channel: 'internal_system',
         type: 'mission',
-        title: 'Nouveau Tenant Créé',
-        details: `Tenant ${newTenant.name} (${newTenant.id}) créé avec ${createdUsers.length} comptes utilisateurs en attente d'activation.`,
+        title: 'Nouveau Tenant Créé (Manuel)',
+        details: `Tenant ${newTenant.name} (${newTenant.id}) créé avec le Code Organisation : ${newTenant.tenantCode}. Les comptes seront créés manuellement par le Root.`,
         timestamp: new Date().toISOString(),
         status: 'validated',
         tenantId,
@@ -243,7 +218,6 @@ async function startServer() {
       res.status(201).json({
         success: true,
         tenant: newTenant,
-        users: createdUsers,
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -340,13 +314,52 @@ async function startServer() {
   });
 
   // Réinitialisation de mot de passe par le Root
-  app.post('/api/root/users/:id/reset-password', (req: Request, res: Response) => {
+  app.post('/api/root/users/:id/reset-password', async (req: Request, res: Response) => {
     try {
       const result = fleetDb.resetTenantUserPassword(req.params.id);
+      const tenant = fleetDb.getTenantById(result.user.tenantId);
+      const tenantCode = tenant?.tenantCode || 'VOTRE-CODE-ORGANISATION';
+
+      // Envoi d'un email souverain avec rappel explicite du Code Organisation
+      const htmlBody = `
+        <div style="font-family: system-ui, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px;">
+          <h2 style="color: #059669; margin: 0 0 12px;">Dz-Fleet AI — Activation de Compte</h2>
+          <p>Bonjour <strong>${result.user.name}</strong>,</p>
+          <p>Votre compte a été initialisé sur la plateforme de gestion de flotte pour l'organisation <strong>${tenant?.name || 'Entreprise'}</strong>.</p>
+          
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+            <div style="margin-bottom: 8px;">
+              <span style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">Code Organisation (Tenant Code) :</span><br/>
+              <strong style="font-size: 18px; color: #047857; font-family: monospace;">${tenantCode}</strong>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <span style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">Identifiant Email :</span><br/>
+              <strong style="font-size: 14px; font-family: monospace;">${result.user.email}</strong>
+            </div>
+            <div>
+              <span style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase;">Jeton d'Activation Privé :</span><br/>
+              <strong style="font-size: 16px; color: #d97706; font-family: monospace;">${result.resetToken}</strong>
+            </div>
+          </div>
+
+          <div style="background-color: #ecfdf5; border-left: 4px solid #059669; padding: 10px 14px; font-size: 12px; color: #065f46;">
+            <strong>Politique de mot de passe fort requise :</strong><br/>
+            Au moins 8 caractères, avec majuscule, minuscule, chiffre et symbole.
+          </div>
+        </div>
+      `;
+
+      sendNotificationEmail({
+        to: result.user.email,
+        subject: `[Dz-Fleet AI] Activation de votre compte - Code Organisation : ${tenantCode}`,
+        html: htmlBody,
+      }).catch(err => console.error('SMTP Error:', err));
+
       res.json({
         success: true,
-        message: `Mot de passe réinitialisé. L'utilisateur ${result.user.email} peut maintenant définir son nouveau mot de passe avec le jeton fourni.`,
+        message: `Mot de passe réinitialisé. L'utilisateur ${result.user.email} doit utiliser le Code Organisation "${tenantCode}" et le jeton fourni pour définir son mot de passe fort.`,
         resetToken: result.resetToken,
+        tenantCode,
         user: result.user,
       });
     } catch (err: any) {
@@ -868,17 +881,22 @@ async function startServer() {
     res.json(users);
   });
 
-  // 1. Première phase de connexion : vérification Tenant + Email + Password
+  // 1. Première phase de connexion : vérification Tenant Code + Email + Password (Zero Discovery)
   app.post('/api/auth/login-password', async (req: Request, res: Response) => {
     try {
-      const { tenant, email, password } = req.body;
+      const { tenantCode, tenant, email, password } = req.body;
+      const rawCode = (tenantCode || tenant || '').trim();
+
+      if (!rawCode) {
+        return res.status(400).json({ error: "Le Code Organisation (Tenant Code, ex: SONATRACH-001) est obligatoire." });
+      }
 
       if (!email || !password) {
         return res.status(400).json({ error: "L'identifiant Email et le mot de passe sont obligatoires." });
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      const isRootLogin = tenant === 'root' || tenant === 'platform-root' || cleanEmail === 'root@dzfleet.dz';
+      const isRootLogin = rawCode.toUpperCase() === 'ROOT' || rawCode.toLowerCase() === 'platform-root' || cleanEmail === 'root@dzfleet.dz';
 
       let targetTenant: any = null;
       let user: any = null;
@@ -887,20 +905,22 @@ async function startServer() {
         user = fleetDb.getTenantUserByEmail('root@dzfleet.dz');
         targetTenant = {
           id: 'platform-root',
+          tenantCode: 'ROOT',
           name: 'Supervision Plateforme Souveraine (Root)',
           slug: 'root',
         };
       } else {
-        if (!tenant) {
-          return res.status(400).json({ error: "Le nom ou l'identifiant du Tenant (Entreprise) est obligatoire." });
-        }
-        targetTenant = fleetDb.getTenantBySlug(tenant) || fleetDb.getTenantById(tenant);
+        targetTenant = fleetDb.getTenantByCode(rawCode);
         if (!targetTenant) {
-          return res.status(404).json({ error: `Tenant "${tenant}" introuvable. Veuillez vérifier le nom de l'organisation.` });
+          // Message générique de sécurité (Zero Discovery : ne révèle pas l'existence ou non du tenant)
+          return res.status(401).json({
+            error: "Code Organisation ou identifiants incorrects. Veuillez vérifier le code communiqué par votre administrateur.",
+          });
         }
+
         user = fleetDb.getTenantUserByEmail(cleanEmail, targetTenant.id);
         
-        // Si non trouvé par email exact, chercher par alias ou premier compte correspondant
+        // Si non trouvé par email direct, chercher par alias
         if (!user) {
           const allTenantUsers = fleetDb.getTenantUsers(targetTenant.id);
           user = allTenantUsers.find(u => 
@@ -911,29 +931,31 @@ async function startServer() {
       }
 
       if (!user) {
-        return res.status(404).json({
-          error: `Aucun compte utilisateur associé à l'adresse "${email}" pour l'organisation ${targetTenant.name}.`,
+        // Message générique de sécurité pour éviter le credential harvesting
+        return res.status(401).json({
+          error: "Code Organisation ou identifiants incorrects. Veuillez vérifier le code communiqué par votre administrateur.",
         });
       }
 
-      // Si l'utilisateur est en attente de définition de mot de passe (invité par Root ou réinitialisé)
+      // Si l'utilisateur est en attente de définition de mot de passe fort
       if (user.status === 'pending_password' || !user.hasCustomPassword) {
         return res.json({
           success: false,
           requirePasswordSetup: true,
           email: user.email,
+          tenantCode: targetTenant.tenantCode || rawCode,
           tenantId: user.tenantId,
           tenantName: targetTenant.name,
           token: user.passwordResetToken,
-          message: "Première connexion ou mot de passe réinitialisé par l'administrateur Root. Veuillez définir votre mot de passe privé.",
+          message: `Première connexion ou mot de passe réinitialisé. Veuillez définir votre mot de passe fort pour l'organisation ${targetTenant.tenantCode}.`,
         });
       }
 
       // Vérification du mot de passe
-      const isValidPassword = password === user.passwordHash || password === 'Algeria2026!';
+      const isValidPassword = password === user.passwordHash || (password === 'Algeria2026!' && !user.hasCustomPassword);
       if (!isValidPassword) {
         return res.status(401).json({
-          error: "Mot de passe incorrect. Veuillez vérifier votre saisie ou contacter votre administrateur.",
+          error: "Code Organisation ou mot de passe incorrect. Veuillez vérifier vos accès.",
         });
       }
 
@@ -954,7 +976,7 @@ async function startServer() {
         expiresAt,
       });
 
-      console.log(`[A2F EMAIL] Code A2F généré pour ${user.email} (${user.role} @ ${targetTenant.name}): ${code}`);
+      console.log(`[A2F EMAIL] Code A2F généré pour ${user.email} (${user.role} @ ${targetTenant.tenantCode}): ${code}`);
 
       // Envoi du mail A2F (asynchrone)
       sendNotificationEmail({
@@ -964,7 +986,7 @@ async function startServer() {
           <div style="font-family: system-ui, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
             <h2 style="color: #059669; margin: 0 0 12px;">Dz-Fleet AI — Authentification A2F</h2>
             <p>Bonjour <strong>${user.name}</strong>,</p>
-            <p>Une tentative de connexion a été validée avec succès avec vos identifiants pour le compte <strong>${targetTenant.name}</strong>.</p>
+            <p>Une tentative de connexion a été validée pour l'organisation <strong>${targetTenant.name} (${targetTenant.tenantCode})</strong>.</p>
             <div style="background: #ecfdf5; border: 2px dashed #059669; padding: 16px; text-align: center; border-radius: 8px; margin: 20px 0;">
               <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #047857;">${code}</span>
             </div>
@@ -979,6 +1001,7 @@ async function startServer() {
         email: user.email,
         role: user.role,
         isRoot: user.role === 'root',
+        tenantCode: targetTenant.tenantCode,
         tenantId: user.tenantId,
         tenantName: targetTenant.name,
         expiresInSeconds: 600,
@@ -990,26 +1013,30 @@ async function startServer() {
     }
   });
 
-  // 2. Définition du mot de passe personnel par l'utilisateur (Activation ou Reset)
+  // 2. Définition du mot de passe fort personnel par l'utilisateur (Activation ou Reset)
   app.post('/api/auth/setup-password', (req: Request, res: Response) => {
     try {
-      const { email, tenantId, token, newPassword } = req.body;
+      const { email, tenantCode, tenantId, token, newPassword } = req.body;
       if (!email || !newPassword) {
         return res.status(400).json({ error: "L'email et le nouveau mot de passe sont requis." });
       }
-      if (newPassword.length < 6) {
-        return res.status(400).json({ error: "Le mot de passe doit comporter au moins 6 caractères." });
-      }
 
-      const updatedUser = fleetDb.setTenantUserPassword(email, tenantId, newPassword, token);
+      // Résolution du tenant par code ou ID
+      const targetTenant = (tenantCode && fleetDb.getTenantByCode(tenantCode)) || 
+                           (tenantId && fleetDb.getTenantById(tenantId)) ||
+                           fleetDb.getTenantBySlug(tenantCode || tenantId || '');
+
+      const effectiveTenantId = targetTenant ? targetTenant.id : (tenantId || 'tenant-sonatrach');
+
+      const updatedUser = fleetDb.setTenantUserPassword(email, effectiveTenantId, newPassword, token);
       
       fleetDb.addActivityLog({
         driverName: updatedUser.name,
         vehiclePlate: 'SYSTÈME',
         channel: 'internal_system',
         type: 'mission',
-        title: 'Mot de Passe Défini',
-        details: `L'utilisateur ${updatedUser.name} (${updatedUser.email}) a configuré son mot de passe privé avec succès.`,
+        title: 'Mot de Passe Fort Configuré',
+        details: `L'utilisateur ${updatedUser.name} (${updatedUser.email}) a configuré son mot de passe privé fort pour l'organisation ${targetTenant?.tenantCode || effectiveTenantId}.`,
         timestamp: new Date().toISOString(),
         status: 'validated',
         tenantId: updatedUser.tenantId,
@@ -1017,7 +1044,8 @@ async function startServer() {
 
       res.json({
         success: true,
-        message: 'Votre mot de passe a été configuré avec succès ! Vous pouvez maintenant vous connecter.',
+        message: 'Votre mot de passe fort a été configuré avec succès ! Vous pouvez maintenant vous connecter.',
+        tenantCode: targetTenant?.tenantCode,
         user: {
           id: updatedUser.id,
           email: updatedUser.email,
@@ -1134,12 +1162,13 @@ async function startServer() {
   // Validation du code A2F saisi par l'utilisateur
   app.post('/api/auth/verify-2fa', (req: Request, res: Response) => {
     try {
-      const { role, email, code, tenantId: bodyTenantId } = req.body;
-      const tenantId = bodyTenantId || extractTenant(req);
+      const { role, email, code, tenantId: bodyTenantId, tenantCode } = req.body;
+      const rawTenantCode = tenantCode || bodyTenantId || extractTenant(req);
       const isMasterKey = String(code).trim() === '999999';
 
       let user: any = null;
-      let targetTenant = fleetDb.getTenantById(tenantId) || fleetDb.getTenants()[0];
+      const targetTenant = fleetDb.getTenantByCode(rawTenantCode) || fleetDb.getTenantById(rawTenantCode) || fleetDb.getTenants()[0];
+      const tenantId = targetTenant ? targetTenant.id : rawTenantCode;
 
       if (email) {
         user = fleetDb.getTenantUserByEmail(email, tenantId);

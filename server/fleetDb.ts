@@ -246,11 +246,37 @@ export const generateSampleStationReceipt = (
   return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
 };
 
+// Validateur souverain de conformité des mots de passe (Politique de Mots de Passe Forts)
+export function validateStrongPassword(password: string): { valid: boolean; error?: string } {
+  if (!password || password.length < 8) {
+    return { valid: false, error: 'Le mot de passe doit comporter au moins 8 caractères.' };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, error: 'Le mot de passe doit contenir au moins une lettre majuscule (A-Z).' };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, error: 'Le mot de passe doit contenir au moins une lettre minuscule (a-z).' };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, error: 'Le mot de passe doit contenir au moins un chiffre (0-9).' };
+  }
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password)) {
+    return { valid: false, error: 'Le mot de passe doit contenir au moins un caractère spécial (!@#$%...).' };
+  }
+  const lower = password.toLowerCase();
+  const commonWeak = ['12345678', 'password', 'motdepasse', 'admin123', 'azerty123', 'qwerty123', 'algerie2026', 'fleet2026'];
+  if (commonWeak.includes(lower)) {
+    return { valid: false, error: 'Ce mot de passe est trop simple ou facilement devinable.' };
+  }
+  return { valid: true };
+}
+
 export class FleetDatabase {
 
   private tenants: Tenant[] = [
     {
       id: 'tenant-sonatrach',
+      tenantCode: 'SONATRACH-001',
       name: 'Sonatrach - DP Hassi Messaoud',
       slug: 'sonatrach',
       companyType: 'Énergie & Hydrocarbures',
@@ -268,6 +294,7 @@ export class FleetDatabase {
     },
     {
       id: 'tenant-cevital',
+      tenantCode: 'CEVITAL-001',
       name: 'Cevital Agro-Industrie',
       slug: 'cevital',
       companyType: 'Agro-Industrie & Chaîne du Froid',
@@ -285,6 +312,7 @@ export class FleetDatabase {
     },
     {
       id: 'tenant-cosider',
+      tenantCode: 'COSIDER-001',
       name: 'Cosider Groupe Travaux Publics',
       slug: 'cosider',
       companyType: 'BTPH & Grands Chantiers Nationaux',
@@ -3277,6 +3305,16 @@ export class FleetDatabase {
     return this.tenants.find(t => t.slug.toLowerCase() === clean || t.id.toLowerCase() === clean);
   }
 
+  getTenantByCode(code: string): Tenant | undefined {
+    if (!code) return undefined;
+    const clean = code.trim().toLowerCase();
+    return this.tenants.find(t => 
+      t.tenantCode?.toLowerCase() === clean || 
+      t.slug.toLowerCase() === clean || 
+      t.id.toLowerCase() === clean
+    );
+  }
+
   addTenant(tenant: Tenant): Tenant {
     this.tenants.push(tenant);
     return tenant;
@@ -3531,6 +3569,11 @@ export class FleetDatabase {
 
     if (token && user.passwordResetToken && user.passwordResetToken !== token) {
       throw new Error("Jeton d'activation ou de réinitialisation invalide");
+    }
+
+    const check = validateStrongPassword(newPassword);
+    if (!check.valid) {
+      throw new Error(check.error || 'Le mot de passe ne respecte pas les critères de sécurité.');
     }
 
     user.passwordHash = newPassword;

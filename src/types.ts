@@ -8,6 +8,7 @@ export type UserRole =
 
 export interface Tenant {
   id: string; // ex: 'tenant-sonatrach', 'tenant-cevital', 'tenant-cosider'
+  tenantCode: string; // Code identifiant unique communiqué aux utilisateurs (ex: 'SONATRACH-001')
   name: string; // Nom légal de l'entreprise ou filiale
   slug: string; // Code court normalisé (ex: 'sonatrach', 'cevital', 'cosider')
   companyType: string; // Secteur d'activité (Pétrole & Gaz, Agro-Alimentaire, BTPH)

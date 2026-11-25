@@ -82,10 +82,11 @@ export const RootBackOffice: React.FC<RootBackOfficeProps> = ({
   const [restoreStatusMsg, setRestoreStatusMsg] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  // Form states for New Tenant
+  // Form states for New Tenant (Manuel, sans création automatique des comptes)
   const [newTenantForm, setNewTenantForm] = useState({
     name: '',
     slug: '',
+    tenantCode: '',
     companyType: 'Énergie & Industrie',
     wilaya: '16 - Alger',
     nif: '000016001298453',
@@ -96,10 +97,6 @@ export const RootBackOffice: React.FC<RootBackOfficeProps> = ({
     email: '',
     brandColor: '#059669',
     plan: 'enterprise' as const,
-    superAdminEmail: '',
-    respMaintenanceEmail: '',
-    respParcEmail: '',
-    controleurGestionEmail: '',
   });
 
   // Form state for New User
@@ -140,27 +137,27 @@ export const RootBackOffice: React.FC<RootBackOfficeProps> = ({
     fetchAllRootData();
   }, []);
 
-  // Update slug automatically when typing name
+  // Update slug and suggested tenant code automatically when typing name
   const handleTenantNameChange = (name: string) => {
     const slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
+
+    const cleanPrefix = name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    const suggestedCode = `${cleanPrefix || 'TENANT'}-001`;
     
     setNewTenantForm(prev => ({
       ...prev,
       name,
       slug,
+      tenantCode: prev.tenantCode && !prev.tenantCode.endsWith('-001') ? prev.tenantCode : suggestedCode,
       email: prev.email || `contact@${slug || 'entreprise'}-dz.com`,
-      superAdminEmail: `SuperAdmin@${slug || 'entreprise'}.com`,
-      respMaintenanceEmail: `RespMaintenance@${slug || 'entreprise'}.com`,
-      respParcEmail: `RespParc@${slug || 'entreprise'}.com`,
-      controleurGestionEmail: `ControleurGestion@${slug || 'entreprise'}.com`,
     }));
   };
 
-  // Submit New Tenant
+  // Submit New Tenant (Manuel, sans création automatique des comptes)
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTenantForm.name || !newTenantForm.slug) {
@@ -172,6 +169,7 @@ export const RootBackOffice: React.FC<RootBackOfficeProps> = ({
       const payload = {
         name: newTenantForm.name,
         slug: newTenantForm.slug,
+        tenantCode: newTenantForm.tenantCode || `${newTenantForm.slug.toUpperCase()}-001`,
         companyType: newTenantForm.companyType,
         wilaya: newTenantForm.wilaya,
         nif: newTenantForm.nif,
@@ -182,32 +180,6 @@ export const RootBackOffice: React.FC<RootBackOfficeProps> = ({
         email: newTenantForm.email,
         brandColor: newTenantForm.brandColor,
         plan: newTenantForm.plan,
-        initialUsers: [
-          {
-            role: 'super_admin',
-            email: newTenantForm.superAdminEmail || `SuperAdmin@${newTenantForm.slug}.com`,
-            name: `Super Admin (${newTenantForm.name})`,
-            department: "Direction des Systèmes d'Information (DSI)",
-          },
-          {
-            role: 'maintenance_lead',
-            email: newTenantForm.respMaintenanceEmail || `RespMaintenance@${newTenantForm.slug}.com`,
-            name: `Resp. Maintenance (${newTenantForm.name})`,
-            department: 'Direction Maintenance & Ateliers',
-          },
-          {
-            role: 'fleet_manager',
-            email: newTenantForm.respParcEmail || `RespParc@${newTenantForm.slug}.com`,
-            name: `Resp. du Parc (${newTenantForm.name})`,
-            department: 'Moyens Généraux & Gestion de Flotte',
-          },
-          {
-            role: 'controller',
-            email: newTenantForm.controleurGestionEmail || `ControleurGestion@${newTenantForm.slug}.com`,
-            name: `Contrôleur de Gestion (${newTenantForm.name})`,
-            department: 'Direction Financière & Audit de Gestion',
-          },
-        ],
       };
 
       const res = await fetch('/api/root/tenants', {
@@ -222,7 +194,7 @@ export const RootBackOffice: React.FC<RootBackOfficeProps> = ({
       setIsAddTenantModalOpen(false);
       await fetchAllRootData();
       if (onRefreshData) onRefreshData();
-      alert(`Tenant "${data.tenant.name}" créé avec succès ! 4 comptes utilisateurs ont été configurés en attente de mot de passe.`);
+      alert(`Tenant "${data.tenant.name}" créé avec succès !\n\n🔑 Code Organisation attribué : ${data.tenant.tenantCode}\n\nVous pouvez maintenant créer manuellement les comptes d'accès avec les emails de votre choix.`);
     } catch (err: any) {
       alert(`Erreur : ${err.message}`);
     }
@@ -593,6 +565,28 @@ export const RootBackOffice: React.FC<RootBackOfficeProps> = ({
                       <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         {t.plan}
                       </span>
+                    </div>
+
+                    {/* Tenant Code Badge (Zero Discovery Identifier) */}
+                    <div className="flex items-center justify-between bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/60 rounded-xl px-2.5 py-1.5 mb-3">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <KeyRound className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Code Organisation :</span>
+                        <span className="font-mono text-xs font-black tracking-wider text-indigo-700 dark:text-indigo-300">
+                          {t.tenantCode || `${t.slug.toUpperCase()}-001`}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(t.tenantCode || `${t.slug.toUpperCase()}-001`);
+                          alert(`Code Organisation "${t.tenantCode || `${t.slug.toUpperCase()}-001`}" copié !`);
+                        }}
+                        className="p-1 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shrink-0"
+                        title="Copier le code de l'organisation"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
                     </div>
 
                     {/* Fiscal & Contact Info */}
@@ -1045,66 +1039,40 @@ export const RootBackOffice: React.FC<RootBackOfficeProps> = ({
                 </div>
               </div>
 
-              {/* Initial accounts configuration */}
+              {/* Code Organisation & Provisionnement Manuel */}
               <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
                 <div className="flex items-center gap-2">
-                  <KeyRound className="w-4 h-4 text-amber-500" />
+                  <KeyRound className="w-4 h-4 text-emerald-500" />
                   <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                    Configuration des Comptes d'Accès Initiaux (Emails Personnalisés)
+                    Code Identifiant Unique de l'Organisation (Tenant Code)
                   </h4>
                 </div>
-                <p className="text-[11px] text-slate-500">
-                  Ces comptes seront créés avec le statut <strong>"En attente de mot de passe"</strong>. L'utilisateur définira son mot de passe privé lors de sa première connexion via le jeton d'activation.
-                </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1">
-                      Super Admin (Email) :
-                    </label>
-                    <input
-                      type="email"
-                      value={newTenantForm.superAdminEmail}
-                      onChange={e => setNewTenantForm({ ...newTenantForm, superAdminEmail: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs text-slate-900 dark:text-white"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Code Organisation Communiqué aux Utilisateurs *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: SONATRACH-001, NAFTAL-001"
+                    value={newTenantForm.tenantCode}
+                    onChange={e => setNewTenantForm({ ...newTenantForm, tenantCode: e.target.value.toUpperCase() })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono font-bold uppercase text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Ce code confidentiel sera transmis par le Root aux collaborateurs de ce tenant pour leur permettre de s'authentifier sans divulgation des autres entreprises hébergées (Zero Discovery).
+                  </p>
+                </div>
 
-                  <div>
-                    <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1">
-                      Resp. Maintenance (Email) :
-                    </label>
-                    <input
-                      type="email"
-                      value={newTenantForm.respMaintenanceEmail}
-                      onChange={e => setNewTenantForm({ ...newTenantForm, respMaintenanceEmail: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs text-slate-900 dark:text-white"
-                    />
+                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    Création Manuelle des Comptes d'Accès
                   </div>
-
-                  <div>
-                    <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1">
-                      Resp. du Parc (Email) :
-                    </label>
-                    <input
-                      type="email"
-                      value={newTenantForm.respParcEmail}
-                      onChange={e => setNewTenantForm({ ...newTenantForm, respParcEmail: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs text-slate-900 dark:text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-slate-600 dark:text-slate-400 block mb-1">
-                      Contrôleur de Gestion (Email) :
-                    </label>
-                    <input
-                      type="email"
-                      value={newTenantForm.controleurGestionEmail}
-                      onChange={e => setNewTenantForm({ ...newTenantForm, controleurGestionEmail: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-xs text-slate-900 dark:text-white"
-                    />
-                  </div>
+                  <p>
+                    Conformément à la politique d'isolation et à la liberté de choix des emails, aucun compte n'est généré automatiquement. Une fois le tenant créé, vous ajouterez manuellement chaque utilisateur avec son adresse email personnelle ou professionnelle choisie (Super Admin, Resp. Maintenance, Resp. Parc, Contrôleur, Chauffeurs).
+                  </p>
                 </div>
               </div>
 
@@ -1128,59 +1096,248 @@ export const RootBackOffice: React.FC<RootBackOfficeProps> = ({
         </div>
       )}
 
-      {/* ======================= MODAL: RESET PASSWORD RESULT ======================= */}
-      {isResetPasswordModalOpen && resetResult && (
+      {/* ======================= MODAL: ADD USER (MANUAL PROVISIONING) ======================= */}
+      {isAddUserModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
-                <KeyRound className="w-5 h-5" />
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Ajouter un Compte Utilisateur</h3>
+                  <p className="text-xs text-slate-500">Création manuelle avec email au choix du collaborateur</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Jeton de Définition du Mot de Passe</h3>
-                <p className="text-xs text-slate-500">Transmettez ce jeton sécurisé à l'utilisateur</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 dark:text-slate-300">
-              Le mot de passe de <strong>{resetResult.user.name}</strong> ({resetResult.user.email}) est en attente. L'utilisateur peut maintenant définir son mot de passe privé (connu de lui seul) lors de sa connexion.
-            </p>
-
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
-              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Jeton de Réinitialisation / Activation :</div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-lg font-black text-emerald-600 dark:text-emerald-400 tracking-wider">
-                  {resetResult.resetToken}
-                </span>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(resetResult.resetToken);
-                    setHasCopiedToken(true);
-                    setTimeout(() => setHasCopiedToken(false), 2000);
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-slate-50"
-                >
-                  {hasCopiedToken ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  {hasCopiedToken ? 'Copié !' : 'Copier'}
-                </button>
-              </div>
-            </div>
-
-            <div className="text-[11px] text-slate-500 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20 text-amber-800 dark:text-amber-300">
-              💡 L'utilisateur doit se rendre sur l'écran de connexion, choisir son Tenant, cliquer sur <strong>"Définir mon mot de passe"</strong> et saisir ce jeton.
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={() => setIsResetPasswordModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm"
-              >
-                J'ai Transmis le Jeton
+              <button onClick={() => setIsAddUserModalOpen(false)}>
+                <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
               </button>
             </div>
+
+            <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Organisation de Rattachement (Tenant) *
+                </label>
+                <select
+                  required
+                  value={newUserForm.tenantId}
+                  onChange={e => setNewUserForm({ ...newUserForm, tenantId: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white text-xs"
+                >
+                  {tenants.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} (Code: {t.tenantCode || `${t.slug.toUpperCase()}-001`})
+                    </option>
+                  ))}
+                </select>
+                {(() => {
+                  const selTenant = tenants.find(t => t.id === newUserForm.tenantId);
+                  return (
+                    <div className="mt-1.5 p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-[11px] text-indigo-700 dark:text-indigo-300 flex items-center justify-between font-mono">
+                      <span>Code Organisation associé : <strong>{selTenant?.tenantCode || 'TENANT-001'}</strong></span>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Rôle & Profil Opérationnel *
+                </label>
+                <select
+                  required
+                  value={newUserForm.role}
+                  onChange={e => setNewUserForm({ ...newUserForm, role: e.target.value as UserRole })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white text-xs"
+                >
+                  <option value="super_admin">Super Administrateur (Administration Totale du Tenant)</option>
+                  <option value="maintenance_lead">Responsable Maintenance (Fiches Réception, Ateliers, Pièces)</option>
+                  <option value="fleet_manager">Gestionnaire de Parc (Ordres de Mission, DI, Carburant)</option>
+                  <option value="controller">Contrôleur de Gestion (Coûts Interventions, TCO Global en DA)</option>
+                  <option value="driver">Conducteur / Chauffeur (PWA Mobile Odomètre & Pleins)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Nom Complet du Collaborateur *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Mourad Dahmani"
+                  value={newUserForm.name}
+                  onChange={e => setNewUserForm({ ...newUserForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Email de Connexion (Professionnel ou Personnel) *
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="Ex: m.dahmani@sonatrach.dz ou dahmani.mourad@gmail.com"
+                  value={newUserForm.email}
+                  onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-900 dark:text-white text-xs"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Libre choix : l'utilisateur s'authentifiera avec cette adresse email et le Code Organisation.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Département / Direction :
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Moyens Généraux"
+                    value={newUserForm.department}
+                    onChange={e => setNewUserForm({ ...newUserForm, department: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Téléphone :
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="+213 661 00 00 00"
+                    value={newUserForm.phone}
+                    onChange={e => setNewUserForm({ ...newUserForm, phone: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddUserModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 font-semibold"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-900/20"
+                >
+                  Créer et Générer le Jeton
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
+
+      {/* ======================= MODAL: RESET PASSWORD RESULT ======================= */}
+      {isResetPasswordModalOpen && resetResult && (() => {
+        const userTenant = tenants.find(t => t.id === resetResult.user.tenantId);
+        const tenantCode = userTenant?.tenantCode || `${userTenant?.slug.toUpperCase() || 'ORGANISATION'}-001`;
+        const invitationText = `Bonjour ${resetResult.user.name},
+
+Votre compte d'accès à la plateforme Dz-Fleet AI a été configuré par l'administrateur Root.
+
+Voici vos paramètres de connexion souveraine :
+- Code Organisation : ${tenantCode}
+- Identifiant / Email : ${resetResult.user.email}
+- Jeton d'activation : ${resetResult.resetToken}
+
+Procédure de première connexion :
+1. Rendez-vous sur https://fleet.dz
+2. Saisissez votre Code Organisation (${tenantCode}) et votre Email
+3. Cliquez sur "Définir mon mot de passe"
+4. Saisissez le jeton d'activation (${resetResult.resetToken}) et définissez votre mot de passe privé fort (8+ caractères, majuscule, minuscule, chiffre et symbole).`;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Paramètres d'Accès & Jeton d'Activation</h3>
+                  <p className="text-xs text-slate-500">Transmettez ces informations confidentielles au collaborateur</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-500">Organisation :</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{userTenant?.name || resetResult.user.tenantId}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800">
+                  <span className="font-semibold text-indigo-700 dark:text-indigo-300">Code Organisation (Tenant Code) :</span>
+                  <span className="font-mono font-black text-indigo-800 dark:text-indigo-200 tracking-wider text-sm">
+                    {tenantCode}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-500">Utilisateur / Email :</span>
+                  <span className="font-mono font-medium text-slate-800 dark:text-slate-200">{resetResult.user.email}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400">Jeton d'Activation / Réinitialisation :</div>
+                    <div className="font-mono text-base font-black text-emerald-800 dark:text-emerald-200 tracking-wider">
+                      {resetResult.resetToken}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(resetResult.resetToken);
+                      setHasCopiedToken(true);
+                      setTimeout(() => setHasCopiedToken(false), 2000);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-emerald-300 dark:border-emerald-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm text-emerald-700 dark:text-emerald-300"
+                  >
+                    {hasCopiedToken ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    {hasCopiedToken ? 'Copié !' : 'Copier Jeton'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-500 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20 text-amber-800 dark:text-amber-300">
+                🔒 Le mot de passe sera défini par l'utilisateur lui-même lors de sa première connexion (avec vérification de politique de mots de passe forts).
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(invitationText);
+                    alert("Message d'invitation complet avec le Code Organisation copié dans le presse-papier !");
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5"
+                >
+                  <Copy className="w-3.5 h-3.5 text-slate-500" />
+                  Copier l'Invitation Complète
+                </button>
+
+                <button
+                  onClick={() => setIsResetPasswordModalOpen(false)}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md"
+                >
+                  Terminé
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ======================= MODAL: RESTORE ASSISTANT ======================= */}
       {isRestoreModalOpen && (
