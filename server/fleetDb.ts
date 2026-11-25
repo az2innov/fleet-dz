@@ -1,5 +1,8 @@
 import { 
   Tenant,
+  TenantUser,
+  TenantBackupPayload,
+  TenantBackupSummary,
   Vehicle, 
   Driver, 
   FuelLog, 
@@ -297,6 +300,226 @@ export class FleetDatabase {
       status: 'active',
       createdAt: '2024-02-10T08:00:00Z',
     }
+  ];
+
+  private storedBackups: TenantBackupSummary[] = [];
+
+  private tenantUsers: TenantUser[] = [
+    // 1. Root Platform Super Admin
+    {
+      id: 'usr-root-1',
+      tenantId: 'platform-root',
+      email: 'root@dzfleet.dz',
+      name: 'Superviseur Root Plateforme',
+      role: 'root',
+      department: 'Direction Générale & Infrastructure Dz-Fleet',
+      phone: '+213 21 00 00 01',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-01-01T08:00:00Z',
+    },
+
+    // 2. Tenant: Sonatrach - DP Hassi Messaoud
+    {
+      id: 'usr-son-superadmin',
+      tenantId: 'tenant-sonatrach',
+      email: 'SuperAdmin@sonatrach.com',
+      name: 'Amine Benzerga (Super Admin)',
+      role: 'super_admin',
+      department: "Direction des Systèmes d'Information (DSI Sonatrach)",
+      phone: '+213 29 73 80 10',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-01-15T08:00:00Z',
+    },
+    {
+      id: 'usr-son-respmaintenance',
+      tenantId: 'tenant-sonatrach',
+      email: 'RespMaintenance@sonatrach.com',
+      name: 'Kamel Meziane (Resp. Maintenance)',
+      role: 'maintenance_lead',
+      department: 'Atelier Central Hassi Messaoud (Base Irara)',
+      phone: '+213 29 73 80 20',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-01-15T08:00:00Z',
+    },
+    {
+      id: 'usr-son-respparc',
+      tenantId: 'tenant-sonatrach',
+      email: 'RespParc@sonatrach.com',
+      name: 'Djamel Rahmani (Chef de Flotte)',
+      role: 'fleet_manager',
+      department: 'Direction des Moyens Généraux Sud',
+      phone: '+213 29 73 80 30',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-01-15T08:00:00Z',
+    },
+    {
+      id: 'usr-son-controlegestion',
+      tenantId: 'tenant-sonatrach',
+      email: 'ControleurGestion@sonatrach.com',
+      name: 'Soraya Hadj (Contrôle Gestion)',
+      role: 'controller',
+      department: 'Direction Financière & Audit de Gestion',
+      phone: '+213 29 73 80 40',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-01-15T08:00:00Z',
+    },
+    {
+      id: 'usr-son-driver-1',
+      tenantId: 'tenant-sonatrach',
+      email: 'chauffeur.belkacem@sonatrach.com',
+      name: 'Karim Belkacem (Chauffeur Sud)',
+      role: 'driver',
+      department: 'Pool Chauffeurs Sud (Transport Opérationnel)',
+      phone: '+213 550 12 34 56',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-01-15T08:00:00Z',
+    },
+
+    // 3. Tenant: Cevital Agro-Industrie
+    {
+      id: 'usr-cev-superadmin',
+      tenantId: 'tenant-cevital',
+      email: 'SuperAdmin@cevital.com',
+      name: 'Redha Ould Ali (Super Admin)',
+      role: 'super_admin',
+      department: "Direction des Systèmes d'Information (DSI Cevital)",
+      phone: '+213 34 21 11 10',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-03-01T08:00:00Z',
+    },
+    {
+      id: 'usr-cev-respmaintenance',
+      tenantId: 'tenant-cevital',
+      email: 'RespMaintenance@cevital.com',
+      name: 'Nabil Mansouri (Resp. Maintenance)',
+      role: 'maintenance_lead',
+      department: 'Atelier Froid & Mécanique Béjaïa',
+      phone: '+213 34 21 11 20',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-03-01T08:00:00Z',
+    },
+    {
+      id: 'usr-cev-respparc',
+      tenantId: 'tenant-cevital',
+      email: 'RespParc@cevital.com',
+      name: 'Samira Benabdelkader (Chef Flotte)',
+      role: 'fleet_manager',
+      department: 'Direction Logistique Froid & Distribution',
+      phone: '+213 34 21 11 30',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-03-01T08:00:00Z',
+    },
+    {
+      id: 'usr-cev-controlegestion',
+      tenantId: 'tenant-cevital',
+      email: 'ControleurGestion@cevital.com',
+      name: 'Farouk Khelifi (Contrôle Coûts)',
+      role: 'controller',
+      department: 'Direction Contrôle Budgétaire & Coûts',
+      phone: '+213 34 21 11 40',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-03-01T08:00:00Z',
+    },
+    {
+      id: 'usr-cev-driver-1',
+      tenantId: 'tenant-cevital',
+      email: 'chauffeur.belhadj@cevital.com',
+      name: 'Tarek Belhadj (Chauffeur Froid)',
+      role: 'driver',
+      department: 'Pool Distribution Frigorifique Béjaïa',
+      phone: '+213 551 23 45 67',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-03-01T08:00:00Z',
+    },
+
+    // 4. Tenant: Cosider Groupe Travaux Publics
+    {
+      id: 'usr-cos-superadmin',
+      tenantId: 'tenant-cosider',
+      email: 'SuperAdmin@cosider.com',
+      name: 'Mourad Boukhalfa (Super Admin)',
+      role: 'super_admin',
+      department: 'Direction des Systèmes Sécurisés (DSI Cosider)',
+      phone: '+213 23 85 40 20',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-02-10T08:00:00Z',
+    },
+    {
+      id: 'usr-cos-respmaintenance',
+      tenantId: 'tenant-cosider',
+      email: 'RespMaintenance@cosider.com',
+      name: 'Lamine Zerrouki (Resp. Maintenance)',
+      role: 'maintenance_lead',
+      department: 'Atelier Central Engins Rouiba',
+      phone: '+213 23 85 40 30',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-02-10T08:00:00Z',
+    },
+    {
+      id: 'usr-cos-respparc',
+      tenantId: 'tenant-cosider',
+      email: 'RespParc@cosider.com',
+      name: 'Walid Boudissa (Chef de Parc Matériel)',
+      role: 'fleet_manager',
+      department: 'Direction Matériel & Logistique Chantiers',
+      phone: '+213 23 85 40 40',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-02-10T08:00:00Z',
+    },
+    {
+      id: 'usr-cos-controlegestion',
+      tenantId: 'tenant-cosider',
+      email: 'ControleurGestion@cosider.com',
+      name: 'Lynda Cherif (Contrôle Budgétaire)',
+      role: 'controller',
+      department: 'Direction Financière & Comptable',
+      phone: '+213 23 85 40 50',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-02-10T08:00:00Z',
+    },
+    {
+      id: 'usr-cos-driver-1',
+      tenantId: 'tenant-cosider',
+      email: 'chauffeur.sellami@cosider.com',
+      name: 'Brahim Sellami (Chauffeur PL)',
+      role: 'driver',
+      department: 'Pool Chauffeurs Chantiers Nationaux',
+      phone: '+213 552 34 56 78',
+      passwordHash: 'Algeria2026!',
+      hasCustomPassword: true,
+      status: 'active',
+      createdAt: '2024-02-10T08:00:00Z',
+    },
   ];
 
   private vehicles: Vehicle[] = [
@@ -3039,7 +3262,7 @@ export class FleetDatabase {
 
   ];
 
-  // ===================== TENANTS CRUD =====================
+  // ===================== TENANTS CRUD & BACKUP / RESTORE =====================
 
   getTenants(): Tenant[] {
     return this.tenants;
@@ -3049,9 +3272,273 @@ export class FleetDatabase {
     return this.tenants.find(t => t.id === id);
   }
 
+  getTenantBySlug(slug: string): Tenant | undefined {
+    const clean = slug.trim().toLowerCase();
+    return this.tenants.find(t => t.slug.toLowerCase() === clean || t.id.toLowerCase() === clean);
+  }
+
   addTenant(tenant: Tenant): Tenant {
     this.tenants.push(tenant);
     return tenant;
+  }
+
+  updateTenant(id: string, updates: Partial<Tenant>): Tenant | undefined {
+    const idx = this.tenants.findIndex(t => t.id === id);
+    if (idx === -1) return undefined;
+    this.tenants[idx] = { ...this.tenants[idx], ...updates };
+    return this.tenants[idx];
+  }
+
+  deleteTenant(id: string): boolean {
+    const idx = this.tenants.findIndex(t => t.id === id);
+    if (idx === -1) return false;
+    this.tenants.splice(idx, 1);
+    
+    // Cascade delete across all collections for this tenant
+    this.vehicles = this.vehicles.filter(v => v.tenantId !== id);
+    this.drivers = this.drivers.filter(d => d.tenantId !== id);
+    this.prepaidFuelCards = this.prepaidFuelCards.filter(c => c.tenantId !== id);
+    this.fuelVouchers = this.fuelVouchers.filter(v => v.tenantId !== id);
+    this.fuelLogs = this.fuelLogs.filter(l => l.tenantId !== id);
+    this.interventions = this.interventions.filter(i => i.tenantId !== id);
+    this.missions = this.missions.filter(m => m.tenantId !== id);
+    this.maintenanceRecords = this.maintenanceRecords.filter(r => r.tenantId !== id);
+    this.accidentClaims = this.accidentClaims.filter(c => c.tenantId !== id);
+    this.alerts = this.alerts.filter(a => a.tenantId !== id);
+    this.activityLogs = this.activityLogs.filter(l => l.tenantId !== id);
+    this.tenantUsers = this.tenantUsers.filter(u => u.tenantId !== id);
+    this.storedBackups = this.storedBackups.filter(b => b.tenantId !== id);
+    return true;
+  }
+
+  backupTenant(tenantId: string): TenantBackupPayload {
+    const tenant = this.getTenantById(tenantId);
+    if (!tenant) throw new Error(`Compte Tenant ${tenantId} introuvable`);
+    
+    const vehicles = this.vehicles.filter(v => v.tenantId === tenantId);
+    const drivers = this.drivers.filter(d => d.tenantId === tenantId);
+    const prepaidFuelCards = this.prepaidFuelCards.filter(c => c.tenantId === tenantId);
+    const fuelVouchers = this.fuelVouchers.filter(v => v.tenantId === tenantId);
+    const fuelLogs = this.fuelLogs.filter(l => l.tenantId === tenantId);
+    const interventions = this.interventions.filter(i => i.tenantId === tenantId);
+    const missionOrders = this.missions.filter(m => m.tenantId === tenantId);
+    const maintenanceRecords = this.maintenanceRecords.filter(r => r.tenantId === tenantId);
+    const accidentClaims = this.accidentClaims.filter(c => c.tenantId === tenantId);
+    const alerts = this.alerts.filter(a => a.tenantId === tenantId);
+    const activityLogs = this.activityLogs.filter(l => l.tenantId === tenantId);
+    const users = this.tenantUsers.filter(u => u.tenantId === tenantId);
+
+    const payload: TenantBackupPayload = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      source: 'Dz-Fleet AI Souverain Backup System (Algérie)',
+      checksum: `SHA256-${Date.now().toString(16)}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+      tenant: { ...tenant },
+      users: JSON.parse(JSON.stringify(users)),
+      vehicles: JSON.parse(JSON.stringify(vehicles)),
+      drivers: JSON.parse(JSON.stringify(drivers)),
+      prepaidFuelCards: JSON.parse(JSON.stringify(prepaidFuelCards)),
+      fuelVouchers: JSON.parse(JSON.stringify(fuelVouchers)),
+      fuelLogs: JSON.parse(JSON.stringify(fuelLogs)),
+      interventions: JSON.parse(JSON.stringify(interventions)),
+      missionOrders: JSON.parse(JSON.stringify(missionOrders)),
+      maintenanceRecords: JSON.parse(JSON.stringify(maintenanceRecords)),
+      accidentClaims: JSON.parse(JSON.stringify(accidentClaims)),
+      alerts: JSON.parse(JSON.stringify(alerts)),
+      activityLogs: JSON.parse(JSON.stringify(activityLogs)),
+    };
+
+    const sizeEstimate = Math.max(1, Math.round(JSON.stringify(payload).length / 1024));
+
+    const summary: TenantBackupSummary = {
+      id: `bkp-${Date.now()}`,
+      tenantId: tenant.id,
+      tenantName: tenant.name,
+      createdAt: payload.exportedAt,
+      checksum: payload.checksum,
+      recordsCount: {
+        vehicles: vehicles.length,
+        drivers: drivers.length,
+        interventions: interventions.length,
+        fuelLogs: fuelLogs.length,
+        users: users.length,
+      },
+      sizeKb: sizeEstimate,
+    };
+
+    this.storedBackups.unshift(summary);
+    return payload;
+  }
+
+  restoreTenant(tenantId: string, payload: TenantBackupPayload): boolean {
+    if (!payload || !payload.tenant) {
+      throw new Error('Format de sauvegarde invalide ou corrompu');
+    }
+    const targetTenantId = tenantId || payload.tenant.id;
+
+    // 1. Mettre à jour ou insérer le Tenant
+    const existingTenantIndex = this.tenants.findIndex(t => t.id === targetTenantId);
+    const updatedTenantInfo: Tenant = {
+      ...payload.tenant,
+      id: targetTenantId,
+    };
+    if (existingTenantIndex >= 0) {
+      this.tenants[existingTenantIndex] = updatedTenantInfo;
+    } else {
+      this.tenants.push(updatedTenantInfo);
+    }
+
+    // 2. Nettoyer les collections existantes du tenant
+    this.vehicles = this.vehicles.filter(v => v.tenantId !== targetTenantId);
+    this.drivers = this.drivers.filter(d => d.tenantId !== targetTenantId);
+    this.prepaidFuelCards = this.prepaidFuelCards.filter(c => c.tenantId !== targetTenantId);
+    this.fuelVouchers = this.fuelVouchers.filter(v => v.tenantId !== targetTenantId);
+    this.fuelLogs = this.fuelLogs.filter(l => l.tenantId !== targetTenantId);
+    this.interventions = this.interventions.filter(i => i.tenantId !== targetTenantId);
+    this.missions = this.missions.filter(m => m.tenantId !== targetTenantId);
+    this.maintenanceRecords = this.maintenanceRecords.filter(r => r.tenantId !== targetTenantId);
+    this.accidentClaims = this.accidentClaims.filter(c => c.tenantId !== targetTenantId);
+    this.alerts = this.alerts.filter(a => a.tenantId !== targetTenantId);
+    this.tenantUsers = this.tenantUsers.filter(u => u.tenantId !== targetTenantId);
+
+    // 3. Ré-insérer les données restaurées taguées avec targetTenantId
+    if (Array.isArray(payload.vehicles)) {
+      this.vehicles.push(...payload.vehicles.map(v => ({ ...v, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.drivers)) {
+      this.drivers.push(...payload.drivers.map(d => ({ ...d, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.prepaidFuelCards)) {
+      this.prepaidFuelCards.push(...payload.prepaidFuelCards.map(c => ({ ...c, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.fuelVouchers)) {
+      this.fuelVouchers.push(...payload.fuelVouchers.map(v => ({ ...v, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.fuelLogs)) {
+      this.fuelLogs.push(...payload.fuelLogs.map(l => ({ ...l, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.interventions)) {
+      this.interventions.push(...payload.interventions.map(i => ({ ...i, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.missionOrders)) {
+      this.missions.push(...payload.missionOrders.map(m => ({ ...m, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.maintenanceRecords)) {
+      this.maintenanceRecords.push(...payload.maintenanceRecords.map(r => ({ ...r, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.accidentClaims)) {
+      this.accidentClaims.push(...payload.accidentClaims.map(c => ({ ...c, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.alerts)) {
+      this.alerts.push(...payload.alerts.map(a => ({ ...a, tenantId: targetTenantId })));
+    }
+    if (Array.isArray(payload.users)) {
+      this.tenantUsers.push(...payload.users.map(u => ({ ...u, tenantId: targetTenantId })));
+    }
+
+    this.addActivityLog({
+      driverName: 'Root Superviseur',
+      vehiclePlate: 'SYSTÈME',
+      channel: 'internal_system',
+      type: 'mission',
+      title: `Restauration de Sauvegarde Souveraine`,
+      details: `Restauration complète effectuée pour ${updatedTenantInfo.name} (${payload.vehicles?.length || 0} véhicules, ${payload.drivers?.length || 0} conducteurs, ${payload.users?.length || 0} utilisateurs).`,
+      timestamp: new Date().toISOString(),
+      status: 'validated',
+      tenantId: targetTenantId,
+    });
+
+    return true;
+  }
+
+  getTenantBackups(tenantId?: string): TenantBackupSummary[] {
+    if (tenantId) {
+      return this.storedBackups.filter(b => b.tenantId === tenantId);
+    }
+    return this.storedBackups;
+  }
+
+  // ===================== TENANT USERS & ACCESS MANAGEMENT =====================
+
+  getTenantUsers(tenantId?: string): TenantUser[] {
+    if (tenantId && tenantId !== 'all') {
+      return this.tenantUsers.filter(u => u.tenantId === tenantId);
+    }
+    return this.tenantUsers;
+  }
+
+  getTenantUserById(id: string): TenantUser | undefined {
+    return this.tenantUsers.find(u => u.id === id);
+  }
+
+  getTenantUserByEmail(email: string, tenantId?: string): TenantUser | undefined {
+    const cleanEmail = email.trim().toLowerCase();
+    return this.tenantUsers.find(u => {
+      const matchEmail = u.email.trim().toLowerCase() === cleanEmail;
+      if (!matchEmail) return false;
+      if (tenantId && tenantId !== 'all') {
+        return u.tenantId === tenantId;
+      }
+      return true;
+    });
+  }
+
+  addTenantUser(user: Omit<TenantUser, 'id'>): TenantUser {
+    const newUser: TenantUser = {
+      ...user,
+      id: `usr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: user.createdAt || new Date().toISOString(),
+      status: user.status || 'pending_password',
+      hasCustomPassword: !!user.hasCustomPassword,
+      passwordResetToken: user.passwordResetToken || `ACT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      passwordResetExpires: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
+    };
+    this.tenantUsers.push(newUser);
+    return newUser;
+  }
+
+  updateTenantUser(id: string, updates: Partial<TenantUser>): TenantUser | undefined {
+    const idx = this.tenantUsers.findIndex(u => u.id === id);
+    if (idx === -1) return undefined;
+    this.tenantUsers[idx] = { ...this.tenantUsers[idx], ...updates };
+    return this.tenantUsers[idx];
+  }
+
+  deleteTenantUser(id: string): boolean {
+    const idx = this.tenantUsers.findIndex(u => u.id === id);
+    if (idx === -1) return false;
+    this.tenantUsers.splice(idx, 1);
+    return true;
+  }
+
+  resetTenantUserPassword(id: string): { resetToken: string; user: TenantUser } {
+    const user = this.getTenantUserById(id);
+    if (!user) throw new Error('Utilisateur introuvable');
+    const resetToken = `RST-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    user.passwordResetToken = resetToken;
+    user.passwordResetExpires = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
+    user.status = 'pending_password';
+    user.hasCustomPassword = false;
+    return { resetToken, user };
+  }
+
+  setTenantUserPassword(userIdOrEmail: string, tenantId: string, newPassword: string, token?: string): TenantUser {
+    let user = this.getTenantUserById(userIdOrEmail);
+    if (!user) {
+      user = this.getTenantUserByEmail(userIdOrEmail, tenantId);
+    }
+    if (!user) throw new Error('Utilisateur introuvable');
+
+    if (token && user.passwordResetToken && user.passwordResetToken !== token) {
+      throw new Error("Jeton d'activation ou de réinitialisation invalide");
+    }
+
+    user.passwordHash = newPassword;
+    user.hasCustomPassword = true;
+    user.status = 'active';
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    return user;
   }
 
   // ===================== VEHICLES CRUD =====================

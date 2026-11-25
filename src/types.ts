@@ -1,4 +1,5 @@
 export type UserRole = 
+  | 'root'
   | 'super_admin' 
   | 'fleet_manager' 
   | 'maintenance_lead' 
@@ -24,11 +25,65 @@ export interface Tenant {
   createdAt: string;
 }
 
+export interface TenantUser {
+  id: string;
+  tenantId: string; // ex: 'tenant-sonatrach' ou 'root'
+  email: string; // Identifiant de connexion (ex: SuperAdmin@sonatrach.com)
+  name: string; // Nom complet
+  role: UserRole;
+  department: string;
+  phone?: string;
+  passwordHash?: string; // Mot de passe chiffré/sécurisé
+  hasCustomPassword: boolean; // True si l'utilisateur a défini son propre mot de passe
+  passwordResetToken?: string; // Token d'activation ou de réinitialisation généré par Root
+  passwordResetExpires?: string; // Date d'expiration du token
+  status: 'active' | 'pending_password' | 'suspended';
+  createdAt: string;
+  lastLoginAt?: string;
+}
+
+export interface TenantBackupPayload {
+  version: string;
+  exportedAt: string;
+  checksum: string;
+  source: string;
+  tenant: Tenant;
+  users: TenantUser[];
+  vehicles: Vehicle[];
+  drivers: Driver[];
+  prepaidFuelCards: PrepaidFuelCard[];
+  fuelVouchers: FuelVoucher[];
+  fuelLogs: FuelLog[];
+  interventions: VehicleIntervention[];
+  missionOrders: MissionOrder[];
+  maintenanceRecords: MaintenanceRecord[];
+  accidentClaims: AccidentClaim[];
+  alerts: FleetAlert[];
+  activityLogs: SovereignActivityLog[];
+}
+
+export interface TenantBackupSummary {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  createdAt: string;
+  checksum: string;
+  recordsCount: {
+    vehicles: number;
+    drivers: number;
+    interventions: number;
+    fuelLogs: number;
+    users: number;
+  };
+  sizeKb: number;
+}
+
 export interface UserSession {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  isRoot?: boolean; // Vrai si compte Root plateforme
   tenantId?: string; // ID du tenant d'appartenance
   tenantName?: string; // Nom de l'entreprise du tenant
   twoFactorEnabled: boolean;

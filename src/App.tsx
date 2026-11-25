@@ -11,6 +11,7 @@ import { VehicleDetailModal } from './components/VehicleDetailModal.js';
 import { DriverPwaApp } from './components/DriverPwaApp.js';
 import { Auth2FAModal } from './components/Auth2FAModal.js';
 import { SovereignComplianceModal } from './components/SovereignComplianceModal.js';
+import { RootBackOffice } from './components/RootBackOffice.js';
 import { 
   Vehicle, 
   Driver, 
@@ -244,9 +245,12 @@ export default function App() {
       localStorage.setItem('dz_fleet_session', JSON.stringify(newSession));
     } catch {}
     setIs2FAModalOpen(false);
-    // If switched to driver, guide to driver PWA
-    if (newSession.role === 'driver') {
+    if (newSession.role === 'root') {
+      setActiveTab('root_backoffice');
+    } else if (newSession.role === 'driver') {
       setActiveTab('pwa_driver');
+    } else if (activeTab === 'root_backoffice') {
+      setActiveTab('dashboard');
     }
   };
 
@@ -347,6 +351,41 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
+
+        {/* Mode Root Audit / Inspection Banner */}
+        {userSession.role === 'root' && activeTab !== 'root_backoffice' && (
+          <div className="mb-6 bg-gradient-to-r from-purple-950 via-slate-900 to-indigo-950 text-white p-4 rounded-2xl border border-purple-500/40 shadow-lg flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-lg border border-purple-500/30">
+                👑
+              </div>
+              <div>
+                <div className="text-[11px] font-black uppercase tracking-wider text-purple-300">
+                  Mode Inspection Superviseur Root
+                </div>
+                <div className="text-sm font-bold text-white">
+                  Organisation inspectée : <span className="underline decoration-purple-400 font-extrabold">{currentTenant?.name}</span> ({currentTenant?.id})
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveTab('root_backoffice')}
+              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+            >
+              ← Retour au Back Office Root
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'root_backoffice' && (
+          <RootBackOffice
+            currentTenantId={currentTenantId}
+            onSwitchTenant={handleSwitchTenant}
+            onNavigateTab={setActiveTab}
+            onRefreshData={fetchFleetData}
+          />
+        )}
 
         {activeTab === 'dashboard' && (
           <FleetDashboard

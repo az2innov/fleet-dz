@@ -6,13 +6,19 @@ import {
   CheckCircle2, 
   AlertCircle, 
   X,
-  RefreshCw,
-  Mail,
-  Send,
-  Users,
-  LogOut,
-  Building2,
-  Check
+  RefreshCw, 
+  Mail, 
+  Send, 
+  Users, 
+  LogOut, 
+  Building2, 
+  Check,
+  Eye,
+  EyeOff,
+  Sparkles,
+  ArrowRight,
+  ShieldAlert,
+  Server
 } from 'lucide-react';
 import { UserRole, UserSession, Tenant } from '../types.js';
 
@@ -30,51 +36,52 @@ interface Auth2FAModalProps {
 
 export const ROLES_CONFIG: {
   role: UserRole;
-  email: string;
   label: string;
   badgeColor: string;
   description: string;
   permissions: string[];
 }[] = [
   {
+    role: 'root',
+    label: 'Root Plateforme',
+    badgeColor: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30',
+    description: 'Super-administrateur souverain : gestion multi-tenant, sauvegardes/restauration, gestion des accès.',
+    permissions: ['Gestion des Tenants', 'Disaster Recovery (Backups)', 'Comptes & Reset Passwords', 'Supervision globale'],
+  },
+  {
     role: 'super_admin',
-    email: 'admin@fleet-dz.com',
     label: 'Super Administrateur',
     badgeColor: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30',
-    description: 'Accès souverain total : sécurité A2F par email, conformité ANPDP, audit des accès et configuration globale.',
-    permissions: ['Tous les droits', 'Gestion des rôles & A2F', 'Export ANPDP', 'Clés de chiffrement', 'Parc & Missions'],
+    description: 'Accès souverain total au tenant : sécurité A2F par email, conformité ANPDP, audit des accès et configuration.',
+    permissions: ['Tous les droits du Tenant', 'Gestion rôles du tenant', 'Audit souverain', 'Parc & Missions'],
   },
   {
     role: 'fleet_manager',
-    email: 'gestion@fleet-dz.com',
-    label: 'Gestionnaire de Flotte',
+    label: 'Gestionnaire de Parc (RespParc)',
     badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
-    description: 'Pilotage complet du parc, affectation des chauffeurs, création des Ordres de Mission et suivi carburant.',
-    permissions: ['CRUD Véhicules', 'CRUD Chauffeurs', 'Édition Ordres de Mission', 'Suivi Naftal', 'Gestion Sinistres'],
+    description: 'Pilotage complet du parc, affectation des chauffeurs, ordres de mission, demandes d intervention (DI) et bons Naftal.',
+    permissions: ['CRUD Véhicules', 'CRUD Chauffeurs', 'Ordres de Mission', 'Émission DI Atelier', 'Bons Carburant Naftal'],
   },
   {
     role: 'maintenance_lead',
-    email: 'maintenance@fleet-dz.com',
-    label: 'Responsable Maintenance',
+    label: 'Responsable Maintenance (RespMaintenance)',
     badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30',
-    description: 'Surveillance technique, état des pneumatiques, programmation des vidanges et contrôles techniques.',
-    permissions: ['Statut Véhicules', 'Suivi Pneumatiques', 'Vidanges & Révisions', 'Alertes Critiques', 'Consultation Flotte'],
+    description: 'Gestion des révisions, établissement des fiches de réception après travaux (FR), contrôle qualité et pièces.',
+    permissions: ['Fiches de Réception (FR)', 'Validation Ateliers', 'Suivi Pneumatiques & Vidanges', 'Clôture Interventions'],
   },
   {
     role: 'controller',
-    email: 'audit@fleet-dz.com',
-    label: 'Contrôleur de Gestion',
+    label: 'Contrôleur de Gestion (ControleurGestion)',
     badgeColor: 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30',
-    description: 'Supervision financière des dépenses en Dinars (DA), surconsommations carburant, péages et per diem.',
-    permissions: ['KPI Financiers (DA)', 'Audit Carburant Naftal', 'Budgets Missions', 'Rapports CO₂', 'Export CSV'],
+    description: 'Supervision financière TCO : coût d acquisition + coûts des interventions + dépenses carburant en Dinars (DA).',
+    permissions: ['Tableau TCO Global (DA)', 'Rapports Coûts Interventions', 'Audit Carburant', 'Exports Financiers'],
   },
   {
     role: 'driver',
-    email: 'drivers@fleet-dz.com',
     label: 'Conducteur / Chauffeur',
     badgeColor: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30',
-    description: 'Interface mobile PWA : relevé compteur, tickets Naftal, déclaration express et mission embarquée.',
-    permissions: ['PWA Mode Hors-Ligne', 'Odomètre quotidien', 'Scan Tickets Naftal', 'Fiche Mission', 'Déclaration Sinistre'],
+    description: 'Interface mobile PWA : relevé odomètre, reçus carburant Naftal, déclaration express et mission active.',
+    permissions: ['PWA Mode Hors-Ligne', 'Odomètre quotidien', 'Scan Reçus Naftal', 'Déclaration Sinistre'],
   },
 ];
 
@@ -89,147 +96,184 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
   tenantsList = [],
   onSwitchTenant,
 }) => {
-  const [selectedRole, setSelectedRole] = useState<UserRole>(currentSession.role);
+  // Step in the authentication flow: 'credentials' -> '2fa' OR 'setup_password'
+  const [step, setStep] = useState<'credentials' | '2fa' | 'setup_password'>('credentials');
+  
+  // Credentials Form
+  const [selectedTenantSlug, setSelectedTenantSlug] = useState<string>(() => {
+    return currentTenant?.slug || 'sonatrach';
+  });
+  const [emailInput, setEmailInput] = useState<string>('SuperAdmin@sonatrach.com');
+  const [passwordInput, setPasswordInput] = useState<string>('Algeria2026!');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+
+  // Setup / Reset Password Form
+  const [setupToken, setSetupToken] = useState<string>('');
+  const [newPasswordInput, setNewPasswordInput] = useState<string>('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState<string>('');
+  const [setupSuccessMsg, setSetupSuccessMsg] = useState<string | null>(null);
+
+  // 2FA Step
   const [totpCode, setTotpCode] = useState<string>('');
-  const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
-  const [emailSentTo, setEmailSentTo] = useState<string | null>(null);
-  const [emailSuccessMsg, setEmailSuccessMsg] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string>('');
+  const [pendingRole, setPendingRole] = useState<string>('super_admin');
+  const [pendingTenantName, setPendingTenantName] = useState<string>('');
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
-  const [verificationSuccess, setVerificationSuccess] = useState<boolean>(false);
+  const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
+  const [emailSuccessMsg, setEmailSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [dynamicRoles, setDynamicRoles] = useState<{ role: UserRole; email: string; label: string; name: string; department: string }[]>([]);
+  const [verificationSuccess, setVerificationSuccess] = useState<boolean>(false);
 
-  const activeTenantId = currentTenant?.id || currentSession.tenantId || 'tenant-sonatrach';
-
-  // Charger les rôles et identités du Tenant actif
+  // Keep tenant updated
   useEffect(() => {
-    if (isOpen) {
-      fetch('/api/auth/roles', {
-        headers: { 'x-tenant-id': activeTenantId }
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (Array.isArray(data)) setDynamicRoles(data);
-        })
-        .catch(console.error);
+    if (currentTenant?.slug) {
+      setSelectedTenantSlug(currentTenant.slug);
     }
-  }, [isOpen, activeTenantId]);
-
-  // Synchroniser le rôle sélectionné avec la session si elle change
-  useEffect(() => {
-    setSelectedRole(currentSession.role);
-  }, [currentSession.role, activeTenantId]);
-
-  // Fermeture propre avec réinitialisation
-  const handleClose = (e?: React.MouseEvent | React.TouchEvent) => {
-    if (isLockScreen) return;
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    setErrorMsg(null);
-    setEmailSuccessMsg(null);
-    setTotpCode('');
-    setIsVerifying(false);
-    onClose();
-  };
-
-  // Fermeture via la touche Échap (toujours appelée inconditionnellement)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isLockScreen) {
-        handleClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isOpen, isLockScreen]);
+  }, [currentTenant]);
 
   if (!isOpen) return null;
 
-  const currentRoleConfig = ROLES_CONFIG.find(r => r.role === selectedRole) || ROLES_CONFIG[0];
-
-  // Envoi réel du code A2F par email via le serveur Express + SMTP Mailtrap
-  const handleSendEmailCode = async () => {
-    setIsSendingEmail(true);
+  // Handle Tenant selection change
+  const handleTenantChange = (slug: string) => {
+    setSelectedTenantSlug(slug);
     setErrorMsg(null);
-    setEmailSuccessMsg(null);
+    if (slug === 'root') {
+      setEmailInput('root@dzfleet.dz');
+    } else {
+      setEmailInput(`SuperAdmin@${slug}.com`);
+    }
+  };
+
+  // Quick Demo Shortcut selector
+  const handleQuickDemoSelect = (role: UserRole) => {
+    setErrorMsg(null);
+    if (role === 'root') {
+      setSelectedTenantSlug('root');
+      setEmailInput('root@dzfleet.dz');
+      setPasswordInput('Algeria2026!');
+      return;
+    }
+
+    const effectiveSlug = selectedTenantSlug === 'root' ? 'sonatrach' : selectedTenantSlug;
+    if (selectedTenantSlug === 'root') setSelectedTenantSlug('sonatrach');
+
+    switch (role) {
+      case 'super_admin':
+        setEmailInput(`SuperAdmin@${effectiveSlug}.com`);
+        break;
+      case 'maintenance_lead':
+        setEmailInput(`RespMaintenance@${effectiveSlug}.com`);
+        break;
+      case 'fleet_manager':
+        setEmailInput(`RespParc@${effectiveSlug}.com`);
+        break;
+      case 'controller':
+        setEmailInput(`ControleurGestion@${effectiveSlug}.com`);
+        break;
+      case 'driver':
+        setEmailInput(
+          effectiveSlug === 'sonatrach' ? 'chauffeur.belkacem@sonatrach.com' :
+          effectiveSlug === 'cevital' ? 'chauffeur.belhadj@cevital.com' :
+          'chauffeur.sellami@cosider.com'
+        );
+        break;
+    }
+    setPasswordInput('Algeria2026!');
+  };
+
+  // Step 1: Submit Credentials (Tenant + Email + Password)
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setIsSendingEmail(true);
 
     try {
-      const res = await fetch('/api/auth/send-2fa', {
+      const res = await fetch('/api/auth/login-password', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-tenant-id': activeTenantId
-        },
-        body: JSON.stringify({ role: selectedRole, tenantId: activeTenantId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant: selectedTenantSlug,
+          email: emailInput,
+          password: passwordInput,
+        }),
       });
 
       const data = await res.json();
-      if (res.ok && data.success) {
-        setEmailSentTo(data.email);
-        setEmailSuccessMsg(`Un code de validation A2F a été envoyé à ${data.email} via le relais SMTP. Veuillez consulter votre boîte de réception (Mailtrap) pour relever les 6 chiffres.`);
-      } else {
-        setErrorMsg(data.error || 'Erreur lors de l\'envoi du code A2F par email.');
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erreur lors de l authentification');
       }
+
+      // Check if user must first set their private password
+      if (data.requirePasswordSetup) {
+        setPendingEmail(data.email);
+        setPendingTenantName(data.tenantName);
+        setSetupToken(data.token || '');
+        setStep('setup_password');
+        setIsSendingEmail(false);
+        return;
+      }
+
+      // Credentials verified! Proceed to 2FA Step
+      setPendingEmail(data.email);
+      setPendingRole(data.role);
+      setPendingTenantName(data.tenantName);
+      setEmailSuccessMsg(data.message || `Code A2F expédié à ${data.email}`);
+      setStep('2fa');
+      setTotpCode('');
     } catch (err: any) {
-      setErrorMsg(`Erreur réseau lors de l'envoi de l'email : ${err.message}`);
+      setErrorMsg(err.message);
     } finally {
       setIsSendingEmail(false);
     }
   };
 
-  // Validation du code A2F saisi
-  const handleVerifyAndSwitchRole = async () => {
-    if (!totpCode || totpCode.trim().length < 6) {
-      setErrorMsg('Veuillez saisir le code de validation à 6 chiffres reçu dans votre boîte email.');
+  // Step 2 (Optional): Set Private Password
+  const handleSetupPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+
+    if (newPasswordInput.length < 6) {
+      setErrorMsg('Le mot de passe doit comporter au moins 6 caractères.');
       return;
     }
 
-    const isMasterCode = totpCode.trim() === '999999';
+    if (newPasswordInput !== confirmPasswordInput) {
+      setErrorMsg('Les deux mots de passe saisis ne correspondent pas.');
+      return;
+    }
 
-    if (isMasterCode) {
-      // Validation directe instantanée (clé maîtresse de secours universelle)
-      const targetRoleConfig = ROLES_CONFIG.find(r => r.role === selectedRole) || ROLES_CONFIG[0];
-      const dynamicTarget = dynamicRoles.find(r => r.role === selectedRole);
-      const masterSession: UserSession = {
-        id: `usr-master-${Date.now().toString(36)}`,
-        name: dynamicTarget?.name || (targetRoleConfig.role === 'super_admin' ? 'Amine Benzerga (Super Admin)' :
-              targetRoleConfig.role === 'fleet_manager' ? 'Gestionnaire Flotte' :
-              targetRoleConfig.role === 'maintenance_lead' ? 'Resp. Maintenance' :
-              targetRoleConfig.role === 'controller' ? 'Contrôleur Gestion' : 'Karim Belkacem (Chauffeur)'),
-        email: dynamicTarget?.email || targetRoleConfig.email,
-        role: targetRoleConfig.role,
-        tenantId: activeTenantId,
-        tenantName: currentTenant?.name || 'Entreprise Algérienne',
-        twoFactorEnabled: true,
-        twoFactorVerified: true,
-        department: dynamicTarget?.department || targetRoleConfig.description,
-      };
-
-      setVerificationSuccess(true);
-      setErrorMsg(null);
-      onUpdateSession(masterSession);
-
-      // Notification asynchrone au backend
-      fetch('/api/auth/verify-2fa', {
+    try {
+      const res = await fetch('/api/auth/setup-password', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-tenant-id': activeTenantId
-        },
-        body: JSON.stringify({ role: selectedRole, code: '999999', tenantId: activeTenantId }),
-      }).catch(() => {});
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: pendingEmail || emailInput,
+          tenantId: selectedTenantSlug,
+          token: setupToken,
+          newPassword: newPasswordInput,
+        }),
+      });
 
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la configuration du mot de passe');
+
+      setSetupSuccessMsg('Votre mot de passe privé a été enregistré avec succès ! Veuillez maintenant vous connecter.');
+      setPasswordInput(newPasswordInput);
       setTimeout(() => {
-        setVerificationSuccess(false);
-        setEmailSentTo(null);
-        setEmailSuccessMsg(null);
-        setTotpCode('');
-        onClose();
-      }, 900);
+        setStep('credentials');
+        setSetupSuccessMsg(null);
+      }, 1500);
+    } catch (err: any) {
+      setErrorMsg(err.message);
+    }
+  };
+
+  // Step 3: Verify 2FA Code
+  const handleVerify2FASubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!totpCode || totpCode.trim().length < 6) {
+      setErrorMsg('Veuillez saisir le code de vérification à 6 chiffres.');
       return;
     }
 
@@ -237,375 +281,433 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
     setErrorMsg(null);
 
     try {
+      const isMasterKey = totpCode.trim() === '999999';
+
       const res = await fetch('/api/auth/verify-2fa', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-tenant-id': activeTenantId
-        },
-        body: JSON.stringify({ role: selectedRole, code: totpCode.trim(), tenantId: activeTenantId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: pendingEmail || emailInput,
+          role: pendingRole,
+          code: totpCode.trim(),
+          tenantId: selectedTenantSlug === 'root' ? 'platform-root' : selectedTenantSlug,
+        }),
       });
 
       const data = await res.json();
-      if (res.ok && data.success && data.session) {
-        setVerificationSuccess(true);
-        onUpdateSession(data.session);
+      if (!res.ok) throw new Error(data.error || 'Code A2F invalide ou expiré');
 
-        setTimeout(() => {
-          setVerificationSuccess(false);
-          setEmailSentTo(null);
-          setEmailSuccessMsg(null);
-          setTotpCode('');
-          onClose();
-        }, 1200);
-      } else {
-        setErrorMsg(data.error || 'Code A2F invalide ou expiré.');
+      setVerificationSuccess(true);
+
+      // If switched tenant, also update active tenant in parent
+      if (onSwitchTenant && data.session?.tenantId && data.session?.tenantId !== 'platform-root') {
+        onSwitchTenant(data.session.tenantId);
       }
+
+      onUpdateSession(data.session);
+
+      setTimeout(() => {
+        setVerificationSuccess(false);
+        setStep('credentials');
+        setTotpCode('');
+        onClose();
+      }, 700);
     } catch (err: any) {
-      setErrorMsg(`Erreur réseau lors de la validation : ${err.message}`);
+      setErrorMsg(err.message);
     } finally {
       setIsVerifying(false);
     }
   };
 
+  // Resend 2FA Email
+  const handleResend2FA = async () => {
+    setIsSendingEmail(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch('/api/auth/send-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: pendingRole, email: pendingEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEmailSuccessMsg(`Un nouveau code A2F a été expédié à ${pendingEmail}`);
+      } else {
+        setErrorMsg(data.error || 'Erreur lors du renvoi du code');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message);
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-200"
-      onClick={handleClose}
-    >
-      <div 
-        className="bg-white dark:bg-[#131b2e] border border-slate-200/90 dark:border-slate-700/80 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl relative z-10"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 antialiased">
+      <div className="bg-white dark:bg-[#0c121e] rounded-3xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden relative flex flex-col">
         
-        {/* Header */}
-        <div className="shrink-0 flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-[#0e1526]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                {isLockScreen ? 'Authentification Souveraine & Accès Sécurisé' : 'Sécurité & Authentification A2F par Email'}
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40">
-                  {isLockScreen ? '🔒 Session Verrouillée' : 'SMTP / Loi 18-07'}
-                </span>
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {isLockScreen 
-                  ? 'Veuillez sélectionner votre profil et valider votre code à 6 chiffres pour déverrouiller la flotte.'
-                  : 'Codes de validation réels expédiés par email pour chaque profil d\'administration'}
-              </p>
-            </div>
-          </div>
+        {/* Top Header */}
+        <div className="p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white relative">
           {!isLockScreen && (
-            <button 
-              type="button"
-              onClick={handleClose}
-              className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Fermer la fenêtre (Échap)"
+            <button
+              onClick={onClose}
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           )}
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 p-6 space-y-6 overflow-y-auto">
-          
-          {/* Bannière d'état Déconnecté / Verrouillé */}
-          {isLockScreen && (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-3">
-              <Lock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="leading-relaxed">
-                <strong className="font-bold text-sm block mb-0.5">Session fermée — Plateforme Verrouillée</strong>
-                <p>
-                  Vous avez été déconnecté. Conformément aux directives ANPDP et Loi 18-07, l'accès à la flotte nécessite une validation A2F.
-                  Sélectionnez votre profil ci-dessous, utilisez le code de secours <strong>999999</strong> (ou recevez-le par email), puis cliquez sur <strong>« Déverrouiller la Plateforme »</strong>.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Compte Entreprise (Multi-Tenant Context) */}
-          {tenantsList && tenantsList.length > 0 && (
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0f1628] border border-slate-200/90 dark:border-slate-800">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2.5 flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Compte Entreprise (Tenant)
-                </span>
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                  Isolation Données Active
-                </span>
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {tenantsList.map((t) => {
-                  const isSelected = t.id === activeTenantId;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => onSwitchTenant?.(t.id)}
-                      className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-emerald-500/10 border-emerald-500 dark:border-emerald-400 shadow-xs text-emerald-950 dark:text-emerald-100 ring-1 ring-emerald-500/40'
-                          : 'bg-white dark:bg-[#151f33] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
-                      }`}
-                      data-testid={`modal-tenant-${t.slug}`}
-                    >
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className="font-extrabold text-xs truncate">{t.name}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
-                      </div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{t.companyType}</div>
-                      <div className="text-[9px] text-emerald-700 dark:text-emerald-400 mt-1 font-semibold">{t.wilaya}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* 1. Role Selection Matrix */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-2">
-              <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 1. Sélectionner le profil utilisateur (RBAC)
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {ROLES_CONFIG.map((r) => {
-                const isSelected = selectedRole === r.role;
-                const dyn = dynamicRoles.find(dr => dr.role === r.role);
-                const roleEmail = dyn?.email || r.email;
-                const roleName = dyn?.name;
-                const roleDept = dyn?.department;
-
-                return (
-                  <button
-                    key={r.role}
-                    type="button"
-                    onClick={() => {
-                      setSelectedRole(r.role);
-                      setErrorMsg(null);
-                      setEmailSuccessMsg(null);
-                      setTotpCode('');
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-slate-100/90 dark:bg-[#1a233a] border-emerald-500 dark:border-emerald-400 shadow-sm ring-1 ring-emerald-500/40'
-                        : 'bg-slate-50 dark:bg-[#0f1628] border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1 mb-1">
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                          {roleName || r.label}
-                        </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                          {r.label}
-                        </span>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border shrink-0 ${r.badgeColor}`}>
-                        {r.role.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold mb-1 flex items-center gap-1 truncate">
-                      <Mail className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{roleEmail}</span>
-                    </div>
-                    {roleDept && (
-                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mb-1">
-                        🏢 {roleDept}
-                      </div>
-                    )}
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                      {r.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              Souveraineté Nationale & ANPDP
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              Isolation Multi-Tenant
+            </span>
           </div>
 
-          {/* 2. Email Sending & Code Input Section */}
-          <div className="bg-slate-50 dark:bg-[#0f1628] border border-slate-200 dark:border-slate-700/80 rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    2. Code A2F expédié par Email
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                    Email de réception : <strong className="font-mono text-emerald-600 dark:text-emerald-400">{currentRoleConfig.email}</strong>
-                  </p>
-                </div>
-              </div>
+          <h2 className="text-xl font-extrabold text-white">
+            {step === 'credentials' && 'Connexion Sécurisée à Dz-Fleet AI'}
+            {step === '2fa' && 'Validation Double Facteur (A2F)'}
+            {step === 'setup_password' && 'Définir Votre Mot de Passe Privé'}
+          </h2>
+          <p className="text-xs text-slate-300 mt-0.5">
+            {step === 'credentials' && 'Accès partitionné par Organisation, Identifiant et Mot de passe'}
+            {step === '2fa' && `Code souverain expédié à ${pendingEmail}`}
+            {step === 'setup_password' && 'Ce mot de passe restera strictement confidentiel et connu de vous seul'}
+          </p>
+        </div>
 
-              {/* Bouton d'envoi du code par email */}
-              <button
-                type="button"
-                onClick={handleSendEmailCode}
-                disabled={isSendingEmail}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer transition-all disabled:opacity-50"
-              >
-                {isSendingEmail ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Envoi en cours...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>{emailSentTo ? 'Renvoyer le code par email' : 'Envoyer le code par email'}</span>
-                  </>
-                )}
-              </button>
+        {/* Global Error Banner */}
+        {errorMsg && (
+          <div className="mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="flex-1 font-medium">{errorMsg}</div>
+          </div>
+        )}
+
+        {/* ===================== STEP 1: CREDENTIALS (TENANT + EMAIL + PASSWORD) ===================== */}
+        {step === 'credentials' && (
+          <form onSubmit={handleCredentialsSubmit} className="p-6 space-y-4">
+            
+            {/* Quick Demo Role Selector Pills */}
+            <div className="space-y-1.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                ⚡ Raccourcis Rapides Profils Démo :
+              </label>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoSelect('super_admin')}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-500/20 hover:bg-rose-100"
+                >
+                  Super Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoSelect('maintenance_lead')}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-500/20 hover:bg-amber-100"
+                >
+                  Resp. Maintenance
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoSelect('fleet_manager')}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 hover:bg-emerald-100"
+                >
+                  Resp. Parc
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoSelect('controller')}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-500/20 hover:bg-sky-100"
+                >
+                  Contrôleur Gestion
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoSelect('driver')}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 hover:bg-indigo-100"
+                >
+                  Chauffeur
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoSelect('root')}
+                  className="px-2 py-1 rounded-lg text-xs font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-500/30 hover:bg-purple-100 flex items-center gap-1 ml-auto"
+                >
+                  👑 Root
+                </button>
+              </div>
             </div>
 
-            {/* Email Success Feedback */}
-            {emailSuccessMsg && (
-              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <div className="leading-relaxed">
-                  <strong>Email envoyé avec succès !</strong>
-                  <p className="mt-0.5">{emailSuccessMsg}</p>
+            {/* Tenant Selector */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-emerald-500" />
+                Compte Organisation (Tenant) *
+              </label>
+              <select
+                value={selectedTenantSlug}
+                onChange={e => handleTenantChange(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="sonatrach">🏢 Sonatrach - DP Hassi Messaoud (Pétrole & Gaz)</option>
+                <option value="cevital">🏢 Cevital Agro-Industrie (Chaîne du Froid)</option>
+                <option value="cosider">🏢 Cosider Groupe Travaux Publics (BTPH)</option>
+                <option value="root">👑 Plateforme Souveraine (Compte Root)</option>
+              </select>
+            </div>
+
+            {/* Email / Identifiant */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-slate-400" />
+                Identifiant / Email Personnel *
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="ex: SuperAdmin@sonatrach.com"
+                value={emailInput}
+                onChange={e => setEmailInput(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            {/* Mot de passe */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-slate-400" />
+                  Mot de Passe *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingEmail(emailInput);
+                    setStep('setup_password');
+                  }}
+                  className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                >
+                  Première connexion ? Définir mon mot de passe
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  placeholder="••••••••••••"
+                  value={passwordInput}
+                  onChange={e => setPasswordInput(e.target.value)}
+                  className="w-full px-3 py-2.5 pr-10 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSendingEmail}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 transition-all mt-2"
+            >
+              {isSendingEmail ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Vérification & Envoi du Code A2F...
+                </>
+              ) : (
+                <>
+                  Valider les Identifiants & Recevoir le Code A2F
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* ===================== STEP 2: SETUP / RESET PASSWORD ===================== */}
+        {step === 'setup_password' && (
+          <form onSubmit={handleSetupPasswordSubmit} className="p-6 space-y-4">
+            {setupSuccessMsg ? (
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs text-center font-semibold space-y-2">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+                <div>{setupSuccessMsg}</div>
+              </div>
+            ) : (
+              <>
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
+                  Saisissez le <strong>Jeton d'activation</strong> fourni par l'administrateur Root, puis définissez votre mot de passe personnel.
                 </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Adresse Email :
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={pendingEmail || emailInput}
+                    onChange={e => setPendingEmail(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Jeton d'Activation / Réinitialisation (fourni par Root) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ex: ACT-7X9K2A ou RST-..."
+                    value={setupToken}
+                    onChange={e => setSetupToken(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Nouveau Mot de Passe Privé *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Au moins 6 caractères"
+                    value={newPasswordInput}
+                    onChange={e => setNewPasswordInput(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Confirmez le Mot de Passe *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Retapez le mot de passe"
+                    value={confirmPasswordInput}
+                    onChange={e => setConfirmPasswordInput(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep('credentials')}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  >
+                    ← Retour à la connexion
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md"
+                  >
+                    Enregistrer mon Mot de Passe Privé
+                  </button>
+                </div>
+              </>
+            )}
+          </form>
+        )}
+
+        {/* ===================== STEP 3: 2FA VERIFICATION ===================== */}
+        {step === '2fa' && (
+          <form onSubmit={handleVerify2FASubmit} className="p-6 space-y-4">
+            
+            {emailSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <div>{emailSuccessMsg}</div>
               </div>
             )}
 
-            {/* 6-Digit Code Input */}
-            <div className="space-y-2 pt-1">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Saisir le code à 6 chiffres reçu dans votre boîte mail :
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 text-center">
+                Saisissez le Code A2F à 6 chiffres :
               </label>
-              <div className="relative">
+
+              <div className="flex justify-center">
                 <input
                   type="text"
                   maxLength={6}
-                  placeholder="• • • • • •"
+                  autoFocus
+                  required
+                  placeholder="000000"
                   value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && totpCode.trim().length >= 6) {
-                      e.preventDefault();
-                      handleVerifyAndSwitchRole();
-                    }
-                  }}
-                  className="w-full bg-white dark:bg-[#151d32] border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3.5 text-center text-2xl font-mono font-bold tracking-[8px] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-inner"
+                  onChange={e => setTotpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                  className="w-56 text-center text-3xl font-mono font-black tracking-[10px] py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-emerald-500/50 text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center flex items-center justify-center gap-1.5 flex-wrap">
-                <span>Validité 10 minutes</span>
-                <span className="text-slate-400 dark:text-slate-600">•</span>
-                <button
-                  type="button"
-                  onClick={() => setTotpCode('999999')}
-                  className="text-emerald-600 dark:text-emerald-400 font-mono font-bold hover:underline cursor-pointer bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800"
-                >
-                  ⚡ Remplir code secours : 999999
-                </button>
-              </p>
 
-              {totpCode === '999999' && (
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-1.5 font-semibold">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    Clé maîtresse reconnue (999999) — Accès immédiat
-                  </span>
-                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded">
-                    Universel
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-800 dark:text-rose-300 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
-                <span>{errorMsg}</span>
-              </div>
-            )}
-
-            {/* Verification Success */}
-            {verificationSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
-                <span>Code A2F validé ! Session souveraine initialisée pour le profil {currentRoleConfig.label}.</span>
-              </div>
-            )}
-          </div>
-
-          {/* Permissions Accordées */}
-          <div className="bg-slate-50 dark:bg-[#0f1628] border border-slate-200 dark:border-slate-800 rounded-2xl p-4">
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-2">
-              Périmètre des permissions accordées pour <strong className="text-emerald-600 dark:text-emerald-400">{currentRoleConfig.label}</strong> :
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {currentRoleConfig.permissions.map((p, idx) => (
-                <span key={idx} className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1a233a] border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-200 flex items-center gap-1.5 shadow-xs">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> {p}
+              <div className="text-center mt-2">
+                <span className="text-[11px] text-slate-400">
+                  Code de secours universel pour tests : <strong className="font-mono text-emerald-600 dark:text-emerald-400">999999</strong>
                 </span>
-              ))}
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="shrink-0 p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-[#0e1526] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-            {!isLockScreen && onLogout && (
+            <div className="flex items-center justify-between text-xs pt-2">
               <button
                 type="button"
-                onClick={() => {
-                  onLogout();
-                  handleClose();
-                }}
-                className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
-                title="Clôturer et fermer votre session active (Déconnexion)"
+                onClick={() => setStep('credentials')}
+                className="font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Fermer la session (Déconnexion)</span>
+                ← Changer de compte
               </button>
-            )}
-            <div className="text-[11px] text-slate-500 dark:text-slate-400 hidden md:flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>TLS 1.3 • Loi 18-07</span>
+
+              <button
+                type="button"
+                onClick={handleResend2FA}
+                disabled={isSendingEmail}
+                className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+              >
+                <RefreshCw className={`w-3 h-3 ${isSendingEmail ? 'animate-spin' : ''}`} />
+                Renvoyer le code
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            {!isLockScreen && (
-              <button
-                type="button"
-                onClick={handleClose}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer relative z-20 hover:scale-[1.02] active:scale-[0.98]"
-                title="Fermer cette fenêtre et revenir au tableau de bord sans changer de session"
-              >
-                Annuler (Rester connecté)
-              </button>
-            )}
+
             <button
-              type="button"
-              onClick={handleVerifyAndSwitchRole}
-              disabled={isVerifying || !totpCode}
-              className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              type="submit"
+              disabled={isVerifying || totpCode.length < 6}
+              className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
+                verificationSuccess
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-900/20'
+              }`}
             >
               {isVerifying ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Validation du code...
+                  Vérification du Code...
+                </>
+              ) : verificationSuccess ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Authentifié avec Succès !
                 </>
               ) : (
                 <>
-                  <ShieldCheck className="w-4 h-4" />
-                  {isLockScreen ? 'Déverrouiller la Plateforme' : 'Valider l\'Accès Sécurisé'}
+                  <Lock className="w-4 h-4" />
+                  Confirmer et Accéder à la Session
                 </>
               )}
             </button>
-          </div>
-        </div>
+          </form>
+        )}
+
       </div>
     </div>
   );

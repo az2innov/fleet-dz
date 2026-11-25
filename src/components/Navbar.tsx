@@ -21,6 +21,7 @@ import {
 import { UserSession, Tenant } from '../types.js';
 
 export type ActiveTab = 
+  | 'root_backoffice'
   | 'dashboard' 
   | 'missions' 
   | 'drivers' 
@@ -64,6 +65,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isTenantMenuOpen, setIsTenantMenuOpen] = useState(false);
   const getRoleLabel = () => {
     switch (userSession?.role) {
+      case 'root': return '👑 Root Plateforme';
       case 'super_admin': return 'Super Admin';
       case 'fleet_manager': return 'Gestionnaire Flotte';
       case 'maintenance_lead': return 'Resp. Maintenance';
@@ -75,6 +77,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const getRoleBadgeStyle = () => {
     switch (userSession?.role) {
+      case 'root':
+        return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30 hover:bg-purple-500/20';
       case 'super_admin': 
         return 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/20';
       case 'fleet_manager': 
@@ -92,6 +96,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const getNavItems = (): { id: ActiveTab; label: string; icon: React.ReactNode; badge?: number }[] => {
     switch (userSession?.role) {
+      case 'root':
+        return [
+          { id: 'root_backoffice', label: '👑 Back Office Root', icon: <Building2 className="w-4 h-4" /> },
+          { id: 'dashboard', label: 'Supervision Flotte', icon: <ShieldCheck className="w-4 h-4" /> },
+          { id: 'vehicles', label: 'Parc Véhicules', icon: <Car className="w-4 h-4" /> },
+          { id: 'drivers', label: 'Conducteurs', icon: <Users className="w-4 h-4" /> },
+          { id: 'interventions', label: 'Interventions', icon: <Wrench className="w-4 h-4" /> },
+          { id: 'fuel', label: 'Carburant', icon: <Fuel className="w-4 h-4" /> },
+        ];
       case 'super_admin':
         return [
           { id: 'dashboard', label: 'Sécurité & Audit DSI', icon: <ShieldCheck className="w-4 h-4" /> },
