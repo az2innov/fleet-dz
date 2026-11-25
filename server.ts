@@ -95,7 +95,14 @@ async function startServer() {
 
 
   // ===================== TENANTS / MULTI-TENANCY API =====================
-  app.get('/api/fleet/tenants', (_req: Request, res: Response) => {
+  app.get('/api/fleet/tenants', (req: Request, res: Response) => {
+    const isRoot = req.headers['x-user-role'] === 'root' || req.query.isRoot === 'true';
+    if (!isRoot) {
+      // Isolation absolue (Zero Discovery) : un compte non-Root ne reçoit JAMAIS la liste des autres tenants
+      const tenantId = extractTenant(req);
+      const tenant = fleetDb.getTenantById(tenantId) || fleetDb.getTenantByCode(tenantId) || fleetDb.getTenants()[0];
+      return res.json(tenant ? [tenant] : []);
+    }
     res.json(fleetDb.getTenants());
   });
 

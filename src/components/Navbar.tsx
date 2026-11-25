@@ -180,101 +180,115 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             </div>
 
-            {/* Sélecteur de Compte Entreprise Multi-Tenant */}
-            {tenantsList && tenantsList.length > 0 && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsTenantMenuOpen(!isTenantMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 hover:bg-slate-200/90 dark:bg-[#121929] dark:hover:bg-[#1c273e] border border-slate-200/90 dark:border-[#222f47] text-xs font-bold text-slate-800 dark:text-slate-100 transition-all cursor-pointer shadow-2xs group"
-                  title="Changer de Compte Entreprise (Tenant) — Isolation Totale des Données"
-                  data-testid="tenant-switcher-btn"
-                >
-                  <div className="w-6 h-6 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                    <Building2 className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="font-extrabold max-w-[130px] sm:max-w-[190px] xl:max-w-[240px] truncate leading-tight text-slate-900 dark:text-white">
-                      {currentTenant?.name || 'Entreprise'}
-                    </span>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold leading-tight flex items-center gap-1">
-                      <span>{currentTenant?.wilaya.split(' ')[0]} {currentTenant?.wilaya.split(' ')[1] || ''}</span>
-                      <span className="text-slate-300 dark:text-slate-600">•</span>
-                      <span className="text-slate-500 dark:text-slate-400 font-normal">{currentTenant?.companyType?.split('&')[0]}</span>
-                    </span>
-                  </div>
-                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 ml-1 transition-transform duration-200 ${isTenantMenuOpen ? 'rotate-180 text-emerald-500' : 'group-hover:text-slate-600 dark:group-hover:text-slate-200'}`} />
-                </button>
-
-                {isTenantMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsTenantMenuOpen(false)} />
-                    <div className="absolute left-0 mt-2 w-84 sm:w-96 rounded-2xl bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] shadow-2xl z-50 p-2 overflow-hidden animate-in fade-in zoom-in-95">
-                      <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-1.5 bg-slate-50/50 dark:bg-[#172033]/50 rounded-xl">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-emerald-500" />
-                            Comptes Entreprises (Tenants)
-                          </span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                            Isolation ANPDP
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                          Chaque tenant dispose de sa propre base cloisonnée (véhicules, chauffeurs, missions, Naftal et budgets).
-                        </p>
-                      </div>
-
-                      <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
-                        {tenantsList.map((t) => {
-                          const isSelected = t.id === currentTenant?.id;
-                          return (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => {
-                                onSwitchTenant?.(t.id);
-                                setIsTenantMenuOpen(false);
-                              }}
-                              className={`w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-start gap-3 cursor-pointer ${
-                                isSelected
-                                  ? 'bg-emerald-50/90 dark:bg-emerald-500/10 border border-emerald-500/40 text-emerald-950 dark:text-emerald-100 shadow-2xs'
-                                  : 'hover:bg-slate-100/80 dark:hover:bg-[#192337] border border-transparent text-slate-700 dark:text-slate-300'
-                              }`}
-                              data-testid={`tenant-option-${t.slug}`}
-                            >
-                              <div className={`w-8 h-8 rounded-lg mt-0.5 flex items-center justify-center shrink-0 ${isSelected ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
-                                <Building2 className="w-4 h-4" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-1">
-                                  <div className="font-extrabold truncate text-slate-900 dark:text-white">
-                                    {t.name}
-                                  </div>
-                                  {isSelected && (
-                                    <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0">
-                                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                                      Actif
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium truncate mt-0.5">
-                                  {t.companyType}
-                                </div>
-                                <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center flex-wrap gap-2">
-                                  <span className="font-semibold text-slate-600 dark:text-slate-400">📍 {t.wilaya}</span>
-                                  <span>•</span>
-                                  <span className="font-mono">NIF: {t.nif}</span>
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </>
-                )}
+            {/* Compte Organisation Souverain : Badge Statique Dédié pour Collaborateurs (Isolation Totale ANPDP) */}
+            {!isRoot ? (
+              <div 
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-[#121929] border border-slate-200/90 dark:border-[#222f47] text-xs font-bold text-slate-800 dark:text-slate-100 select-none shadow-2xs"
+                title={`Organisation active : ${currentTenant?.name || userSession?.tenantName || 'Entreprise'}`}
+              >
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <Building2 className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="font-extrabold max-w-[130px] sm:max-w-[190px] xl:max-w-[240px] truncate leading-tight text-slate-900 dark:text-white">
+                    {currentTenant?.name || userSession?.tenantName || 'Entreprise'}
+                  </span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold leading-tight flex items-center gap-1">
+                    <span className="font-mono font-bold tracking-wider">{currentTenant?.tenantCode || 'ORGANISATION'}</span>
+                    <span className="text-slate-300 dark:text-slate-600">•</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-normal">{currentTenant?.wilaya?.split(' ')[0] || ''}</span>
+                  </span>
+                </div>
               </div>
+            ) : (
+              /* Sélecteur de Compte Entreprise Multi-Tenant RÉSERVÉ AU ROOT */
+              tenantsList && tenantsList.length > 0 && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsTenantMenuOpen(!isTenantMenuOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 dark:bg-purple-950/40 dark:hover:bg-purple-900/40 border border-purple-500/30 text-xs font-bold text-purple-900 dark:text-purple-200 transition-all cursor-pointer shadow-2xs group"
+                    title="Changer de Compte Entreprise (Supervision Root)"
+                    data-testid="tenant-switcher-btn"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                      <Building2 className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="font-extrabold max-w-[130px] sm:max-w-[190px] xl:max-w-[240px] truncate leading-tight">
+                        {currentTenant?.name || 'Entreprise'}
+                      </span>
+                      <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold leading-tight flex items-center gap-1">
+                        <span>Root Plateforme</span>
+                        <span className="text-slate-300 dark:text-slate-600">•</span>
+                        <span className="font-mono">{currentTenant?.tenantCode}</span>
+                      </span>
+                    </div>
+                    <ChevronDown className={`w-3.5 h-3.5 text-purple-400 ml-1 transition-transform duration-200 ${isTenantMenuOpen ? 'rotate-180 text-purple-500' : 'group-hover:text-purple-600'}`} />
+                  </button>
+
+                  {isTenantMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsTenantMenuOpen(false)} />
+                      <div className="absolute left-0 mt-2 w-84 sm:w-96 rounded-2xl bg-white dark:bg-[#121929] border border-slate-200 dark:border-[#222f47] shadow-2xl z-50 p-2 overflow-hidden animate-in fade-in zoom-in-95">
+                        <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-1.5 bg-slate-50/50 dark:bg-[#172033]/50 rounded-xl">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+                              <Building2 className="w-3.5 h-3.5 text-purple-500" />
+                              Supervision Root (Tenants)
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20">
+                              Accès Root
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                            Basculez entre les espaces partitionnés des différentes organisations hébergées.
+                          </p>
+                        </div>
+
+                        <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+                          {tenantsList.map((t) => {
+                            const isSelected = t.id === currentTenant?.id;
+                            return (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => {
+                                  onSwitchTenant?.(t.id);
+                                  setIsTenantMenuOpen(false);
+                                }}
+                                className={`w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-start gap-3 cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-purple-50 dark:bg-purple-950/40 border border-purple-500/40 text-purple-950 dark:text-purple-100 shadow-2xs'
+                                    : 'hover:bg-slate-100/80 dark:hover:bg-[#192337] border border-transparent text-slate-700 dark:text-slate-300'
+                                }`}
+                                data-testid={`tenant-option-${t.slug}`}
+                              >
+                                <div className={`w-8 h-8 rounded-lg mt-0.5 flex items-center justify-center shrink-0 ${isSelected ? 'bg-purple-600 text-white font-bold' : 'bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                                  <Building2 className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="font-extrabold truncate text-slate-900 dark:text-white">
+                                      {t.name}
+                                    </div>
+                                    <span className="font-mono text-[10px] font-bold text-purple-600 dark:text-purple-400 px-1 rounded bg-purple-100 dark:bg-purple-950">
+                                      {t.tenantCode}
+                                    </span>
+                                  </div>
+                                  <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium truncate mt-0.5">
+                                    {t.companyType}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )
             )}
           </div>
 

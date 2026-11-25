@@ -123,21 +123,27 @@ export default function App() {
   const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
   const [isANPDPModalOpen, setIsANPDPModalOpen] = useState(false);
 
-  // Charger la liste des Tenants au démarrage
+  // Charger la liste des Tenants selon les privilèges (Zero Discovery : uniquement le propre tenant si non-Root)
   useEffect(() => {
-    fetch('/api/fleet/tenants')
+    const isRoot = userSession?.isRoot || userSession?.role === 'root';
+    const reqHeaders: Record<string, string> = {};
+    if (isRoot) {
+      reqHeaders['x-user-role'] = 'root';
+    }
+
+    fetch('/api/fleet/tenants', { headers: reqHeaders })
       .then(r => r.json())
       .then((data: Tenant[]) => {
         if (Array.isArray(data) && data.length > 0) {
           setTenantsList(data);
-          const activeT = localStorage.getItem('dz_fleet_current_tenant') || 'tenant-sonatrach';
+          const activeT = localStorage.getItem('dz_fleet_current_tenant') || userSession?.tenantId || 'tenant-sonatrach';
           const match = data.find(t => t.id === activeT) || data[0];
           setCurrentTenant(match);
           setCurrentTenantId(match.id);
         }
       })
       .catch(console.error);
-  }, []);
+  }, [userSession]);
 
   const fetchFleetData = async (tenantIdOverride?: string) => {
     const tId = tenantIdOverride || currentTenantId || localStorage.getItem('dz_fleet_current_tenant') || 'tenant-sonatrach';
@@ -172,8 +178,13 @@ export default function App() {
     }
   };
 
-  // Basculer instantanément de Compte Entreprise (Tenant Switcher)
+  // Basculer de Compte Entreprise (Réservé au superviseur Root)
   const handleSwitchTenant = async (newTenantId: string) => {
+    const isRoot = userSession?.isRoot || userSession?.role === 'root';
+    if (!isRoot) {
+      console.warn("Accès refusé : Seul le compte Root superviseur est habilité à inspecter ou basculer d'organisation.");
+      return;
+    }
     if (newTenantId === currentTenantId) return;
     setCurrentTenantId(newTenantId);
     if (typeof window !== 'undefined') {
