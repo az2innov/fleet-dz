@@ -902,7 +902,7 @@ export const FleetDashboard: React.FC<FleetDashboardProps> = ({
                           {rc.role.replace('_', ' ')}
                         </span>
                       </div>
-                      <p className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">{rc.email}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{rc.description}</p>
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {rc.permissions.slice(0, 3).map((p, idx) => (
                           <span key={idx} className="text-[10px] bg-white dark:bg-[#1a233a] px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">

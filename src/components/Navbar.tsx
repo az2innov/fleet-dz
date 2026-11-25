@@ -63,6 +63,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
 }) => {
   const [isTenantMenuOpen, setIsTenantMenuOpen] = useState(false);
+  const isRoot = userSession?.isRoot === true || userSession?.role === 'root';
+
   const getRoleLabel = () => {
     switch (userSession?.role) {
       case 'root': return '👑 Root Plateforme';
