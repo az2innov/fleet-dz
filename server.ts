@@ -83,12 +83,35 @@ async function startServer() {
     }
   });
 
+
+  // Extraction dynamique et sécurisée du Tenant actif (Isolation Multi-Tenant ANPDP)
+  const extractTenant = (req: Request): string => {
+    const headerTenant = req.headers['x-tenant-id'];
+    if (typeof headerTenant === 'string' && headerTenant.trim()) return headerTenant.trim();
+    if (typeof req.query.tenantId === 'string' && req.query.tenantId.trim()) return req.query.tenantId.trim();
+    if (req.body && typeof req.body.tenantId === 'string' && req.body.tenantId.trim()) return req.body.tenantId.trim();
+    return 'tenant-sonatrach';
+  };
+
+
+  // ===================== TENANTS / MULTI-TENANCY API =====================
+  app.get('/api/fleet/tenants', (_req: Request, res: Response) => {
+    res.json(fleetDb.getTenants());
+  });
+
+  app.get('/api/fleet/tenants/current', (req: Request, res: Response) => {
+    const tenantId = extractTenant(req);
+    const tenant = fleetDb.getTenantById(tenantId) || fleetDb.getTenants()[0];
+    res.json(tenant);
+  });
+
   // Fleet Overview Stats
-  app.get('/api/fleet/summary', (_req: Request, res: Response) => {
-    const vehicles = fleetDb.getVehicles();
-    const fuelLogs = fleetDb.getFuelLogs();
-    const claims = fleetDb.getAccidentClaims();
-    const alerts = fleetDb.getAlerts().filter(a => !a.resolved);
+  app.get('/api/fleet/summary', (req: Request, res: Response) => {
+    const tenantId = extractTenant(req);
+    const vehicles = fleetDb.getVehicles(tenantId);
+    const fuelLogs = fleetDb.getFuelLogs(tenantId);
+    const claims = fleetDb.getAccidentClaims(tenantId);
+    const alerts = fleetDb.getAlerts(tenantId).filter(a => !a.resolved);
 
     const totalFuelDZD = fuelLogs.reduce((acc, log) => acc + log.amountDZD, 0);
     const totalLiters = fuelLogs.reduce((acc, log) => acc + log.liters, 0);
@@ -109,13 +132,13 @@ async function startServer() {
   });
 
   // Fleet Vehicles CRUD
-  app.get('/api/fleet/vehicles', (_req: Request, res: Response) => {
-    res.json(fleetDb.getVehicles());
+  app.get('/api/fleet/vehicles', (req: Request, res: Response) => {
+    res.json(fleetDb.getVehicles(extractTenant(req)));
   });
 
   app.post('/api/fleet/vehicles', (req: Request, res: Response) => {
     try {
-      const newV = fleetDb.addVehicle(req.body);
+      const newV = fleetDb.addVehicle(req.body, extractTenant(req));
       res.status(201).json(newV);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -142,13 +165,13 @@ async function startServer() {
   });
 
   // Fleet Drivers CRUD
-  app.get('/api/fleet/drivers', (_req: Request, res: Response) => {
-    res.json(fleetDb.getDrivers());
+  app.get('/api/fleet/drivers', (req: Request, res: Response) => {
+    res.json(fleetDb.getDrivers(extractTenant(req)));
   });
 
   app.post('/api/fleet/drivers', (req: Request, res: Response) => {
     try {
-      const newD = fleetDb.addDriver(req.body);
+      const newD = fleetDb.addDriver(req.body, extractTenant(req));
       res.status(201).json(newD);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -195,13 +218,13 @@ async function startServer() {
   });
 
   // Fleet Missions & Ordres de Mission CRUD
-  app.get('/api/fleet/missions', (_req: Request, res: Response) => {
-    res.json(fleetDb.getMissions());
+  app.get('/api/fleet/missions', (req: Request, res: Response) => {
+    res.json(fleetDb.getMissions(extractTenant(req)));
   });
 
   app.post('/api/fleet/missions', (req: Request, res: Response) => {
     try {
-      const newM = fleetDb.addMission(req.body);
+      const newM = fleetDb.addMission(req.body, extractTenant(req));
       res.status(201).json(newM);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -229,11 +252,12 @@ async function startServer() {
 
   // ===================== INTERVENTIONS CRUD & DOCUMENTS (DI & FR) =====================
   app.get('/api/fleet/interventions', (req: Request, res: Response) => {
+    const tenantId = extractTenant(req);
     const plate = req.query.plate as string | undefined;
     if (plate) {
-      return res.json(fleetDb.getInterventionsByVehicle(plate));
+      return res.json(fleetDb.getInterventionsByVehicle(plate, tenantId));
     }
-    res.json(fleetDb.getInterventions());
+    res.json(fleetDb.getInterventions(tenantId));
   });
 
   app.get('/api/fleet/interventions/:id', (req: Request, res: Response) => {
@@ -245,7 +269,7 @@ async function startServer() {
   // Émettre une Demande d'Intervention (DI) par le Gestionnaire de Flotte
   app.post('/api/fleet/interventions', (req: Request, res: Response) => {
     try {
-      const newItv = fleetDb.addIntervention(req.body);
+      const newItv = fleetDb.addIntervention(req.body, extractTenant(req));
       res.status(201).json(newItv);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -286,13 +310,13 @@ async function startServer() {
   });
 
   // Fleet Fuel logs
-  app.get('/api/fleet/fuel', (_req: Request, res: Response) => {
-    res.json(fleetDb.getFuelLogs());
+  app.get('/api/fleet/fuel', (req: Request, res: Response) => {
+    res.json(fleetDb.getFuelLogs(extractTenant(req)));
   });
 
   app.post('/api/fleet/fuel', (req: Request, res: Response) => {
     try {
-      const newLog = fleetDb.addFuelLog(req.body);
+      const newLog = fleetDb.addFuelLog(req.body, extractTenant(req));
       res.status(201).json(newLog);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -310,13 +334,13 @@ async function startServer() {
   });
 
   // Cartes Prépayées Déposées en Station
-  app.get('/api/fleet/fuel/prepaid-cards', (_req: Request, res: Response) => {
-    res.json(fleetDb.getPrepaidFuelCards());
+  app.get('/api/fleet/fuel/prepaid-cards', (req: Request, res: Response) => {
+    res.json(fleetDb.getPrepaidFuelCards(extractTenant(req)));
   });
 
   app.post('/api/fleet/fuel/prepaid-cards', (req: Request, res: Response) => {
     try {
-      const card = fleetDb.addPrepaidFuelCard(req.body);
+      const card = fleetDb.addPrepaidFuelCard(req.body, extractTenant(req));
       res.status(201).json(card);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -324,13 +348,13 @@ async function startServer() {
   });
 
   // Bons de Ravitaillement en Carburant (Délivrés par le Gestionnaire de Flotte)
-  app.get('/api/fleet/fuel/vouchers', (_req: Request, res: Response) => {
-    res.json(fleetDb.getFuelVouchers());
+  app.get('/api/fleet/fuel/vouchers', (req: Request, res: Response) => {
+    res.json(fleetDb.getFuelVouchers(extractTenant(req)));
   });
 
   app.post('/api/fleet/fuel/vouchers', (req: Request, res: Response) => {
     try {
-      const voucher = fleetDb.addFuelVoucher(req.body);
+      const voucher = fleetDb.addFuelVoucher(req.body, extractTenant(req));
       res.status(201).json(voucher);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -349,13 +373,13 @@ async function startServer() {
   });
 
   // Fleet Maintenance records
-  app.get('/api/fleet/maintenance', (_req: Request, res: Response) => {
-    res.json(fleetDb.getMaintenanceRecords());
+  app.get('/api/fleet/maintenance', (req: Request, res: Response) => {
+    res.json(fleetDb.getMaintenanceRecords(extractTenant(req)));
   });
 
   // Fleet Accident / Claims & Insurance Transmission
-  app.get('/api/fleet/accidents', (_req: Request, res: Response) => {
-    res.json(fleetDb.getAccidentClaims());
+  app.get('/api/fleet/accidents', (req: Request, res: Response) => {
+    res.json(fleetDb.getAccidentClaims(extractTenant(req)));
   });
 
   app.put('/api/fleet/accidents/:id', (req: Request, res: Response) => {
@@ -379,8 +403,8 @@ async function startServer() {
   });
 
   // Fleet Alerts
-  app.get('/api/fleet/alerts', (_req: Request, res: Response) => {
-    res.json(fleetDb.getAlerts());
+  app.get('/api/fleet/alerts', (req: Request, res: Response) => {
+    res.json(fleetDb.getAlerts(extractTenant(req)));
   });
 
   app.post('/api/fleet/alerts/:id/resolve', (req: Request, res: Response) => {
@@ -405,8 +429,8 @@ async function startServer() {
   });
 
   // Sovereign Activity Logs (Journal souverain ANPDP)
-  app.get('/api/fleet/activity-logs', (_req: Request, res: Response) => {
-    res.json(fleetDb.getActivityLogs());
+  app.get('/api/fleet/activity-logs', (req: Request, res: Response) => {
+    res.json(fleetDb.getActivityLogs(extractTenant(req)));
   });
 
   // --- AUTHENTIFICATION SOUVERAINE & 2FA PAR EMAIL ---
@@ -418,54 +442,152 @@ async function startServer() {
   }
   const twoFactorPendingStore = new Map<string, TwoFactorPending>();
 
-  const SOUVERAIN_ROLES_AUTH: Record<string, { role: string; email: string; label: string; name: string; department: string }> = {
-    super_admin: {
-      role: 'super_admin',
-      email: 'admin@fleet-dz.com',
-      label: 'Super Administrateur',
-      name: 'Amine Benzerga (Super Admin)',
-      department: "Direction des Systèmes d'Information (DSI)",
+
+  // Rôles et profils souverains par Compte Entreprise (Multi-Tenant)
+  const TENANT_ROLES_AUTH: Record<string, Record<string, { role: string; tenantId: string; email: string; label: string; name: string; department: string }>> = {
+    'tenant-sonatrach': {
+      super_admin: {
+        role: 'super_admin',
+        tenantId: 'tenant-sonatrach',
+        email: 'admin@sonatrach-dz.com',
+        label: 'Super Administrateur',
+        name: 'Amine Benzerga (Super Admin)',
+        department: "Direction des Systèmes d'Information (DSI Sonatrach)",
+      },
+      fleet_manager: {
+        role: 'fleet_manager',
+        tenantId: 'tenant-sonatrach',
+        email: 'gestion@sonatrach-dz.com',
+        label: 'Gestionnaire de Parc & Flotte',
+        name: 'Djamel Rahmani (Chef de Flotte)',
+        department: 'Direction des Moyens Généraux Sud',
+      },
+      maintenance_lead: {
+        role: 'maintenance_lead',
+        tenantId: 'tenant-sonatrach',
+        email: 'maintenance@sonatrach-dz.com',
+        label: 'Responsable Maintenance',
+        name: 'Kamel Meziane (Resp. Maintenance)',
+        department: 'Atelier Central Hassi Messaoud',
+      },
+      controller: {
+        role: 'controller',
+        tenantId: 'tenant-sonatrach',
+        email: 'audit@sonatrach-dz.com',
+        label: 'Contrôleur de Gestion',
+        name: 'Soraya Hadj (Contrôle Gestion)',
+        department: 'Direction Financière & Audit',
+      },
+      driver: {
+        role: 'driver',
+        tenantId: 'tenant-sonatrach',
+        email: 'karim.b@sonatrach-dz.com',
+        label: 'Conducteur / Chauffeur Sud',
+        name: 'Karim Belkacem (Chauffeur)',
+        department: 'Pool Chauffeurs Sud',
+      },
     },
-    fleet_manager: {
-      role: 'fleet_manager',
-      email: 'gestion@fleet-dz.com',
-      label: 'Gestionnaire de Flotte',
-      name: 'Djamel Rahmani (Chef de Flotte)',
-      department: 'Direction des Moyens Généraux',
+    'tenant-cevital': {
+      super_admin: {
+        role: 'super_admin',
+        tenantId: 'tenant-cevital',
+        email: 'admin@cevital-dz.com',
+        label: 'Super Administrateur',
+        name: 'Redha Ould Ali (Super Admin)',
+        department: "Direction Systèmes d'Information (DSI Cevital)",
+      },
+      fleet_manager: {
+        role: 'fleet_manager',
+        tenantId: 'tenant-cevital',
+        email: 'gestion@cevital-dz.com',
+        label: 'Gestionnaire de Flotte',
+        name: 'Samira Benabdelkader (Chef Flotte)',
+        department: 'Direction Logistique Froid',
+      },
+      maintenance_lead: {
+        role: 'maintenance_lead',
+        tenantId: 'tenant-cevital',
+        email: 'maintenance@cevital-dz.com',
+        label: 'Responsable Maintenance',
+        name: 'Nabil Mansouri (Resp. Maintenance)',
+        department: 'Atelier Froid & Mécanique Béjaïa',
+      },
+      controller: {
+        role: 'controller',
+        tenantId: 'tenant-cevital',
+        email: 'audit@cevital-dz.com',
+        label: 'Contrôleur de Gestion',
+        name: 'Farouk Khelifi (Contrôle Coûts)',
+        department: 'Direction Financière & Logistique',
+      },
+      driver: {
+        role: 'driver',
+        tenantId: 'tenant-cevital',
+        email: 'tarek.b@cevital-dz.com',
+        label: 'Conducteur Frigorifique',
+        name: 'Tarek Belhadj (Chauffeur)',
+        department: 'Pool Distribution Froid Béjaïa',
+      },
     },
-    maintenance_lead: {
-      role: 'maintenance_lead',
-      email: 'maintenance@fleet-dz.com',
-      label: 'Responsable Maintenance',
-      name: 'Kamel Meziane (Resp. Maintenance)',
-      department: 'Département Maintenance & Parc',
-    },
-    controller: {
-      role: 'controller',
-      email: 'audit@fleet-dz.com',
-      label: 'Contrôleur de Gestion',
-      name: 'Soraya Hadj (Contrôle Gestion)',
-      department: 'Direction Financière & Audit',
-    },
-    driver: {
-      role: 'driver',
-      email: 'drivers@fleet-dz.com',
-      label: 'Conducteur / Chauffeur',
-      name: 'Karim Belkacem (Chauffeur)',
-      department: 'Pool Chauffeurs',
+    'tenant-cosider': {
+      super_admin: {
+        role: 'super_admin',
+        tenantId: 'tenant-cosider',
+        email: 'admin@cosider-dz.com',
+        label: 'Super Administrateur',
+        name: 'Mourad Boukhalfa (Super Admin)',
+        department: "Direction des Systèmes Sécurisés (DSI)",
+      },
+      fleet_manager: {
+        role: 'fleet_manager',
+        tenantId: 'tenant-cosider',
+        email: 'gestion@cosider-dz.com',
+        label: 'Chef de Parc & Matériel',
+        name: 'Walid Boudissa (Chef de Parc Matériel)',
+        department: 'Direction Matériel & Logistique Chantiers',
+      },
+      maintenance_lead: {
+        role: 'maintenance_lead',
+        tenantId: 'tenant-cosider',
+        email: 'maintenance@cosider-dz.com',
+        label: 'Responsable Maintenance',
+        name: 'Lamine Zerrouki (Resp. Maintenance)',
+        department: 'Atelier Central Engins Rouiba',
+      },
+      controller: {
+        role: 'controller',
+        tenantId: 'tenant-cosider',
+        email: 'audit@cosider-dz.com',
+        label: 'Contrôleur de Gestion',
+        name: 'Lynda Cherif (Contrôle Budgétaire)',
+        department: 'Direction Financière & Comptable',
+      },
+      driver: {
+        role: 'driver',
+        tenantId: 'tenant-cosider',
+        email: 'brahim.s@cosider-dz.com',
+        label: 'Conducteur Poids Lourds BTPH',
+        name: 'Brahim Sellami (Chauffeur PL)',
+        department: 'Pool Chauffeurs Chantiers',
+      },
     },
   };
 
-  // Liste des rôles configurés et leurs adresses de réception A2F
-  app.get('/api/auth/roles', (_req: Request, res: Response) => {
-    res.json(Object.values(SOUVERAIN_ROLES_AUTH));
+
+  // Liste des rôles configurés par Tenant et leurs adresses de réception A2F
+  app.get('/api/auth/roles', (req: Request, res: Response) => {
+    const tenantId = extractTenant(req);
+    const tenantRoles = TENANT_ROLES_AUTH[tenantId] || TENANT_ROLES_AUTH['tenant-sonatrach'];
+    res.json(Object.values(tenantRoles));
   });
 
   // Envoi réel du code A2F à 6 chiffres par email via SMTP (Mailtrap)
   app.post('/api/auth/send-2fa', async (req: Request, res: Response) => {
     try {
       const { role } = req.body;
-      const targetRole = SOUVERAIN_ROLES_AUTH[role] || SOUVERAIN_ROLES_AUTH['super_admin'];
+      const tenantId = extractTenant(req);
+      const tenantRoles = TENANT_ROLES_AUTH[tenantId] || TENANT_ROLES_AUTH['tenant-sonatrach'];
+      const targetRole = tenantRoles[role] || tenantRoles['super_admin'];
       
       // Génération code aléatoire 6 chiffres
       const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -558,7 +680,10 @@ async function startServer() {
   app.post('/api/auth/verify-2fa', (req: Request, res: Response) => {
     try {
       const { role, code } = req.body;
-      const targetRole = SOUVERAIN_ROLES_AUTH[role] || SOUVERAIN_ROLES_AUTH['super_admin'];
+      const tenantId = extractTenant(req);
+      const tenantRoles = TENANT_ROLES_AUTH[tenantId] || TENANT_ROLES_AUTH['tenant-sonatrach'];
+      const targetRole = tenantRoles[role] || tenantRoles['super_admin'];
+      const tenantObj = fleetDb.getTenantById(tenantId) || fleetDb.getTenants()[0];
       const pending = twoFactorPendingStore.get(targetRole.role);
       const isMasterKey = String(code).trim() === '999999';
 
@@ -597,6 +722,8 @@ async function startServer() {
         name: targetRole.name,
         email: targetRole.email,
         role: targetRole.role,
+        tenantId: targetRole.tenantId,
+        tenantName: tenantObj.name,
         twoFactorEnabled: true,
         twoFactorVerified: true,
         department: targetRole.department,

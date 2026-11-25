@@ -5,11 +5,32 @@ export type UserRole =
   | 'controller' 
   | 'driver';
 
+export interface Tenant {
+  id: string; // ex: 'tenant-sonatrach', 'tenant-cevital', 'tenant-cosider'
+  name: string; // Nom légal de l'entreprise ou filiale
+  slug: string; // Code court normalisé (ex: 'sonatrach', 'cevital', 'cosider')
+  companyType: string; // Secteur d'activité (Pétrole & Gaz, Agro-Alimentaire, BTPH)
+  wilaya: string; // Wilaya de rattachement administratif
+  nif: string; // Numéro d'Identification Fiscale
+  nis: string; // Numéro d'Identification Statistique
+  rc: string; // Registre de Commerce
+  address: string; // Siège social ou base opérationnelle
+  phone: string; // Contact standard
+  email: string; // Email officiel
+  logoUrl?: string; // Logo entreprise ou icône
+  brandColor?: string; // Couleur thématique de l'entreprise
+  plan: 'enterprise' | 'sovereign_on_premise' | 'standard';
+  status: 'active' | 'suspended';
+  createdAt: string;
+}
+
 export interface UserSession {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  tenantId?: string; // ID du tenant d'appartenance
+  tenantName?: string; // Nom de l'entreprise du tenant
   twoFactorEnabled: boolean;
   twoFactorVerified: boolean;
   department: string;
@@ -48,6 +69,7 @@ export type TransmissionType = 'Manuelle' | 'Automatique' | 'Robotisée';
 
 export interface Vehicle {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   plate: string; // e.g. "04512-118-16" (Wilaya 16 - Alger)
   make: string;
   model: string;
@@ -121,6 +143,7 @@ export interface DriverComment {
 
 export interface Driver {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   name: string;
   phone: string;
   email?: string;
@@ -163,6 +186,7 @@ export type RefuelType = 'partiel_appoint' | 'plein_complet' | 'dotation_mission
 
 export interface PrepaidFuelCard {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   cardNumber: string; // e.g. "NAFTAL-CORP-0145"
   cardName: string; // e.g. "Carte Naftal Entreprise - Station Chéraga"
   stationName: string; // Station d'essence dépositaire
@@ -176,6 +200,7 @@ export interface PrepaidFuelCard {
 
 export interface FuelVoucher {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   voucherNumber: string; // e.g. "BR-2026-0089"
   date: string; // YYYY-MM-DD (date d'émission)
   vehicleId: string;
@@ -212,6 +237,7 @@ export interface FuelVoucher {
 
 export interface FuelLog {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   vehicleId: string;
   vehiclePlate: string;
   driverId: string;
@@ -240,6 +266,7 @@ export interface FuelLog {
 
 export interface MaintenanceRecord {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   vehicleId: string;
   vehiclePlate: string;
   type: 'vidange' | 'plaquettes_freins' | 'pneus' | 'courroie_distribution' | 'revision_generale' | 'reparation_mecanique';
@@ -254,6 +281,7 @@ export interface MaintenanceRecord {
 
 export interface AccidentClaim {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   claimNumber: string; // e.g. "SIN-2026-0042"
   vehicleId: string;
   vehiclePlate: string;
@@ -284,6 +312,7 @@ export interface AccidentClaim {
 
 export interface FleetAlert {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   vehicleId: string;
   vehiclePlate: string;
   type: 'vidange_overdue' | 'assurance_expiring' | 'controle_technique' | 'accident_pending' | 'surconsommation' | 'visite_medicale';
@@ -298,6 +327,7 @@ export interface FleetAlert {
 
 export interface MissionOrder {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   orderNumber: string; // e.g. "OM-2026-0412"
   title: string;
   purpose: string; // Objet de la mission
@@ -333,6 +363,7 @@ export interface MissionOrder {
 
 export interface SovereignActivityLog {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   driverPhone?: string;
   driverName: string;
   vehiclePlate?: string;
@@ -403,6 +434,7 @@ export interface InterventionQualityChecks {
 
 export interface VehicleIntervention {
   id: string;
+  tenantId?: string; // ID du compte entreprise (Tenant)
   // Numérotation officielle
   interventionOrderNumber: string; // Numéro de Demande d'Intervention : e.g. "DI-2026-0082"
   receptionSheetNumber?: string;   // Numéro de Fiche de Réception : e.g. "FR-2026-0082"

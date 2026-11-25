@@ -21,7 +21,8 @@ import {
   SovereignActivityLog,
   MissionOrder,
   VehicleIntervention,
-  UserSession 
+  UserSession,
+  Tenant 
 } from './types.js';
 
 export default function App() {
@@ -71,6 +72,33 @@ export default function App() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Multi-Tenant Isolation State
+  const [currentTenantId, setCurrentTenantId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dz_fleet_current_tenant');
+      if (saved) return saved;
+    }
+    return 'tenant-sonatrach';
+  });
+  const [tenantsList, setTenantsList] = useState<Tenant[]>([]);
+  const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
+
+  // Intercepteur souverain global de fetch pour injecter x-tenant-id systématiquement
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !(window as any).__dz_fetch_intercepted) {
+      (window as any).__dz_fetch_intercepted = true;
+      const originalFetch = window.fetch;
+      window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+        const activeT = localStorage.getItem('dz_fleet_current_tenant') || 'tenant-sonatrach';
+        const headers = new Headers(init?.headers || {});
+        if (!headers.has('x-tenant-id')) {
+          headers.set('x-tenant-id', activeT);
+        }
+        return originalFetch(input, { ...init, headers });
+      };
+    }
+  }, []);
+
   // Enterprise Security & RBAC Session State
   const [userSession, setUserSession] = useState<UserSession>(() => {
     if (typeof window !== 'undefined') {
@@ -82,28 +110,49 @@ export default function App() {
     return {
       id: 'usr-1',
       name: 'Amine Benzerga (Super Admin)',
-      email: 'admin@fleet-dz.com',
+      email: 'admin@sonatrach-dz.com',
       role: 'super_admin',
+      tenantId: 'tenant-sonatrach',
+      tenantName: 'Sonatrach - DP Hassi Messaoud',
       twoFactorEnabled: true,
       twoFactorVerified: true,
-      department: "Direction des Systèmes d'Information (DSI)",
+      department: "Direction des Systèmes d'Information (DSI Sonatrach)",
     };
   });
   const [is2FAModalOpen, setIs2FAModalOpen] = useState(false);
   const [isANPDPModalOpen, setIsANPDPModalOpen] = useState(false);
 
-  const fetchFleetData = async () => {
+  // Charger la liste des Tenants au démarrage
+  useEffect(() => {
+    fetch('/api/fleet/tenants')
+      .then(r => r.json())
+      .then((data: Tenant[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTenantsList(data);
+          const activeT = localStorage.getItem('dz_fleet_current_tenant') || 'tenant-sonatrach';
+          const match = data.find(t => t.id === activeT) || data[0];
+          setCurrentTenant(match);
+          setCurrentTenantId(match.id);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const fetchFleetData = async (tenantIdOverride?: string) => {
+    const tId = tenantIdOverride || currentTenantId || localStorage.getItem('dz_fleet_current_tenant') || 'tenant-sonatrach';
+    const reqHeaders = { 'x-tenant-id': tId };
+
     try {
       const [vRes, dRes, mRes, misRes, itvRes, fRes, aRes, altRes, actRes] = await Promise.all([
-        fetch('/api/fleet/vehicles'),
-        fetch('/api/fleet/drivers'),
-        fetch('/api/fleet/maintenance'),
-        fetch('/api/fleet/missions'),
-        fetch('/api/fleet/interventions'),
-        fetch('/api/fleet/fuel'),
-        fetch('/api/fleet/accidents'),
-        fetch('/api/fleet/alerts'),
-        fetch('/api/fleet/activity-logs'),
+        fetch('/api/fleet/vehicles', { headers: reqHeaders }),
+        fetch('/api/fleet/drivers', { headers: reqHeaders }),
+        fetch('/api/fleet/maintenance', { headers: reqHeaders }),
+        fetch('/api/fleet/missions', { headers: reqHeaders }),
+        fetch('/api/fleet/interventions', { headers: reqHeaders }),
+        fetch('/api/fleet/fuel', { headers: reqHeaders }),
+        fetch('/api/fleet/accidents', { headers: reqHeaders }),
+        fetch('/api/fleet/alerts', { headers: reqHeaders }),
+        fetch('/api/fleet/activity-logs', { headers: reqHeaders }),
       ]);
 
       if (vRes.ok) setVehicles(await vRes.json());
@@ -122,13 +171,61 @@ export default function App() {
     }
   };
 
+  // Basculer instantanément de Compte Entreprise (Tenant Switcher)
+  const handleSwitchTenant = async (newTenantId: string) => {
+    if (newTenantId === currentTenantId) return;
+    setCurrentTenantId(newTenantId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dz_fleet_current_tenant', newTenantId);
+    }
+
+    const foundTenant = tenantsList.find(t => t.id === newTenantId);
+    if (foundTenant) {
+      setCurrentTenant(foundTenant);
+    }
+
+    // Basculer l'utilisateur sur le profil équivalent du nouveau tenant
+    try {
+      const rolesRes = await fetch('/api/auth/roles', {
+        headers: { 'x-tenant-id': newTenantId }
+      });
+      if (rolesRes.ok) {
+        const roles = await rolesRes.json();
+        const targetRoleObj = roles.find((r: any) => r.role === userSession.role) || roles[0];
+        if (targetRoleObj) {
+          const newSession: UserSession = {
+            id: `usr-${Date.now()}`,
+            name: targetRoleObj.name,
+            email: targetRoleObj.email,
+            role: targetRoleObj.role,
+            tenantId: newTenantId,
+            tenantName: foundTenant?.name,
+            twoFactorEnabled: true,
+            twoFactorVerified: true,
+            department: targetRoleObj.department,
+          };
+          setUserSession(newSession);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('dz_fleet_session', JSON.stringify(newSession));
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Erreur lors du basculement des rôles:', e);
+    }
+
+    // Recharger toutes les données cloisonnées du nouveau tenant
+    setLoading(true);
+    fetchFleetData(newTenantId);
+  };
+
   useEffect(() => {
-    fetchFleetData();
+    fetchFleetData(currentTenantId);
     const interval = setInterval(() => {
       fetchFleetData();
     }, 15000);
     return () => clearInterval(interval);
-  }, []);
+  }, [currentTenantId]);
 
   const handleResolveAlert = async (alertId: string) => {
     try {
@@ -221,6 +318,9 @@ export default function App() {
           onUpdateSession={handleUpdateSession}
           onLogout={handleLogout}
           isLockScreen={true}
+          currentTenant={currentTenant}
+          tenantsList={tenantsList}
+          onSwitchTenant={handleSwitchTenant}
         />
       </div>
     );
@@ -235,6 +335,9 @@ export default function App() {
         activeAlertsCount={activeAlertsCount}
         openClaimsCount={openClaimsCount}
         userSession={userSession}
+        currentTenant={currentTenant}
+        tenantsList={tenantsList}
+        onSwitchTenant={handleSwitchTenant}
         onOpen2FA={() => setIs2FAModalOpen(true)}
         onOpenANPDP={() => setIsANPDPModalOpen(true)}
         theme={theme}
@@ -347,6 +450,9 @@ export default function App() {
         onClose={() => setIs2FAModalOpen(false)}
         onUpdateSession={handleUpdateSession}
         onLogout={handleLogout}
+        currentTenant={currentTenant}
+        tenantsList={tenantsList}
+        onSwitchTenant={handleSwitchTenant}
       />
 
       {/* Sovereign ANPDP / Loi 18-07 Modal */}

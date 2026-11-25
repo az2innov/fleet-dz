@@ -10,9 +10,11 @@ import {
   Mail,
   Send,
   Users,
-  LogOut
+  LogOut,
+  Building2,
+  Check
 } from 'lucide-react';
-import { UserRole, UserSession } from '../types.js';
+import { UserRole, UserSession, Tenant } from '../types.js';
 
 interface Auth2FAModalProps {
   currentSession: UserSession;
@@ -21,6 +23,9 @@ interface Auth2FAModalProps {
   onUpdateSession: (newSession: UserSession) => void;
   onLogout?: () => void;
   isLockScreen?: boolean;
+  currentTenant?: Tenant | null;
+  tenantsList?: Tenant[];
+  onSwitchTenant?: (tenantId: string) => void;
 }
 
 export const ROLES_CONFIG: {
@@ -80,6 +85,9 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
   onUpdateSession,
   onLogout,
   isLockScreen = false,
+  currentTenant,
+  tenantsList = [],
+  onSwitchTenant,
 }) => {
   const [selectedRole, setSelectedRole] = useState<UserRole>(currentSession.role);
   const [totpCode, setTotpCode] = useState<string>('');
@@ -89,6 +97,28 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [verificationSuccess, setVerificationSuccess] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [dynamicRoles, setDynamicRoles] = useState<{ role: UserRole; email: string; label: string; name: string; department: string }[]>([]);
+
+  const activeTenantId = currentTenant?.id || currentSession.tenantId || 'tenant-sonatrach';
+
+  // Charger les rôles et identités du Tenant actif
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/auth/roles', {
+        headers: { 'x-tenant-id': activeTenantId }
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) setDynamicRoles(data);
+        })
+        .catch(console.error);
+    }
+  }, [isOpen, activeTenantId]);
+
+  // Synchroniser le rôle sélectionné avec la session si elle change
+  useEffect(() => {
+    setSelectedRole(currentSession.role);
+  }, [currentSession.role, activeTenantId]);
 
   // Fermeture propre avec réinitialisation
   const handleClose = (e?: React.MouseEvent | React.TouchEvent) => {
@@ -130,8 +160,11 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
     try {
       const res = await fetch('/api/auth/send-2fa', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: selectedRole }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-tenant-id': activeTenantId
+        },
+        body: JSON.stringify({ role: selectedRole, tenantId: activeTenantId }),
       });
 
       const data = await res.json();
@@ -160,17 +193,20 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
     if (isMasterCode) {
       // Validation directe instantanée (clé maîtresse de secours universelle)
       const targetRoleConfig = ROLES_CONFIG.find(r => r.role === selectedRole) || ROLES_CONFIG[0];
+      const dynamicTarget = dynamicRoles.find(r => r.role === selectedRole);
       const masterSession: UserSession = {
         id: `usr-master-${Date.now().toString(36)}`,
-        name: targetRoleConfig.role === 'super_admin' ? 'Amine Benzerga (Super Admin)' :
+        name: dynamicTarget?.name || (targetRoleConfig.role === 'super_admin' ? 'Amine Benzerga (Super Admin)' :
               targetRoleConfig.role === 'fleet_manager' ? 'Gestionnaire Flotte' :
               targetRoleConfig.role === 'maintenance_lead' ? 'Resp. Maintenance' :
-              targetRoleConfig.role === 'controller' ? 'Contrôleur Gestion' : 'Karim Belkacem (Chauffeur)',
-        email: targetRoleConfig.email,
+              targetRoleConfig.role === 'controller' ? 'Contrôleur Gestion' : 'Karim Belkacem (Chauffeur)'),
+        email: dynamicTarget?.email || targetRoleConfig.email,
         role: targetRoleConfig.role,
+        tenantId: activeTenantId,
+        tenantName: currentTenant?.name || 'Entreprise Algérienne',
         twoFactorEnabled: true,
         twoFactorVerified: true,
-        department: targetRoleConfig.description,
+        department: dynamicTarget?.department || targetRoleConfig.description,
       };
 
       setVerificationSuccess(true);
@@ -180,8 +216,11 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
       // Notification asynchrone au backend
       fetch('/api/auth/verify-2fa', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: selectedRole, code: '999999' }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-tenant-id': activeTenantId
+        },
+        body: JSON.stringify({ role: selectedRole, code: '999999', tenantId: activeTenantId }),
       }).catch(() => {});
 
       setTimeout(() => {
@@ -200,8 +239,11 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
     try {
       const res = await fetch('/api/auth/verify-2fa', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: selectedRole, code: totpCode.trim() }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-tenant-id': activeTenantId
+        },
+        body: JSON.stringify({ role: selectedRole, code: totpCode.trim(), tenantId: activeTenantId }),
       });
 
       const data = await res.json();
@@ -285,6 +327,45 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
             </div>
           )}
 
+          {/* Compte Entreprise (Multi-Tenant Context) */}
+          {tenantsList && tenantsList.length > 0 && (
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0f1628] border border-slate-200/90 dark:border-slate-800">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2.5 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Compte Entreprise (Tenant)
+                </span>
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                  Isolation Données Active
+                </span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {tenantsList.map((t) => {
+                  const isSelected = t.id === activeTenantId;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => onSwitchTenant?.(t.id)}
+                      className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-emerald-500/10 border-emerald-500 dark:border-emerald-400 shadow-xs text-emerald-950 dark:text-emerald-100 ring-1 ring-emerald-500/40'
+                          : 'bg-white dark:bg-[#151f33] border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                      data-testid={`modal-tenant-${t.slug}`}
+                    >
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="font-extrabold text-xs truncate">{t.name}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{t.companyType}</div>
+                      <div className="text-[9px] text-emerald-700 dark:text-emerald-400 mt-1 font-semibold">{t.wilaya}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* 1. Role Selection Matrix */}
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-2">
@@ -293,6 +374,11 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {ROLES_CONFIG.map((r) => {
                 const isSelected = selectedRole === r.role;
+                const dyn = dynamicRoles.find(dr => dr.role === r.role);
+                const roleEmail = dyn?.email || r.email;
+                const roleName = dyn?.name;
+                const roleDept = dyn?.department;
+
                 return (
                   <button
                     key={r.role}
@@ -310,15 +396,27 @@ export const Auth2FAModal: React.FC<Auth2FAModalProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between gap-1 mb-1">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">{r.label}</span>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${r.badgeColor}`}>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          {roleName || r.label}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                          {r.label}
+                        </span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border shrink-0 ${r.badgeColor}`}>
                         {r.role.replace('_', ' ')}
                       </span>
                     </div>
-                    <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold mb-1 flex items-center gap-1">
+                    <div className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 font-semibold mb-1 flex items-center gap-1 truncate">
                       <Mail className="w-3 h-3 shrink-0" />
-                      <span>{r.email}</span>
+                      <span className="truncate">{roleEmail}</span>
                     </div>
+                    {roleDept && (
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate mb-1">
+                        🏢 {roleDept}
+                      </div>
+                    )}
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
                       {r.description}
                     </p>
